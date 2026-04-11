@@ -1,0 +1,46 @@
+# Claude
+.claude/
+
+# Node
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+
+# Vite
+*.local
+
+# Gradle / Java / Kotlin
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+local.properties
+
+# Android
+*.apk
+*.aab
+*.dex
+*.class
+*.ap_
+*.iml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Database
+*.sqlite
+*.db
