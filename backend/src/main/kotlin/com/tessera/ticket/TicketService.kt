@@ -3,6 +3,8 @@ package com.tessera.ticket
 import com.tessera.event.EventRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.OffsetDateTime
+import java.util.UUID
 
 @Service
 class TicketService(
@@ -24,4 +26,22 @@ class TicketService(
 
         return ticketRepository.save(ticket)
     }
+
+    @Transactional
+    fun validate(code: UUID): Ticket {
+        val ticket = ticketRepository.findByCode(code)
+            ?: throw TicketNotFoundException("Ticket not found: $code")
+
+        if (ticket.status != TicketStatus.PAID) {
+            throw InvalidTicketStatusException("Ticket status is ${ticket.status}, expected ${TicketStatus.PAID}")
+        }
+
+        ticket.status = TicketStatus.VALIDATED
+        ticket.validationDate = OffsetDateTime.now()
+
+        return ticketRepository.save(ticket)
+    }
 }
+
+class TicketNotFoundException(message: String) : RuntimeException(message)
+class InvalidTicketStatusException(message: String) : RuntimeException(message)

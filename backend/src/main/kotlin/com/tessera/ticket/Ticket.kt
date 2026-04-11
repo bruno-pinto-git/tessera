@@ -6,6 +6,12 @@ import java.math.BigDecimal
 import java.time.OffsetDateTime
 import java.util.UUID
 
+enum class TicketStatus {
+    PENDING,
+    PAID,
+    VALIDATED
+}
+
 @Entity
 @Table(name = "ticket")
 class Ticket(
@@ -23,8 +29,9 @@ class Ticket(
     @Column(nullable = false)
     val price: BigDecimal,
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val status: String = "PENDING",
+    var status: TicketStatus = TicketStatus.PENDING,
 
     @Column(name = "payment_method")
     val paymentMethod: String? = null,
@@ -39,7 +46,7 @@ class Ticket(
     val paymentDate: OffsetDateTime? = null,
 
     @Column(name = "validation_date")
-    val validationDate: OffsetDateTime? = null,
+    var validationDate: OffsetDateTime? = null,
 
     @Column(name = "validator_id")
     val validatorId: Long? = null
