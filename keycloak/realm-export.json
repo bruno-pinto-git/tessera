@@ -1,0 +1,63 @@
+{
+  "realm": "tessera",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "loginWithEmailAllowed": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Club administrator – full access to club management"
+      },
+      {
+        "name": "staff",
+        "description": "Club staff – ticket validation and match sheet management"
+      },
+      {
+        "name": "fan",
+        "description": "Fan / supporter – ticket purchase and match viewing"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "tessera-web",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true
+    },
+    {
+      "clientId": "tessera-android",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "tessera://callback/*"
+      ],
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true
+    },
+    {
+      "clientId": "tessera-bff",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "change-me-in-production",
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false
+    }
+  ]
+}

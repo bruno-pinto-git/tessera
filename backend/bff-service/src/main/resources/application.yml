@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: bff-service
+
+# Internal service URLs
+services:
+  ticket-url: http://localhost:8081
+  match-url: http://localhost:8082
+  statistics-url: http://localhost:8083
