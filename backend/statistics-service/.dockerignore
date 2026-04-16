@@ -1,4 +1,11 @@
 .gradle/
 build/
+!build/libs/
 .idea/
 *.iml
+src/
+gradle/
+gradlew
+gradlew.bat
+*.gradle.kts
+*.properties

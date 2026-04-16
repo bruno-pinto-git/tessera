@@ -3,29 +3,26 @@ package com.tessera.bff.config
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.client.RestTemplate
 
 @Configuration
 class WebClientConfig {
 
-    @Bean
-    fun ticketServiceClient(
+    @Bean("ticketServiceUrl")
+    fun ticketServiceUrl(
         @Value("\${services.ticket-url}") ticketUrl: String
-    ): WebClient = WebClient.builder()
-        .baseUrl(ticketUrl)
-        .build()
+    ): String = ticketUrl
 
-    @Bean
-    fun matchServiceClient(
+    @Bean("matchServiceUrl")
+    fun matchServiceUrl(
         @Value("\${services.match-url}") matchUrl: String
-    ): WebClient = WebClient.builder()
-        .baseUrl(matchUrl)
-        .build()
+    ): String = matchUrl
+
+    @Bean("statisticsServiceUrl")
+    fun statisticsServiceUrl(
+        @Value("\${services.statistics-url}") statisticsUrl: String
+    ): String = statisticsUrl
 
     @Bean
-    fun statisticsServiceClient(
-        @Value("\${services.statistics-url}") statisticsUrl: String
-    ): WebClient = WebClient.builder()
-        .baseUrl(statisticsUrl)
-        .build()
+    fun restTemplate(): RestTemplate = RestTemplate()
 }
