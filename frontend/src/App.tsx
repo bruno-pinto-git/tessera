@@ -1,7 +1,15 @@
-import { TicketsPage } from "./features/tickets/pages/TicketsPage";
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "@/auth/AuthProvider";
+import { AppRoutes } from "@/routes/AppRoutes";
 
 function App() {
-  return <TicketsPage />;
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }
 
 export default App;

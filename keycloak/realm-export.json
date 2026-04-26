@@ -8,6 +8,8 @@
   "resetPasswordAllowed": true,
   "editUsernameAllowed": false,
   "bruteForceProtected": true,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 604800,
   "defaultRole": {
     "name": "default-roles-tessera",
     "composites": {

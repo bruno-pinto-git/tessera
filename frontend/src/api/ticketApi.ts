@@ -1,9 +1,9 @@
-const API_BASE = "/api";
+import { apiFetch } from "./http";
 
 export type CreateTicketRequest = {
   eventId: number;
   supporter: boolean;
-}
+};
 
 export type TicketResponse = {
   id: number;
@@ -11,14 +11,11 @@ export type TicketResponse = {
   price: string;
   status: string;
   createdAt: string;
-}
+};
 
-export async function createTicket(
-  request: CreateTicketRequest
-): Promise<TicketResponse> {
-  const response = await fetch(`${API_BASE}/tickets`, {
+export async function createTicket(request: CreateTicketRequest): Promise<TicketResponse> {
+  const response = await apiFetch("/tickets", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
   });
 

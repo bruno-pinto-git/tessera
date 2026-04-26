@@ -4,4 +4,4 @@ export type Ticket = {
   price: string;
   status: string;
   createdAt: string;
-}
+};
