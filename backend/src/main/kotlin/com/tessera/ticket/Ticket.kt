@@ -21,13 +21,13 @@ class Ticket(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false)
-    val event: Event,
+    val event: Event? = null,
 
     @Column(nullable = false, unique = true)
     val code: UUID = UUID.randomUUID(),
 
     @Column(nullable = false)
-    val price: BigDecimal,
+    val price: BigDecimal = BigDecimal.ZERO,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
