@@ -1,0 +1,10 @@
+.git/
+.idea/
+android/
+docs/
+db/
+scripts/
+backend/
+keycloak/
+frontend/node_modules/
+frontend/.vite/

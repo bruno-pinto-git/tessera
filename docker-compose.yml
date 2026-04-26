@@ -1,0 +1,169 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # NGINX – reverse proxy (entry point)
+  # ---------------------------------------------------------------------------
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "8000:80"
+    depends_on:
+      - bff-service
+      - keycloak
+    networks:
+      - tessera-net
+
+  # ---------------------------------------------------------------------------
+  # BFF – backend for frontend
+  # ---------------------------------------------------------------------------
+  bff-service:
+    build: ./backend/bff-service
+    ports:
+      - "8080:8080"
+    environment:
+      SERVICES_TICKET_URL: http://ticket-service:8081
+      SERVICES_MATCH_URL: http://match-service:8082
+      SERVICES_STATISTICS_URL: http://statistics-service:8083
+    depends_on:
+      - ticket-service
+      - match-service
+      - statistics-service
+    networks:
+      - tessera-net
+
+  # ---------------------------------------------------------------------------
+  # TICKET SERVICE
+  # ---------------------------------------------------------------------------
+  ticket-service:
+    build: ./backend/ticket-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-tickets:5432/tessera_tickets
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      db-tickets:
+        condition: service_healthy
+    networks:
+      - tessera-net
+
+  # ---------------------------------------------------------------------------
+  # MATCH SERVICE
+  # ---------------------------------------------------------------------------
+  match-service:
+    build: ./backend/match-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-matches:5432/tessera_matches
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      db-matches:
+        condition: service_healthy
+    networks:
+      - tessera-net
+
+  # ---------------------------------------------------------------------------
+  # STATISTICS SERVICE
+  # ---------------------------------------------------------------------------
+  statistics-service:
+    build: ./backend/statistics-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-statistics:5432/tessera_statistics
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      db-statistics:
+        condition: service_healthy
+    networks:
+      - tessera-net
+
+  # ---------------------------------------------------------------------------
+  # DATABASES – one per service
+  # ---------------------------------------------------------------------------
+  db-tickets:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tessera_tickets
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db-tickets-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - tessera-net
+
+  db-matches:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tessera_matches
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db-matches-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - tessera-net
+
+  db-statistics:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tessera_statistics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db-statistics-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - tessera-net
+
+  # ---------------------------------------------------------------------------
+  # KEYCLOAK – authentication & authorization
+  # ---------------------------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --import-realm
+    ports:
+      - "8180:8180"
+    environment:
+      KC_HTTP_PORT: 8180
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: true
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    networks:
+      - tessera-net
+
+# ---------------------------------------------------------------------------
+# VOLUMES
+# ---------------------------------------------------------------------------
+volumes:
+  db-tickets-data:
+  db-matches-data:
+  db-statistics-data:
+
+# ---------------------------------------------------------------------------
+# NETWORKS
+# ---------------------------------------------------------------------------
+networks:
+  tessera-net:
+    driver: bridge

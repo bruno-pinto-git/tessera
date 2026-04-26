@@ -9,10 +9,7 @@ export function TicketsPage() {
   return (
     <div style={{ maxWidth: 480, margin: "40px auto", padding: 16 }}>
       <h1>Tessera</h1>
-      <button
-        onClick={() => generate(SEED_EVENT_ID, false)}
-        disabled={loading}
-      >
+      <button onClick={() => generate(SEED_EVENT_ID, false)} disabled={loading}>
         {loading ? "A gerar..." : "Gerar Ticket"}
       </button>
 

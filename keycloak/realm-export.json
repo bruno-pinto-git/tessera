@@ -1,0 +1,215 @@
+{
+  "realm": "tessera",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 604800,
+  "defaultRole": {
+    "name": "default-roles-tessera",
+    "composites": {
+      "realm": ["fan"]
+    }
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrador do clube - acesso total à gestão do clube, jogadores, jogos e bilheteira"
+      },
+      {
+        "name": "staff",
+        "description": "Staff do clube - validação de bilhetes e gestão da ficha técnica dos jogos"
+      },
+      {
+        "name": "fan",
+        "description": "Adepto - compra de bilhetes e consulta de jogos e estatísticas"
+      }
+    ],
+    "client": {
+      "tessera-web": [],
+      "tessera-android": [],
+      "tessera-bff": []
+    }
+  },
+  "scopeMappings": [
+    {
+      "client": "tessera-web",
+      "roles": ["admin", "staff", "fan"]
+    },
+    {
+      "client": "tessera-android",
+      "roles": ["admin", "staff", "fan"]
+    },
+    {
+      "client": "tessera-bff",
+      "roles": ["admin", "staff", "fan"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "tessera-web",
+      "name": "Tessera Web App",
+      "description": "React SPA - gestão de bilhetes, jogos e consulta para adeptos e administradores",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:8000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:8000"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "attributes": {
+        "access.token.lifespan": "1800",
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "tessera-android",
+      "name": "Tessera Android App",
+      "description": "Aplicação móvel Android - validação de bilhetes e ficha técnica para staff",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "tessera://callback/*"
+      ],
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles"
+      ],
+      "optionalClientScopes": [
+        "offline_access"
+      ],
+      "attributes": {
+        "access.token.lifespan": "3600",
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "tessera-bff",
+      "name": "Tessera BFF Service",
+      "description": "Backend for Frontend - comunicação serviço-a-serviço, validação de tokens",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "change-me-in-production",
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect",
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "email": "admin@tessera.pt",
+      "firstName": "Admin",
+      "lastName": "Tessera",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "staff",
+      "email": "staff@tessera.pt",
+      "firstName": "Staff",
+      "lastName": "Tessera",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "staff",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["staff"]
+    },
+    {
+      "username": "adepto",
+      "email": "adepto@tessera.pt",
+      "firstName": "Adepto",
+      "lastName": "Tessera",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "adepto",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["fan"]
+    }
+  ]
+}
