@@ -1,0 +1,20 @@
+type: object
+description: Ticket sales aggregated for a single match.
+required:
+  - matchId
+  - sold
+  - validated
+  - revenue
+properties:
+  matchId:
+    type: integer
+    format: int64
+  sold:
+    type: integer
+    format: int64
+  validated:
+    type: integer
+    format: int64
+  revenue:
+    type: string
+    description: Total revenue for this match, decimal string.

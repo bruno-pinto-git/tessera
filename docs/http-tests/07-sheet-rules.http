@@ -1,0 +1,417 @@
+# =====================================================================
+#  07-sheet-rules.http
+#  Business rules for the match sheet (P3):
+#    - max 11 STARTERs per team
+#    - max 12 SUBSTITUTEs per team
+#    - max 5 SUBSTITUTION occurrences per team per match
+#    - player sent off (RED_CARD) cannot author further occurrences
+#    - FOUL is a valid occurrence type
+#
+#  Requires 00-auth.http + 03-teams.http + 04-players.http already executed
+#  (so we have teamSeniorMId, awayTeamId, venueId, etc.).
+# =====================================================================
+
+### Setup: fresh match for these rule tests
+POST {{matchServiceUrl}}/api/v1/matches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "homeTeamId": {{teamSeniorMId}},
+  "awayTeamId": {{awayTeamId}},
+  "kickoffAt":  "2026-12-15T20:00:00Z"
+}
+
+> {%
+client.global.set("rulesMatchId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### Setup: create 12 home-team players (we need lots to test limits)
+# We reuse playerGkId + playerFwId (2) from 04-players.http and add 10 more.
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk1", "lastName": "P", "position": "DF", "shirtNumber": 2 }
+
+> {% client.global.set("bulkP1", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk2", "lastName": "P", "position": "DF", "shirtNumber": 3 }
+
+> {% client.global.set("bulkP2", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk3", "lastName": "P", "position": "DF", "shirtNumber": 4 }
+
+> {% client.global.set("bulkP3", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk4", "lastName": "P", "position": "MF", "shirtNumber": 5 }
+
+> {% client.global.set("bulkP4", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk5", "lastName": "P", "position": "MF", "shirtNumber": 6 }
+
+> {% client.global.set("bulkP5", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk6", "lastName": "P", "position": "MF", "shirtNumber": 7 }
+
+> {% client.global.set("bulkP6", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk7", "lastName": "P", "position": "MF", "shirtNumber": 8 }
+
+> {% client.global.set("bulkP7", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk8", "lastName": "P", "position": "FW", "shirtNumber": 10 }
+
+> {% client.global.set("bulkP8", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk9", "lastName": "P", "position": "FW", "shirtNumber": 11 }
+
+> {% client.global.set("bulkP9", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Bulk10", "lastName": "P", "position": "FW", "shirtNumber": 12 }
+
+> {% client.global.set("bulkP10", response.body.id); %}
+
+
+### Fill lineup with 11 STARTERs (gk + fw + 9 bulk)
+# We send each one as a separate request — the test runs blocks in order.
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{playerGkId}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{playerFwId}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP1}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP2}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP3}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP4}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP5}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP6}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP7}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP8}}, "role": "STARTER" }
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP9}}, "role": "STARTER" }
+
+> {%
+client.test("11th STARTER accepted", () => client.assert(response.status === 201));
+%}
+
+
+### 12th STARTER → 409 (max 11 reached)
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP10}}, "role": "STARTER" }
+
+> {%
+client.test("status 409 (max 11 starters)", () =>
+    client.assert(response.status === 409));
+%}
+
+
+### Add same player as SUBSTITUTE instead → 201
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{bulkP10}}, "role": "SUBSTITUTE" }
+
+> {%
+client.test("status 201 (substitute ok)", () => client.assert(response.status === 201));
+%}
+
+
+### Cannot promote SUBSTITUTE to STARTER if 11 already STARTERs → 409
+PATCH {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup/{{bulkP10}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "role": "STARTER" }
+
+> {%
+client.test("status 409 (PATCH respects roster limit)", () =>
+    client.assert(response.status === 409));
+%}
+
+
+### FOUL is now a valid occurrence type
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 25, "type": "FOUL", "playerId": {{bulkP1}} }
+
+> {%
+client.test("FOUL accepted", () => client.assert(response.status === 201));
+client.test("type stored", () =>
+    client.assert(response.body.type === "FOUL"));
+%}
+
+
+### RED_CARD: send off bulkP1
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 40, "type": "RED_CARD", "playerId": {{bulkP1}} }
+
+> {%
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### bulkP1 (sent off) can NOT author further occurrences → 409
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 55, "type": "GOAL", "playerId": {{bulkP1}} }
+
+> {%
+client.test("status 409 (sent off)", () =>
+    client.assert(response.status === 409));
+%}
+
+
+### Substitutions: do 5 of them, then the 6th should fail
+# Sub 1: bulkP10 (sub) comes on, bulkP2 (starter) goes off
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 60, "type": "SUBSTITUTION", "playerId": {{bulkP10}}, "replacedPlayerId": {{bulkP2}} }
+
+### Sub 2: need fresh subs — add bulkP3...P7 as subs first
+# Actually bulkP2..P9 are STARTERs. We need to add more SUBSTITUTEs.
+# Let's add 4 more subs to the team using the players we still have.
+# We are limited by team roster — let's add some more players quickly.
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Sub2", "lastName": "P", "position": "MF", "shirtNumber": 13 }
+
+> {% client.global.set("subB", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{subB}}, "role": "SUBSTITUTE" }
+
+### Sub 2
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 65, "type": "SUBSTITUTION", "playerId": {{subB}}, "replacedPlayerId": {{bulkP3}} }
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Sub3", "lastName": "P", "position": "MF", "shirtNumber": 14 }
+
+> {% client.global.set("subC", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{subC}}, "role": "SUBSTITUTE" }
+
+### Sub 3
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 70, "type": "SUBSTITUTION", "playerId": {{subC}}, "replacedPlayerId": {{bulkP4}} }
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Sub4", "lastName": "P", "position": "FW", "shirtNumber": 15 }
+
+> {% client.global.set("subD", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{subD}}, "role": "SUBSTITUTE" }
+
+### Sub 4
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 75, "type": "SUBSTITUTION", "playerId": {{subD}}, "replacedPlayerId": {{bulkP5}} }
+
+###
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Sub5", "lastName": "P", "position": "FW", "shirtNumber": 16 }
+
+> {% client.global.set("subE", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{subE}}, "role": "SUBSTITUTE" }
+
+### Sub 5
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 80, "type": "SUBSTITUTION", "playerId": {{subE}}, "replacedPlayerId": {{bulkP6}} }
+
+> {%
+client.test("5th sub accepted", () => client.assert(response.status === 201));
+%}
+
+
+### Sub 6 — same team — should be rejected with 409
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Sub6", "lastName": "P", "position": "FW", "shirtNumber": 17 }
+
+> {% client.global.set("subF", response.body.id); %}
+
+###
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{subF}}, "role": "SUBSTITUTE" }
+
+### Sub 6 should fail
+POST {{matchServiceUrl}}/api/v1/matches/{{rulesMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 85, "type": "SUBSTITUTION", "playerId": {{subF}}, "replacedPlayerId": {{bulkP7}} }
+
+> {%
+client.test("status 409 (6th sub blocked)", () =>
+    client.assert(response.status === 409));
+%}

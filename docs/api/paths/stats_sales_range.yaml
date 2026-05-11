@@ -1,0 +1,37 @@
+get:
+  operationId: getSalesInRange
+  tags: [Statistics]
+  summary: Ticket sales aggregated over a time range
+  description: |
+    Aggregates `paidAt` between `from` (inclusive) and `to` (exclusive).
+    `validationRate` is always 0 in this view because validation lags
+    payment and would skew the rate.
+  x-required-roles: [admin]
+  parameters:
+    - in: query
+      name: from
+      required: true
+      schema:
+        type: string
+        format: date-time
+    - in: query
+      name: to
+      required: true
+      schema:
+        type: string
+        format: date-time
+  responses:
+    "200":
+      description: Aggregated sales in the range.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/salesSummary.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

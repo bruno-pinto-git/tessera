@@ -1,0 +1,61 @@
+get:
+  operationId: listMatchSheetHistory
+  tags: [Statistics]
+  summary: List historical match-sheet snapshots
+  description: |
+    Returns matches whose match-sheet has been closed and snapshotted by the
+    statistics-service. Filters can be combined; results are ordered by
+    `kickoffAt` ascending (configurable via the `sort` parameter).
+
+    Public endpoint — fans can browse the historical archive.
+  security: []
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+    - $ref: "../components/parameters/pagination.yaml#/Sort"
+    - in: query
+      name: clubId
+      required: false
+      schema:
+        type: integer
+        format: int64
+      description: Only matches where the given club was home or away.
+    - in: query
+      name: playerId
+      required: false
+      schema:
+        type: integer
+        format: int64
+      description: Only matches where the player appeared in the lineup.
+    - in: query
+      name: season
+      required: false
+      schema:
+        type: string
+        pattern: "^[0-9]{4}-[0-9]{2}$"
+      description: Season label, e.g. `2026-27`.
+    - in: query
+      name: status
+      required: false
+      schema:
+        type: string
+        enum: [SCHEDULED, LIVE, FINISHED, POSTPONED, ABANDONED, CANCELLED]
+      description: Match status at the time the sheet was closed.
+  responses:
+    "200":
+      description: Page of match summaries.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/matchSummary.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

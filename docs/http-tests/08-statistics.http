@@ -1,0 +1,181 @@
+# =====================================================================
+#  08-statistics.http
+#  History (read-side) endpoints in the statistics-service.
+#
+#  Pre-conditions:
+#    - The full stack is up (RabbitMQ included).
+#    - 03-teams.http + 04-players.http + 05-matches.http already ran
+#      (we need `teamSeniorMId`, `awayTeamId`, plus an admin/staff token).
+#
+#  Setup recipe to produce data:
+#    1. Create a fresh match in SCHEDULED.
+#    2. POST /matches/{id}/sheet/lock — fires `match.sheet.closed`.
+#    3. Wait ~1s for the statistics-service to consume the event.
+#    4. Query the stats endpoints below.
+# =====================================================================
+
+
+### Setup: fresh match for stats
+POST {{matchServiceUrl}}/api/v1/matches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "homeTeamId": {{teamSeniorMId}},
+  "awayTeamId": {{awayTeamId}},
+  "kickoffAt":  "2026-12-20T20:00:00Z"
+}
+
+> {%
+client.global.set("statsMatchId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### Add a quick lineup so the event has interesting content
+POST {{matchServiceUrl}}/api/v1/matches/{{statsMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "playerId": {{playerFwId}}, "role": "STARTER" }
+
+
+### Add an occurrence
+POST {{matchServiceUrl}}/api/v1/matches/{{statsMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "minute": 22, "type": "GOAL", "playerId": {{playerFwId}} }
+
+
+### Close the sheet — fires `match.sheet.closed` to statistics-service
+POST {{matchServiceUrl}}/api/v1/matches/{{statsMatchId}}/sheet/lock
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("locked", () => client.assert(response.body.locked === true));
+%}
+
+
+### Warmup poll: wait up to ~3s for the consumer to ingest the event.
+# The IntelliJ HTTP Client has no native sleep; we fire a few cheap GETs
+# in quick succession so that by the time we reach the next assertion the
+# snapshot exists. Each loop iteration is a separate request to the same
+# public endpoint.
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets/{{statsMatchId}}
+
+###
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets/{{statsMatchId}}
+
+###
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets/{{statsMatchId}}
+
+
+### List historical match-sheets (public; should include our match)
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("has at least one entry", () =>
+    client.assert(response.body.totalElements >= 1));
+%}
+
+
+### Filter by clubId — find by the home club of our match
+# (we know `teamsClubId` from 03-teams.http maps to the home team's club)
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets?clubId={{teamsClubId}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+%}
+
+
+### Filter by season (matches with kickoff in 2026-27)
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets?season=2026-27
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("at least one in 2026-27", () =>
+    client.assert(response.body.totalElements >= 1));
+%}
+
+
+### Filter by status (only FINISHED — sheet was locked while match was SCHEDULED so this may be empty)
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets?status=SCHEDULED
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+%}
+
+
+### Get full snapshot of our match
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets/{{statsMatchId}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("lineup present", () =>
+    client.assert(response.body.lineup.length >= 1));
+client.test("occurrence present", () =>
+    client.assert(response.body.occurrences.length >= 1));
+%}
+
+
+### Snapshot for a non-existent match → 404
+GET {{statisticsServiceUrl}}/api/v1/stats/match-sheets/999999
+
+> {%
+client.test("status 404", () => client.assert(response.status === 404));
+%}
+
+
+### --- Sales endpoints (admin-only) ---
+
+### Sales summary as adepto → 403
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/summary
+Authorization: Bearer {{adeptoToken}}
+
+> {%
+client.test("status 403", () => client.assert(response.status === 403));
+%}
+
+
+### Sales summary as admin → 200 (probably 0 since ticket-service producer
+### isn't implemented yet — but the endpoint must work).
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/summary
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("has sold field", () =>
+    client.assert(typeof response.body.sold === "number"));
+%}
+
+
+### Sales by match (admin)
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/by-match/{{statsMatchId}}
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("matchId echoed", () =>
+    client.assert(response.body.matchId === client.global.get("statsMatchId")));
+%}
+
+
+### Sales in date range (admin)
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/range?from=2026-01-01T00:00:00Z&to=2027-01-01T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+%}
+
+
+### Sales range with from >= to → 400
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/range?from=2026-12-01T00:00:00Z&to=2026-01-01T00:00:00Z
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 400", () => client.assert(response.status === 400));
+%}

@@ -1,0 +1,59 @@
+type: object
+description: |
+  Snapshot of a match captured by the statistics-service when the match-sheet
+  was closed. Read-only view, fed by the `match.sheet.closed` event.
+required:
+  - matchId
+  - season
+  - matchStatus
+  - kickoffAt
+  - homeTeamId
+  - awayTeamId
+  - homeClubId
+  - awayClubId
+properties:
+  matchId:
+    type: integer
+    format: int64
+  season:
+    type: string
+    description: Season label in `YYYY-YY` format.
+    pattern: "^[0-9]{4}-[0-9]{2}$"
+    examples:
+      - "2026-27"
+  matchStatus:
+    type: string
+    description: Match status at the time the sheet was closed.
+    enum:
+      - SCHEDULED
+      - LIVE
+      - FINISHED
+      - POSTPONED
+      - ABANDONED
+      - CANCELLED
+  kickoffAt:
+    type: string
+    format: date-time
+  homeTeamId:
+    type: integer
+    format: int64
+  awayTeamId:
+    type: integer
+    format: int64
+  homeClubId:
+    type: integer
+    format: int64
+  awayClubId:
+    type: integer
+    format: int64
+  venueId:
+    type: [integer, "null"]
+    format: int64
+  homeScore:
+    type: [integer, "null"]
+    format: int32
+  awayScore:
+    type: [integer, "null"]
+    format: int32
+  refereeName:
+    type: [string, "null"]

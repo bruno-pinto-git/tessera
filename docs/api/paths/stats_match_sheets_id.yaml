@@ -1,0 +1,29 @@
+parameters:
+  - in: path
+    name: matchId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+
+get:
+  operationId: getMatchSheetHistory
+  tags: [Statistics]
+  summary: Get a historical match-sheet snapshot
+  description: |
+    Returns the full snapshot for the given match: summary, lineup, and
+    occurrences as recorded by the statistics-service when the match-sheet
+    was closed. Public endpoint.
+  security: []
+  responses:
+    "200":
+      description: The snapshot.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/matchSheetHistory.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

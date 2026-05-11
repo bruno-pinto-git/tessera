@@ -1,0 +1,21 @@
+get:
+  operationId: getSalesSummary
+  tags: [Statistics]
+  summary: Total ticket sales summary
+  description: |
+    Aggregated counts and revenue across all matches. Requires the `admin`
+    role.
+  x-required-roles: [admin]
+  responses:
+    "200":
+      description: Aggregated sales.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/salesSummary.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

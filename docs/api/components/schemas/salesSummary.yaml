@@ -1,0 +1,33 @@
+type: object
+description: Aggregated ticket sales for a period or for the whole system.
+required:
+  - sold
+  - validated
+  - revenue
+  - validationRate
+properties:
+  sold:
+    type: integer
+    format: int64
+    description: Number of tickets paid (PENDING → PAID).
+    examples:
+      - 1234
+  validated:
+    type: integer
+    format: int64
+    description: Number of those tickets that were validated at the gate.
+    examples:
+      - 1100
+  revenue:
+    type: string
+    description: Total revenue, as decimal string to preserve precision.
+    examples:
+      - "12345.50"
+  validationRate:
+    type: string
+    description: |
+      `validated / sold` (0.000 .. 1.000). Always 0 in the date-range
+      summary because validation happens later than payment and would
+      skew the metric.
+    examples:
+      - "0.892"

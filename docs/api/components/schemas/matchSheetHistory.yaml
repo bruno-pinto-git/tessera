@@ -1,0 +1,24 @@
+type: object
+description: |
+  Full snapshot of a match: summary + lineup + occurrences as recorded at
+  the moment the sheet was closed. Returned by
+  `GET /stats/match-sheets/{matchId}`.
+required:
+  - matchId
+  - summary
+  - lineup
+  - occurrences
+properties:
+  matchId:
+    type: integer
+    format: int64
+  summary:
+    $ref: "./matchSummary.yaml"
+  lineup:
+    type: array
+    items:
+      $ref: "./lineupEntry.yaml"
+  occurrences:
+    type: array
+    items:
+      $ref: "./occurrence.yaml"

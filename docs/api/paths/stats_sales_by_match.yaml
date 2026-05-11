@@ -1,0 +1,27 @@
+parameters:
+  - in: path
+    name: matchId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+
+get:
+  operationId: getSalesByMatch
+  tags: [Statistics]
+  summary: Ticket sales for a single match
+  x-required-roles: [admin]
+  responses:
+    "200":
+      description: Aggregated sales for the match.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/salesByMatch.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
