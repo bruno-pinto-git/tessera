@@ -1,0 +1,50 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+
+post:
+  operationId: payTicket
+  tags: [Tickets]
+  summary: Confirm payment of a ticket (PENDING → PAID)
+  description: |
+    Transitions the ticket to `PAID`, stamps `paymentDate`, persists the
+    chosen `paymentMethod` (and `mbwayReference` when applicable), and
+    publishes `ticket.ticket.paid` so the statistics-service can record
+    the sale.
+
+    Authorisation: the ticket owner, or staff/admin (over-the-counter
+    cash payment).
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/ticketPayRequest.yaml"
+  responses:
+    "200":
+      description: Ticket transitioned to PAID.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/ticket.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      description: Ticket is not in PENDING status.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../components/schemas/problem.yaml"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

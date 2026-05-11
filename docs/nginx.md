@@ -19,7 +19,7 @@ A alternativa seria utilizar um Spring Cloud Gateway (servico Java dedicado ao r
 
 ## Configuracao
 
-O ficheiro `nginx/nginx.conf` define toda a configuracao:
+O ficheiro `infra/nginx/nginx.conf` define toda a configuracao:
 
 ### Upstreams
 
@@ -110,7 +110,7 @@ Os ficheiros estaticos do React SPA sao compilados e copiados para dentro da ima
 - O NGINX serve os ficheiros diretamente do disco (maximo desempenho)
 - O frontend e versionado junto com a configuracao do NGINX
 
-Ver `nginx/Dockerfile` e a documentacao Docker para detalhes do processo de build.
+Ver `infra/nginx/Dockerfile` e a documentacao Docker para detalhes do processo de build.
 
 ## Problemas Encontrados e Solucoes
 

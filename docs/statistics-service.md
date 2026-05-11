@@ -4,6 +4,10 @@ Servico read-side de relatorios historicos. Recebe eventos assincronos
 via RabbitMQ dos outros servicos, popula tabelas denormalizadas, e
 expoe endpoints de consulta.
 
+> Desde a P3 (tickets) os producers `ticket.ticket.paid` e
+> `ticket.ticket.validated` ja existem no ticket-service — os
+> endpoints de vendas devolvem dados reais.
+
 - **Porta:** 8083
 - **Base de dados:** `tessera_statistics` (PostgreSQL 16)
 - **Stack:** Spring Boot 3.4.4, Kotlin 1.9.25, JPA, Flyway, Spring AMQP,
@@ -133,9 +137,8 @@ logado como warning.
 
 ## Trabalho futuro
 
-- [ ] Implementar o producer no **ticket-service** (`TicketPaid` e
-      `TicketValidated`) — actualmente os endpoints de sales devolvem
-      sempre 0 enquanto nenhum evento chega
+- [x] ~~Implementar o producer no **ticket-service** (`TicketPaid` e
+      `TicketValidated`)~~ — concluido na P3
 - [ ] Dead-letter queue + retry exponencial para mensagens que falham
 - [ ] Tracing distribuido (traceId/spanId nos eventos)
 - [ ] Reports avancados (top scorers, cleansheets, atendance trends)

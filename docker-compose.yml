@@ -6,7 +6,7 @@ services:
   nginx:
     build:
       context: .
-      dockerfile: nginx/Dockerfile
+      dockerfile: infra/nginx/Dockerfile
     ports:
       - "8000:80"
     depends_on:
@@ -44,8 +44,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-tickets:5432/tessera_tickets
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      KEYCLOAK_JWKS_URI: http://keycloak:8180/realms/tessera/protocol/openid-connect/certs
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: tessera
+      SPRING_RABBITMQ_PASSWORD: tessera
     depends_on:
       db-tickets:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - tessera-net
@@ -182,7 +189,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: true
     volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     networks:
       - tessera-net
 

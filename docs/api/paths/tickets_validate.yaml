@@ -1,0 +1,39 @@
+post:
+  operationId: validateTicket
+  tags: [Tickets]
+  summary: Validate a ticket at the gate (PAID → VALIDATED)
+  description: |
+    Looks up the ticket by its QR `code` (a UUID), transitions it to
+    `VALIDATED`, stamps `validationDate` and `validatorSub` (the JWT
+    subject of the staff member), and publishes
+    `ticket.ticket.validated`.
+  x-required-roles: [staff, admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/ticketValidateRequest.yaml"
+  responses:
+    "200":
+      description: Ticket validated.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/ticket.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      description: Ticket is not in PAID status.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../components/schemas/problem.yaml"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

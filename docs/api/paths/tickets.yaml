@@ -1,0 +1,69 @@
+get:
+  operationId: listTicketsByEvent
+  tags: [Tickets]
+  summary: List tickets for an event
+  description: |
+    Staff/admin view. Use `?eventId=` to filter by the parent event; results
+    are paginated. To list the **caller's** own tickets, use `/tickets/mine`.
+  x-required-roles: [staff, admin]
+  parameters:
+    - in: query
+      name: eventId
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+    - $ref: "../components/parameters/pagination.yaml#/Sort"
+  responses:
+    "200":
+      description: Paginated list of tickets.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/ticket.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createTicket
+  tags: [Tickets]
+  summary: Create a digital ticket
+  description: |
+    Creates a ticket in `PENDING` status owned by the authenticated user.
+    The `code` field returned in the response is the UUID that the client
+    renders as a QR code.
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/ticketCreateRequest.yaml"
+  responses:
+    "201":
+      description: Ticket created in PENDING status.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/ticket.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

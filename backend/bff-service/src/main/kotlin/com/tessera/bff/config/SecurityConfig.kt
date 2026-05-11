@@ -53,7 +53,9 @@ class SecurityConfig(
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/players/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/matches/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/stats/match-sheets/**").permitAll()
+                auth.requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
                 // /api/v1/stats/sales/** requires admin — downstream enforces.
+                // /api/v1/tickets/** always needs a valid token — downstream enforces roles.
                 // Anything else needs a valid token; fine-grained role
                 // checks happen downstream.
                 auth.anyRequest().authenticated()

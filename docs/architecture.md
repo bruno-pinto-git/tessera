@@ -55,16 +55,24 @@ O BFF nao possui base de dados propria. Utiliza `RestTemplate` para comunicar co
 
 ### Ticket Service — Porta 8081
 
-**Estado:** funcional, em refactor (migracao para `/api/v1`).
+**Estado:** **feature-complete** para o scope P3 (compra + QR + listagens
++ validacao + eventos AMQP).
 
 Responsavel por toda a gestao de bilheteira:
 
 - Criacao e consulta de eventos (jogos com bilheteira ativa)
-- Compra de bilhetes digitais (PENDING → PAID → VALIDATED)
-- Validacao de bilhetes por codigo UUID (leitura de QR code)
-- Gestao de pagamentos (MB WAY, multibanco, dinheiro)
+- Compra de bilhetes digitais (`PENDING → PAID → VALIDATED`) com
+  ownership por JWT `sub`
+- Listagem dos bilhetes do utilizador autenticado (`/tickets/mine`) e
+  por evento (staff/admin)
+- Validacao de bilhetes por UUID (payload do QR code) com identificacao
+  do staff validador
+- Pagamentos: MB WAY, multibanco/cartao, dinheiro
+- Publica eventos `ticket.ticket.paid` e `ticket.ticket.validated` em
+  RabbitMQ para o statistics-service
 
-Base de dados: `tessera_tickets`
+Base de dados: `tessera_tickets`. Detalhes em
+[ticket-service.md](ticket-service.md).
 
 ### Match Service — Porta 8082
 
@@ -85,8 +93,8 @@ Base de dados: `tessera_matches`. Detalhes em [match-service.md](match-service.m
 
 ### Statistics Service — Porta 8083
 
-**Estado:** funcional (fichas tecnicas via eventos RabbitMQ; vendas
-ficam a 0 ate o producer do ticket-service ser implementado).
+**Estado:** funcional. Fichas tecnicas via `match.sheet.closed`; vendas
+via `ticket.ticket.paid` / `ticket.ticket.validated` desde a P3.
 
 Servico read-side de relatorios historicos. Recebe eventos assincronos
 via RabbitMQ:
@@ -189,8 +197,9 @@ tessera/
 │   ├── statistics-service/   # Relatorios e estatisticas
 │   └── settings.gradle.kts   # Multi-module Gradle (IntelliJ)
 ├── frontend/                 # React SPA (TypeScript + Vite)
-├── keycloak/                 # Configuracao do realm Keycloak
-├── nginx/                    # Configuracao e Dockerfile do NGINX
+├── infra/                    # Infra-as-config: imagens off-the-shelf
+│   ├── keycloak/             # Configuracao do realm Keycloak
+│   └── nginx/                # Configuracao e Dockerfile do NGINX
 ├── scripts/
 │   ├── build/                # Scripts PowerShell de compilacao
 │   └── run/                  # Scripts PowerShell de execucao/reset
@@ -209,6 +218,7 @@ tessera/
 | [security.md](security.md) | Autenticacao, autorizacao, JWT pass-through, RBAC |
 | [bff.md](bff.md) | Padrao proxy, controllers, configuracao |
 | [match-service.md](match-service.md) | Recursos, endpoints, regras de negocio |
+| [ticket-service.md](ticket-service.md) | Bilhetes digitais, QR, fluxo de pagamento, validacao |
 | [statistics-service.md](statistics-service.md) | Read-side tables, consumers, endpoints de historico e vendas |
 | [events/async-contracts.md](events/async-contracts.md) | Contratos dos eventos RabbitMQ |
 | [keycloak.md](keycloak.md) | Realm, clients, roles, utilizadores |

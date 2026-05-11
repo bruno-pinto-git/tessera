@@ -1,0 +1,12 @@
+type: object
+required:
+  - paymentMethod
+properties:
+  paymentMethod:
+    type: string
+    enum: [MBWAY, CARD, CASH]
+  mbwayReference:
+    type: [string, "null"]
+    description: |
+      Optional. Reference returned by the MB WAY provider (only meaningful
+      when `paymentMethod = MBWAY`).

@@ -145,7 +145,7 @@ explicitamente para produzir Problem JSON em vez do default Spring
 
 ## Utilizadores de teste (desenvolvimento)
 
-Definidos no `keycloak/realm-export.json`, importados automaticamente
+Definidos no `infra/keycloak/realm-export.json`, importados automaticamente
 quando o container Keycloak arranca pela primeira vez:
 
 | Username | Password | Role |

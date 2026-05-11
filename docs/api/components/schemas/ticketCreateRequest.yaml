@@ -1,0 +1,14 @@
+type: object
+required:
+  - eventId
+properties:
+  eventId:
+    type: integer
+    format: int64
+    minimum: 1
+  supporter:
+    type: boolean
+    default: false
+    description: |
+      If `true`, applies the event's supporter price (typically discounted
+      for season-pass holders); otherwise the normal price is used.

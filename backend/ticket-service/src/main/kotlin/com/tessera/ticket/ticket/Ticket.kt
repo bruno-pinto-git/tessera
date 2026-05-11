@@ -34,20 +34,25 @@ class Ticket(
     var status: TicketStatus = TicketStatus.PENDING,
 
     @Column(name = "payment_method")
-    val paymentMethod: String? = null,
+    var paymentMethod: String? = null,
 
     @Column(name = "mbway_reference")
-    val mbwayReference: String? = null,
+    var mbwayReference: String? = null,
+
+    /** Keycloak subject UUID of the buyer. Null only for legacy rows. */
+    @Column(name = "owner_sub")
+    val ownerSub: String? = null,
 
     @Column(name = "created_at", nullable = false, updatable = false)
     val createdAt: OffsetDateTime = OffsetDateTime.now(),
 
     @Column(name = "payment_date")
-    val paymentDate: OffsetDateTime? = null,
+    var paymentDate: OffsetDateTime? = null,
 
     @Column(name = "validation_date")
     var validationDate: OffsetDateTime? = null,
 
-    @Column(name = "validator_id")
-    val validatorId: Long? = null
+    /** Keycloak subject UUID of the staff member that validated the ticket. */
+    @Column(name = "validator_sub")
+    var validatorSub: String? = null,
 )

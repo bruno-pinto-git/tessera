@@ -1,0 +1,11 @@
+type: string
+description: |
+  Lifecycle of a digital ticket.
+
+  * `PENDING`    — created but not yet paid
+  * `PAID`       — payment confirmed (`POST /tickets/{id}/pay`)
+  * `VALIDATED`  — scanned at the gate (`POST /tickets/validate`)
+enum:
+  - PENDING
+  - PAID
+  - VALIDATED

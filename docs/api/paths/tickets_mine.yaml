@@ -1,0 +1,29 @@
+get:
+  operationId: listMyTickets
+  tags: [Tickets]
+  summary: List tickets owned by the caller
+  description: |
+    Returns the tickets whose `ownerSub` matches the JWT subject UUID of
+    the caller. Used by the Android and SPA "My tickets" screens.
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+    - $ref: "../components/parameters/pagination.yaml#/Sort"
+  responses:
+    "200":
+      description: Paginated list of tickets.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/ticket.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

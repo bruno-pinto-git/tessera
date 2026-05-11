@@ -19,7 +19,7 @@ nos servicos backend, etc.), ver [security.md](security.md).
 - **Modo:** Desenvolvimento (`start-dev`)
 - **Porta:** 8180
 - **Base de dados:** H2 embebida (desenvolvimento); em producao deve ser substituida por PostgreSQL
-- **Importacao automatica:** O realm `tessera` e importado automaticamente a partir do ficheiro `keycloak/realm-export.json` na primeira execucao
+- **Importacao automatica:** O realm `tessera` e importado automaticamente a partir do ficheiro `infra/keycloak/realm-export.json` na primeira execucao
 
 ```yaml
 keycloak:
@@ -30,7 +30,7 @@ keycloak:
     KEYCLOAK_ADMIN: admin
     KEYCLOAK_ADMIN_PASSWORD: admin
   volumes:
-    - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
 ```
 
 ## Realm: tessera
@@ -242,7 +242,7 @@ para producao desde que o JWKS endpoint seja acessivel.
 
 ## Importacao do Realm
 
-O ficheiro `keycloak/realm-export.json` e importado automaticamente quando o container inicia pela primeira vez. Para re-importar (ex: apos alteracoes ao ficheiro):
+O ficheiro `infra/keycloak/realm-export.json` e importado automaticamente quando o container inicia pela primeira vez. Para re-importar (ex: apos alteracoes ao ficheiro):
 
 1. Parar e remover o container Keycloak
 2. Reiniciar — o Keycloak ira re-importar o ficheiro

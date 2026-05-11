@@ -40,7 +40,9 @@ tags:
   - name: Statistics
     description: Aggregated read-side data on matches, players, teams and sales.
   - name: Tickets
-    description: Owned by ticket-service. Specified separately by the ticket team.
+    description: |
+      Digital tickets — creation, payment, listing, and gate validation.
+      The QR code rendered by clients is simply the ticket's `code` UUID.
   - name: Events
     description: Sellable bundles of tickets attached to a match.
 
@@ -96,6 +98,20 @@ paths:
     $ref: "./paths/matches_id_sheet_lock.yaml"
   /matches/{id}/sheet/unlock:
     $ref: "./paths/matches_id_sheet_unlock.yaml"
+  /events:
+    $ref: "./paths/events.yaml"
+  /events/{id}:
+    $ref: "./paths/events_id.yaml"
+  /tickets:
+    $ref: "./paths/tickets.yaml"
+  /tickets/mine:
+    $ref: "./paths/tickets_mine.yaml"
+  /tickets/{id}:
+    $ref: "./paths/tickets_id.yaml"
+  /tickets/{id}/pay:
+    $ref: "./paths/tickets_id_pay.yaml"
+  /tickets/validate:
+    $ref: "./paths/tickets_validate.yaml"
 
 components:
   securitySchemes:
@@ -194,3 +210,17 @@ components:
       $ref: "./components/schemas/salesSummary.yaml"
     SalesByMatch:
       $ref: "./components/schemas/salesByMatch.yaml"
+    Event:
+      $ref: "./components/schemas/event.yaml"
+    EventCreateRequest:
+      $ref: "./components/schemas/eventCreateRequest.yaml"
+    TicketStatus:
+      $ref: "./components/schemas/ticketStatus.yaml"
+    Ticket:
+      $ref: "./components/schemas/ticket.yaml"
+    TicketCreateRequest:
+      $ref: "./components/schemas/ticketCreateRequest.yaml"
+    TicketPayRequest:
+      $ref: "./components/schemas/ticketPayRequest.yaml"
+    TicketValidateRequest:
+      $ref: "./components/schemas/ticketValidateRequest.yaml"

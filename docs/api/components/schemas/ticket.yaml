@@ -1,0 +1,52 @@
+type: object
+description: |
+  A digital ticket. `code` is the UUID the fan renders as a QR code in
+  the SPA / Android app; staff scan it at the gate to validate the ticket.
+required:
+  - id
+  - code
+  - eventId
+  - price
+  - status
+  - createdAt
+properties:
+  id:
+    type: integer
+    format: int64
+    examples: [12345]
+  code:
+    type: string
+    format: uuid
+    description: Unique UUID payload of the QR code. Generated server-side.
+  eventId:
+    type: integer
+    format: int64
+  matchId:
+    type: [integer, "null"]
+    format: int64
+    description: |
+      Match the parent event is attached to, if any. Mirrored here so the
+      Android validator can show context without an extra call.
+  ownerSub:
+    type: [string, "null"]
+    description: Keycloak subject UUID of the buyer.
+  price:
+    type: string
+    description: Decimal string, e.g. "10.00".
+  status:
+    $ref: "./ticketStatus.yaml"
+  paymentMethod:
+    type: [string, "null"]
+    enum: [MBWAY, CARD, CASH, null]
+  createdAt:
+    type: string
+    format: date-time
+  paymentDate:
+    type: [string, "null"]
+    format: date-time
+  validationDate:
+    type: [string, "null"]
+    format: date-time
+  validatorSub:
+    type: [string, "null"]
+    description: Keycloak subject UUID of the staff member who scanned the ticket.

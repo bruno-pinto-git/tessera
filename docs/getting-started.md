@@ -192,8 +192,9 @@ tessera/
 │   ├── match-service/        # Jogos e fichas tecnicas (porta 8082)
 │   └── statistics-service/   # Estatisticas (porta 8083)
 ├── frontend/                 # React SPA
-├── keycloak/                 # Configuracao do Keycloak
-├── nginx/                    # Configuracao e Dockerfile NGINX
+├── infra/                    # Infra-as-config (imagens off-the-shelf)
+│   ├── keycloak/             # Configuracao do Keycloak
+│   └── nginx/                # Configuracao e Dockerfile NGINX
 ├── scripts/                  # Scripts de build e execucao
 ├── docs/                     # Documentacao
 └── docker-compose.yml        # Orquestracao Docker

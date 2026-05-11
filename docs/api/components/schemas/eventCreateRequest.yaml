@@ -1,0 +1,25 @@
+type: object
+required:
+  - name
+  - priceNormal
+  - priceSupporter
+properties:
+  name:
+    type: string
+    minLength: 1
+  matchId:
+    type: [integer, "null"]
+    format: int64
+  priceNormal:
+    type: string
+    description: Decimal string, e.g. "10.00".
+  priceSupporter:
+    type: string
+    description: Decimal string.
+  status:
+    type: string
+    enum: [DRAFT, PUBLISHED, SALES_CLOSED, CANCELLED]
+    default: PUBLISHED
+    description: |
+      Optional. Defaults to `PUBLISHED` so tickets are immediately
+      purchasable.

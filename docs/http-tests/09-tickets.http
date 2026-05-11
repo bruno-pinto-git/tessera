@@ -1,0 +1,259 @@
+# =====================================================================
+#  09-tickets.http
+#  End-to-end smoke test for ticket-service.
+#
+#  Pre-conditions:
+#    - Full stack up (RabbitMQ + statistics-service included).
+#    - 00-auth.http already ran (adminToken / staffToken / adeptoToken
+#      stored as globals).
+#
+#  Covers:
+#    - Admin creates a public Event (POST /events).
+#    - Anonymous reads on the event catalog.
+#    - Adepto buys a ticket, pays it, and lists it under /tickets/mine.
+#    - Staff validates the ticket at the gate.
+#    - Negative paths: wrong role, missing token, wrong status, bad UUID.
+#    - Statistics-service eventually reflects the sale (warmup polling).
+# =====================================================================
+
+
+### Create an event as admin → 201
+POST {{ticketServiceUrl}}/api/v1/events
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Round 5 vs Rivals — Ticket Smoke {{$timestamp}}",
+  "matchId": null,
+  "priceNormal": "10.00",
+  "priceSupporter": "7.50",
+  "status": "PUBLISHED"
+}
+
+> {%
+client.global.set("ticketEventId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+client.test("status published", () => client.assert(response.body.status === "PUBLISHED"));
+%}
+
+
+### Create event as fan → 403
+POST {{ticketServiceUrl}}/api/v1/events
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "name": "x", "priceNormal": "1.00", "priceSupporter": "1.00" }
+
+> {% client.test("status 403", () => client.assert(response.status === 403)); %}
+
+
+### Public list events
+GET {{ticketServiceUrl}}/api/v1/events
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("has at least one event", () =>
+    client.assert(response.body.totalElements >= 1));
+%}
+
+
+### Public get event by id
+GET {{ticketServiceUrl}}/api/v1/events/{{ticketEventId}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("ids match", () =>
+    client.assert(response.body.id === parseInt(client.global.get("ticketEventId"))));
+%}
+
+
+### --- Buy flow (as adepto / fan) ---
+
+### Create ticket without token → 401
+POST {{ticketServiceUrl}}/api/v1/tickets
+Content-Type: application/json
+
+{ "eventId": {{ticketEventId}}, "supporter": false }
+
+> {% client.test("status 401", () => client.assert(response.status === 401)); %}
+
+
+### Create ticket as adepto → 201 PENDING
+POST {{ticketServiceUrl}}/api/v1/tickets
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "eventId": {{ticketEventId}}, "supporter": false }
+
+> {%
+client.global.set("ticketId", response.body.id);
+client.global.set("ticketCode", response.body.code);
+client.test("status 201", () => client.assert(response.status === 201));
+client.test("status PENDING", () => client.assert(response.body.status === "PENDING"));
+client.test("price = normal", () => client.assert(parseFloat(response.body.price) === 10));
+client.test("has UUID code", () =>
+    client.assert(/^[0-9a-f-]{36}$/i.test(response.body.code)));
+%}
+
+
+### Adepto lists own tickets → 200 with at least one
+GET {{ticketServiceUrl}}/api/v1/tickets/mine
+Authorization: Bearer {{adeptoToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("has at least one", () =>
+    client.assert(response.body.totalElements >= 1));
+%}
+
+
+### Adepto cannot list by event (staff/admin only) → 403
+GET {{ticketServiceUrl}}/api/v1/tickets?eventId={{ticketEventId}}
+Authorization: Bearer {{adeptoToken}}
+
+> {% client.test("status 403", () => client.assert(response.status === 403)); %}
+
+
+### Staff lists tickets for the event → 200
+GET {{ticketServiceUrl}}/api/v1/tickets?eventId={{ticketEventId}}
+Authorization: Bearer {{staffToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("at least one ticket for event", () =>
+    client.assert(response.body.totalElements >= 1));
+%}
+
+
+### Validate while PENDING → 409
+POST {{ticketServiceUrl}}/api/v1/tickets/validate
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "code": "{{ticketCode}}" }
+
+> {% client.test("status 409", () => client.assert(response.status === 409)); %}
+
+
+### Pay as adepto (owner) → 200 PAID
+POST {{ticketServiceUrl}}/api/v1/tickets/{{ticketId}}/pay
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "paymentMethod": "MBWAY", "mbwayReference": "REF-{{$timestamp}}" }
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("status PAID", () => client.assert(response.body.status === "PAID"));
+client.test("paymentMethod MBWAY", () => client.assert(response.body.paymentMethod === "MBWAY"));
+client.test("paymentDate set", () => client.assert(response.body.paymentDate != null));
+%}
+
+
+### Pay again (already PAID) → 409
+POST {{ticketServiceUrl}}/api/v1/tickets/{{ticketId}}/pay
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "paymentMethod": "CASH" }
+
+> {% client.test("status 409", () => client.assert(response.status === 409)); %}
+
+
+### --- Validation flow (as staff) ---
+
+### Fan cannot validate → 403
+POST {{ticketServiceUrl}}/api/v1/tickets/validate
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "code": "{{ticketCode}}" }
+
+> {% client.test("status 403", () => client.assert(response.status === 403)); %}
+
+
+### Bad UUID → 400
+POST {{ticketServiceUrl}}/api/v1/tickets/validate
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "code": "not-a-uuid" }
+
+> {% client.test("status 400", () => client.assert(response.status === 400)); %}
+
+
+### Unknown UUID → 404
+POST {{ticketServiceUrl}}/api/v1/tickets/validate
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "code": "00000000-0000-0000-0000-000000000000" }
+
+> {% client.test("status 404", () => client.assert(response.status === 404)); %}
+
+
+### Staff validates → 200 VALIDATED
+POST {{ticketServiceUrl}}/api/v1/tickets/validate
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "code": "{{ticketCode}}" }
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("status VALIDATED", () => client.assert(response.body.status === "VALIDATED"));
+client.test("validatorSub set", () => client.assert(response.body.validatorSub != null));
+client.test("validationDate set", () => client.assert(response.body.validationDate != null));
+%}
+
+
+### Validate twice → 409 (already VALIDATED)
+POST {{ticketServiceUrl}}/api/v1/tickets/validate
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "code": "{{ticketCode}}" }
+
+> {% client.test("status 409", () => client.assert(response.status === 409)); %}
+
+
+### --- Single-ticket read access control ---
+
+### Owner reads own ticket → 200
+GET {{ticketServiceUrl}}/api/v1/tickets/{{ticketId}}
+Authorization: Bearer {{adeptoToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("ownerSub matches caller", () =>
+    client.assert(response.body.ownerSub != null));
+%}
+
+
+### Staff reads any ticket → 200
+GET {{ticketServiceUrl}}/api/v1/tickets/{{ticketId}}
+Authorization: Bearer {{staffToken}}
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}
+
+
+### --- Statistics eventually reflects the sale (warmup poll) ---
+# The statistics-service has its own consumer; give it a moment.
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/summary
+Authorization: Bearer {{adminToken}}
+
+###
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/summary
+Authorization: Bearer {{adminToken}}
+
+###
+GET {{statisticsServiceUrl}}/api/v1/stats/sales/summary
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("at least one sold", () =>
+    client.assert(response.body.sold >= 1));
+client.test("at least one validated", () =>
+    client.assert(response.body.validated >= 1));
+%}

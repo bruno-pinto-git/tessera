@@ -94,7 +94,9 @@ multiplas chamadas e elimina race conditions.
 
 ### `ticket.ticket.paid` *(producer: ticket-service)*
 
-Emitido quando um bilhete transita `PENDING → PAID`.
+Emitido apos a transicao `PENDING → PAID` fazer commit em base de
+dados. `matchId` e nullable porque um `event` pode existir sem estar
+ligado a um match especifico.
 
 ```json
 {
@@ -111,7 +113,10 @@ Emitido quando um bilhete transita `PENDING → PAID`.
 
 ### `ticket.ticket.validated` *(producer: ticket-service)*
 
-Emitido quando um bilhete e validado a entrada (`PAID → VALIDATED`).
+Emitido apos a transicao `PAID → VALIDATED` fazer commit. `validatorSub`
+e o `sub` (UUID) do JWT do staff/admin que fez o scan no portao —
+nao um id numerico, porque o ticket-service nao tem tabela de
+utilizadores; a fonte de verdade e o Keycloak.
 
 ```json
 {
@@ -120,7 +125,7 @@ Emitido quando um bilhete e validado a entrada (`PAID → VALIDATED`).
   "ticketId": 12345,
   "matchId": 42,
   "validatedAt": "2026-09-15T20:25:29.000Z",
-  "validatorId": 50
+  "validatorSub": "1f8f29c4-8a3b-4c11-8d92-2db1bdf02a07"
 }
 ```
 

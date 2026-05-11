@@ -1,0 +1,54 @@
+get:
+  operationId: listEvents
+  tags: [Events]
+  summary: List sellable events
+  description: |
+    Public catalog of events for which tickets can be purchased.
+  security: []
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+    - $ref: "../components/parameters/pagination.yaml#/Sort"
+  responses:
+    "200":
+      description: Paginated list of events.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/event.yaml"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createEvent
+  tags: [Events]
+  summary: Create a sellable event
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/eventCreateRequest.yaml"
+  responses:
+    "201":
+      description: Event created.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/event.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

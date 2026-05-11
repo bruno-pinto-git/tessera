@@ -6,23 +6,35 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 /**
- * Proxy for ticket-service. Old paths under /api/tickets are kept for the
- * existing frontend wiring; we will migrate to /api/v1/tickets once the
- * ticket-service team finishes their OpenAPI rewrite.
+ * Proxy for ticket-service. All endpoints under `/api/v1/tickets` are
+ * forwarded with the original `Authorization` header so the ticket-service
+ * can re-validate the JWT and apply method-level role checks.
  */
 @RestController
-@RequestMapping("/api/tickets")
+@RequestMapping("/api/v1/tickets")
 class TicketProxyController(
     private val proxy: ProxyService,
     @Qualifier("ticketServiceUrl") private val ticketServiceUrl: String,
 ) {
 
+    @GetMapping
+    fun listByEvent(req: HttpServletRequest): ResponseEntity<String> =
+        proxy.forward(req, ticketServiceUrl, body = null)
+
+    @GetMapping("/mine")
+    fun listMine(req: HttpServletRequest): ResponseEntity<String> =
+        proxy.forward(req, ticketServiceUrl, body = null)
+
     @GetMapping("/{id}")
-    fun get(req: HttpServletRequest): ResponseEntity<String> =
+    fun getOne(req: HttpServletRequest): ResponseEntity<String> =
         proxy.forward(req, ticketServiceUrl, body = null)
 
     @PostMapping
     fun create(@RequestBody body: String, req: HttpServletRequest): ResponseEntity<String> =
+        proxy.forward(req, ticketServiceUrl, body)
+
+    @PostMapping("/{id}/pay")
+    fun pay(@RequestBody body: String, req: HttpServletRequest): ResponseEntity<String> =
         proxy.forward(req, ticketServiceUrl, body)
 
     @PostMapping("/validate")

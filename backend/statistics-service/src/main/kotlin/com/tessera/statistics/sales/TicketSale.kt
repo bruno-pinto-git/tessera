@@ -14,8 +14,8 @@ class TicketSale(
     @Column(name = "event_id", nullable = false)
     val eventId: Long,
 
-    @Column(name = "match_id", nullable = false)
-    val matchId: Long,
+    @Column(name = "match_id")
+    val matchId: Long?,
 
     @Column(nullable = false)
     val price: BigDecimal,

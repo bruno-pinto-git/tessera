@@ -1,0 +1,25 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+
+get:
+  operationId: getEvent
+  tags: [Events]
+  summary: Get an event by id
+  security: []
+  responses:
+    "200":
+      description: Event.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/event.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

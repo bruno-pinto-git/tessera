@@ -1,0 +1,31 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+
+get:
+  operationId: getTicket
+  tags: [Tickets]
+  summary: Get a ticket by id
+  description: |
+    Visible to the ticket owner or to staff/admin. Other authenticated
+    callers receive 403.
+  responses:
+    "200":
+      description: Ticket.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/ticket.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

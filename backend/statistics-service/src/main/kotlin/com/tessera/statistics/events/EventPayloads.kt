@@ -55,7 +55,8 @@ data class TicketPaidEvent(
     val occurredAt: OffsetDateTime,
     val ticketId: Long,
     val eventId: Long,
-    val matchId: Long,
+    /** Nullable: an event can sell tickets without being tied to a specific match. */
+    val matchId: Long?,
     val price: BigDecimal,
     val paymentMethod: String?,
     val paidAt: OffsetDateTime,
@@ -66,7 +67,8 @@ data class TicketValidatedEvent(
     val version: Int = 1,
     val occurredAt: OffsetDateTime,
     val ticketId: Long,
-    val matchId: Long,
+    val matchId: Long?,
     val validatedAt: OffsetDateTime,
-    val validatorId: Long?,
+    /** Keycloak subject UUID of the validator (staff/admin). */
+    val validatorSub: String?,
 )
