@@ -1,0 +1,74 @@
+BadRequest:
+  description: Request was malformed or failed validation.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../schemas/problem.yaml"
+      example:
+        type: "https://tessera/api/errors/validation"
+        title: "Validation failed"
+        status: 400
+        detail: "One or more fields are invalid."
+        errors:
+          - field: "kickoffAt"
+            message: "must be in the future"
+
+Unauthorized:
+  description: Missing or invalid bearer token.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../schemas/problem.yaml"
+      example:
+        type: "https://tessera/api/errors/unauthorized"
+        title: "Unauthorized"
+        status: 401
+        detail: "Bearer token is missing or expired."
+
+Forbidden:
+  description: Authenticated, but the user lacks the required role.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../schemas/problem.yaml"
+      example:
+        type: "https://tessera/api/errors/forbidden"
+        title: "Forbidden"
+        status: 403
+        detail: "Role 'admin' is required for this operation."
+
+NotFound:
+  description: The requested resource does not exist (or is soft-deleted).
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../schemas/problem.yaml"
+      example:
+        type: "https://tessera/api/errors/not-found"
+        title: "Not found"
+        status: 404
+        detail: "Match 42 does not exist."
+
+Conflict:
+  description: Request conflicts with the current state of the resource.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../schemas/problem.yaml"
+      example:
+        type: "https://tessera/api/errors/conflict"
+        title: "Conflict"
+        status: 409
+        detail: "Match sheet is locked and cannot be modified."
+
+InternalServerError:
+  description: Unexpected error on the server side.
+  content:
+    application/problem+json:
+      schema:
+        $ref: "../schemas/problem.yaml"
+      example:
+        type: "https://tessera/api/errors/internal"
+        title: "Internal Server Error"
+        status: 500
+        detail: "An unexpected error occurred. Please retry."

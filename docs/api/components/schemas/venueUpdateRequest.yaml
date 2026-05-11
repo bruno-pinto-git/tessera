@@ -1,0 +1,18 @@
+type: object
+description: |
+  Partial update payload (PATCH). Omitted fields are left unchanged.
+  At least one field must be provided.
+minProperties: 1
+properties:
+  name:
+    type: string
+    minLength: 2
+    maxLength: 200
+  capacity:
+    type: integer
+    format: int32
+    minimum: 0
+    maximum: 200000
+  address:
+    type: [string, "null"]
+    maxLength: 500

@@ -1,51 +1,31 @@
 package com.tessera.bff.proxy
 
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.http.*
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.client.HttpServerErrorException
-import org.springframework.web.client.RestTemplate
 
+/**
+ * Proxy for ticket-service. Old paths under /api/tickets are kept for the
+ * existing frontend wiring; we will migrate to /api/v1/tickets once the
+ * ticket-service team finishes their OpenAPI rewrite.
+ */
 @RestController
 @RequestMapping("/api/tickets")
 class TicketProxyController(
-    private val restTemplate: RestTemplate,
-    @Qualifier("ticketServiceUrl") private val ticketServiceUrl: String
+    private val proxy: ProxyService,
+    @Qualifier("ticketServiceUrl") private val ticketServiceUrl: String,
 ) {
 
+    @GetMapping("/{id}")
+    fun get(req: HttpServletRequest): ResponseEntity<String> =
+        proxy.forward(req, ticketServiceUrl, body = null)
+
     @PostMapping
-    fun createTicket(@RequestBody body: String): ResponseEntity<String> {
-        return forward(HttpMethod.POST, "/api/tickets", body)
-    }
+    fun create(@RequestBody body: String, req: HttpServletRequest): ResponseEntity<String> =
+        proxy.forward(req, ticketServiceUrl, body)
 
     @PostMapping("/validate")
-    fun validateTicket(@RequestBody body: String): ResponseEntity<String> {
-        return forward(HttpMethod.POST, "/api/tickets/validate", body)
-    }
-
-    @GetMapping("/{id}")
-    fun getTicket(@PathVariable id: Long): ResponseEntity<String> {
-        return forward(HttpMethod.GET, "/api/tickets/$id", null)
-    }
-
-    private fun forward(method: HttpMethod, path: String, body: String?): ResponseEntity<String> {
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-
-        val request = HttpEntity(body, headers)
-
-        return try {
-            restTemplate.exchange(
-                "$ticketServiceUrl$path",
-                method,
-                request,
-                String::class.java
-            )
-        } catch (e: HttpClientErrorException) {
-            ResponseEntity.status(e.statusCode).body(e.responseBodyAsString)
-        } catch (e: HttpServerErrorException) {
-            ResponseEntity.status(e.statusCode).body(e.responseBodyAsString)
-        }
-    }
+    fun validate(@RequestBody body: String, req: HttpServletRequest): ResponseEntity<String> =
+        proxy.forward(req, ticketServiceUrl, body)
 }

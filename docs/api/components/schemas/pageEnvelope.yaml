@@ -1,0 +1,39 @@
+type: object
+description: |
+  Standard pagination envelope for list endpoints. The `content` array
+  carries the page items; concrete endpoints document its element type.
+required:
+  - content
+  - page
+  - size
+  - totalElements
+  - totalPages
+properties:
+  content:
+    type: array
+    description: Items on this page.
+    items: {}
+  page:
+    type: integer
+    minimum: 0
+    description: Zero-based page index.
+    examples:
+      - 0
+  size:
+    type: integer
+    minimum: 1
+    description: Page size requested.
+    examples:
+      - 20
+  totalElements:
+    type: integer
+    minimum: 0
+    description: Total number of items across all pages.
+    examples:
+      - 137
+  totalPages:
+    type: integer
+    minimum: 0
+    description: Total number of pages.
+    examples:
+      - 7

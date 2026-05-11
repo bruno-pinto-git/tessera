@@ -1,0 +1,8 @@
+type: string
+description: Player's dominant foot.
+enum:
+  - LEFT
+  - RIGHT
+  - BOTH
+examples:
+  - "RIGHT"

@@ -9,6 +9,10 @@ O Keycloak e um servidor de identidade open-source que gere a autenticacao e aut
 - Controlo de acessos baseado em papeis (RBAC)
 - Suporte a multiplos clientes (web, mobile, servicos)
 
+Este documento cobre a **configuracao do Keycloak**. Para o **fluxo de
+autenticacao** ponta-a-ponta no Tessera (JWT pass-through, validacao
+nos servicos backend, etc.), ver [security.md](security.md).
+
 ## Versao e Execucao
 
 - **Versao:** Keycloak 26.0
@@ -197,7 +201,44 @@ Na consola e possivel:
 6. SPA troca code por access token + refresh token
 7. SPA inclui access token (Bearer) em todas as chamadas API
 8. BFF valida o token com a chave publica do Keycloak
+9. BFF encaminha o token ao servico downstream, que tambem o valida
 ```
+
+## Integracao com os servicos backend
+
+O **bff-service** e o **match-service** sao configurados como
+OAuth2 Resource Servers via Spring Boot:
+
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://keycloak:8180/realms/tessera/protocol/openid-connect/certs}
+```
+
+### Porque `jwk-set-uri` e nao `issuer-uri`?
+
+O Keycloak emite tokens com o claim `iss = http://localhost:8180/realms/tessera`
+(porto do host). Mas dentro da rede Docker, os servicos chegam ao
+Keycloak em `http://keycloak:8180`. Se usassemos `issuer-uri`,
+o Spring Security iria comparar o claim `iss` com este URL e o token
+seria rejeitado por mismatch.
+
+Usando `jwk-set-uri`, o Spring valida apenas a **assinatura
+criptografica** do JWT contra a chave publica obtida do endpoint
+JWKS — e ignora a comparacao do issuer.
+
+Alternativas (mais complexas):
+
+- Configurar `KC_HOSTNAME` no container Keycloak para emitir tokens
+  com um issuer URL "estatico" (ex: `https://auth.tessera.example`)
+- Ter dois Keycloak hostnames distintos consoante a rede (frontend
+  vs backend)
+
+A abordagem JWKS e a mais simples para desenvolvimento e suficiente
+para producao desde que o JWKS endpoint seja acessivel.
 
 ## Importacao do Realm
 

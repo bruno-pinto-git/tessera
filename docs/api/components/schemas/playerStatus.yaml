@@ -1,0 +1,12 @@
+type: string
+description: |
+  Player's current availability status.
+    - ACTIVE: available for selection
+    - INJURED: out due to injury
+    - SUSPENDED: serving a suspension
+enum:
+  - ACTIVE
+  - INJURED
+  - SUSPENDED
+examples:
+  - "ACTIVE"

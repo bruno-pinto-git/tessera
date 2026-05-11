@@ -1,0 +1,46 @@
+type: object
+description: |
+  A single in-game event recorded in the match sheet (goal, card, substitution).
+  Append-only while the match is live; can be deleted only while the sheet is
+  unlocked and the match status allows edits.
+required:
+  - id
+  - minute
+  - type
+  - teamId
+  - playerId
+  - createdAt
+properties:
+  id:
+    type: integer
+    format: int64
+    readOnly: true
+  minute:
+    type: integer
+    format: int32
+    minimum: 0
+    maximum: 200
+    description: |
+      Match minute (0–200 to cover regulation time, stoppage and extra time).
+    examples:
+      - 34
+  type:
+    $ref: "./occurrenceType.yaml"
+  teamId:
+    type: integer
+    format: int64
+    description: Team to which the player belongs.
+  playerId:
+    type: integer
+    format: int64
+    description: Player who scored / received the card / went off (for substitution).
+  replacedPlayerId:
+    type: [integer, "null"]
+    format: int64
+    description: |
+      Required for SUBSTITUTION — id of the player coming on. Must be null
+      for any other occurrence type.
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true

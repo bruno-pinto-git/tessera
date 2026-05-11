@@ -1,0 +1,16 @@
+type: string
+description: |
+  Type of in-game occurrence:
+    - GOAL: scored a goal for own team
+    - OWN_GOAL: scored an own goal (counts for the opposing team)
+    - YELLOW_CARD: yellow card shown
+    - RED_CARD: red card shown (direct, or second yellow)
+    - SUBSTITUTION: tactical substitution; replacedPlayerId is required
+enum:
+  - GOAL
+  - OWN_GOAL
+  - YELLOW_CARD
+  - RED_CARD
+  - SUBSTITUTION
+examples:
+  - "GOAL"

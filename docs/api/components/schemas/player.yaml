@@ -1,0 +1,90 @@
+type: object
+description: |
+  A player belonging to a team. Soft-deleted to preserve historical
+  match-sheet references.
+required:
+  - id
+  - teamId
+  - firstName
+  - lastName
+  - position
+  - status
+  - createdAt
+properties:
+  id:
+    type: integer
+    format: int64
+    readOnly: true
+    examples:
+      - 1
+  teamId:
+    type: integer
+    format: int64
+    description: Identifier of the team the player belongs to.
+    examples:
+      - 1
+  firstName:
+    type: string
+    minLength: 1
+    maxLength: 100
+    examples:
+      - "João"
+  lastName:
+    type: string
+    minLength: 1
+    maxLength: 100
+    examples:
+      - "Silva"
+  birthdate:
+    type: [string, "null"]
+    format: date
+    description: Date of birth (ISO 8601 date).
+    examples:
+      - "1998-03-12"
+  nationality:
+    type: [string, "null"]
+    description: ISO 3166-1 alpha-3 country code.
+    pattern: "^[A-Z]{3}$"
+    examples:
+      - "PRT"
+  position:
+    $ref: "./playerPosition.yaml"
+  shirtNumber:
+    type: [integer, "null"]
+    format: int32
+    minimum: 1
+    maximum: 99
+    description: Shirt number. Unique among active players within the same team.
+    examples:
+      - 9
+  photoUrl:
+    type: [string, "null"]
+    format: uri
+    examples:
+      - "https://tessera.example/players/1.jpg"
+  dominantFoot:
+    oneOf:
+      - $ref: "./dominantFoot.yaml"
+      - type: "null"
+  height:
+    type: [integer, "null"]
+    format: int32
+    minimum: 100
+    maximum: 250
+    description: Height in centimeters.
+    examples:
+      - 178
+  weight:
+    type: [integer, "null"]
+    format: int32
+    minimum: 30
+    maximum: 200
+    description: Weight in kilograms.
+    examples:
+      - 72
+  status:
+    $ref: "./playerStatus.yaml"
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true

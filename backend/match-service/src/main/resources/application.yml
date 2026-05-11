@@ -11,9 +11,17 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     open-in-view: false
   flyway:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Use jwk-set-uri (not issuer-uri) so we don't validate the `iss`
+          # claim — Keycloak issues tokens with iss=http://localhost:8180
+          # (host port) but inside Docker we reach it as http://keycloak:8180.
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://keycloak:8180/realms/tessera/protocol/openid-connect/certs}

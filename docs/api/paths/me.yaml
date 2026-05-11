@@ -1,0 +1,25 @@
+get:
+  operationId: getMe
+  tags: [Profile]
+  summary: Get the authenticated user's profile
+  description: |
+    Returns the profile of the currently authenticated user, projected
+    from the bearer token. Useful for the SPA and Android apps to
+    discover the user's role and decide which screens to render.
+  responses:
+    "200":
+      description: Profile of the authenticated user.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/me.yaml"
+          example:
+            username: "adepto"
+            email: "adepto@tessera.pt"
+            firstName: "Adepto"
+            lastName: "Tessera"
+            roles: ["fan"]
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

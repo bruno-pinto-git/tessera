@@ -1,0 +1,73 @@
+parameters:
+  - in: path
+    name: clubId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the parent club.
+
+get:
+  operationId: listTeamsOfClub
+  tags: [Teams]
+  summary: List teams of a club
+  description: |
+    Returns all active teams belonging to the club, ordered by category.
+    Public endpoint.
+  security: []
+  responses:
+    "200":
+      description: List of teams.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "../components/schemas/team.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createTeam
+  tags: [Teams]
+  summary: Create a team in a club
+  description: |
+    Creates a new team in the club. A club may have at most one active team
+    per category — duplicate categories are rejected with 409. Requires the
+    `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/teamCreateRequest.yaml"
+        example:
+          category: "SENIOR_M"
+  responses:
+    "201":
+      description: Team created.
+      headers:
+        Location:
+          schema:
+            type: string
+            format: uri
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/team.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

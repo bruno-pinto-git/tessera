@@ -1,0 +1,178 @@
+openapi: 3.1.0
+
+info:
+  title: Tessera API
+  version: 0.1.0
+  description: |
+    REST API for the Tessera platform — match management, ticketing,
+    and statistics for lower-division football clubs.
+
+    This document is the source of truth for the contract between the
+    backend (BFF + microservices) and its consumers (web SPA, Android
+    apps for fans and staff). Implementations are derived from this spec.
+  contact:
+    name: Tessera Team
+  license:
+    name: Academic project
+    url: https://example.invalid/license
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development (via NGINX)
+  - url: http://localhost:8080/api/v1
+    description: Local development (BFF direct)
+
+tags:
+  - name: Profile
+    description: Information about the authenticated user.
+  - name: Clubs
+    description: Football clubs.
+  - name: Teams
+    description: Teams within a club (senior, sub-19, female, ...).
+  - name: Players
+    description: Players belonging to a team.
+  - name: Venues
+    description: Stadiums and grounds where matches are played.
+  - name: Matches
+    description: Scheduled, live and finished matches.
+  - name: Match sheets
+    description: Lineups and in-game occurrences (goals, cards, subs).
+  - name: Statistics
+    description: Aggregated read-side data on matches, players, teams and sales.
+  - name: Tickets
+    description: Owned by ticket-service. Specified separately by the ticket team.
+  - name: Events
+    description: Sellable bundles of tickets attached to a match.
+
+security:
+  - bearerAuth: []
+
+paths:
+  /me:
+    $ref: "./paths/me.yaml"
+  /clubs:
+    $ref: "./paths/clubs.yaml"
+  /clubs/{id}:
+    $ref: "./paths/clubs_id.yaml"
+  /venues:
+    $ref: "./paths/venues.yaml"
+  /venues/{id}:
+    $ref: "./paths/venues_id.yaml"
+  /clubs/{clubId}/teams:
+    $ref: "./paths/clubs_id_teams.yaml"
+  /teams/{id}:
+    $ref: "./paths/teams_id.yaml"
+  /teams/{teamId}/players:
+    $ref: "./paths/teams_id_players.yaml"
+  /clubs/{clubId}/players:
+    $ref: "./paths/clubs_id_players.yaml"
+  /players/{id}:
+    $ref: "./paths/players_id.yaml"
+  /matches:
+    $ref: "./paths/matches.yaml"
+  /matches/{id}:
+    $ref: "./paths/matches_id.yaml"
+  /matches/{id}/sheet:
+    $ref: "./paths/matches_id_sheet.yaml"
+  /matches/{id}/sheet/lineup:
+    $ref: "./paths/matches_id_sheet_lineup.yaml"
+  /matches/{id}/sheet/lineup/{playerId}:
+    $ref: "./paths/matches_id_sheet_lineup_player.yaml"
+  /matches/{id}/sheet/occurrences:
+    $ref: "./paths/matches_id_sheet_occurrences.yaml"
+  /matches/{id}/sheet/occurrences/{occId}:
+    $ref: "./paths/matches_id_sheet_occurrence_id.yaml"
+  /matches/{id}/sheet/lock:
+    $ref: "./paths/matches_id_sheet_lock.yaml"
+  /matches/{id}/sheet/unlock:
+    $ref: "./paths/matches_id_sheet_unlock.yaml"
+
+components:
+  securitySchemes:
+    $ref: "./components/securitySchemes.yaml"
+
+  parameters:
+    Page:
+      $ref: "./components/parameters/pagination.yaml#/Page"
+    Size:
+      $ref: "./components/parameters/pagination.yaml#/Size"
+    Sort:
+      $ref: "./components/parameters/pagination.yaml#/Sort"
+
+  responses:
+    BadRequest:
+      $ref: "./components/responses/errors.yaml#/BadRequest"
+    Unauthorized:
+      $ref: "./components/responses/errors.yaml#/Unauthorized"
+    Forbidden:
+      $ref: "./components/responses/errors.yaml#/Forbidden"
+    NotFound:
+      $ref: "./components/responses/errors.yaml#/NotFound"
+    Conflict:
+      $ref: "./components/responses/errors.yaml#/Conflict"
+    InternalServerError:
+      $ref: "./components/responses/errors.yaml#/InternalServerError"
+
+  schemas:
+    Problem:
+      $ref: "./components/schemas/problem.yaml"
+    PageEnvelope:
+      $ref: "./components/schemas/pageEnvelope.yaml"
+    Me:
+      $ref: "./components/schemas/me.yaml"
+    Club:
+      $ref: "./components/schemas/club.yaml"
+    ClubCreateRequest:
+      $ref: "./components/schemas/clubCreateRequest.yaml"
+    ClubUpdateRequest:
+      $ref: "./components/schemas/clubUpdateRequest.yaml"
+    Venue:
+      $ref: "./components/schemas/venue.yaml"
+    VenueCreateRequest:
+      $ref: "./components/schemas/venueCreateRequest.yaml"
+    VenueUpdateRequest:
+      $ref: "./components/schemas/venueUpdateRequest.yaml"
+    TeamCategory:
+      $ref: "./components/schemas/teamCategory.yaml"
+    Team:
+      $ref: "./components/schemas/team.yaml"
+    TeamCreateRequest:
+      $ref: "./components/schemas/teamCreateRequest.yaml"
+    TeamUpdateRequest:
+      $ref: "./components/schemas/teamUpdateRequest.yaml"
+    PlayerPosition:
+      $ref: "./components/schemas/playerPosition.yaml"
+    DominantFoot:
+      $ref: "./components/schemas/dominantFoot.yaml"
+    PlayerStatus:
+      $ref: "./components/schemas/playerStatus.yaml"
+    Player:
+      $ref: "./components/schemas/player.yaml"
+    PlayerCreateRequest:
+      $ref: "./components/schemas/playerCreateRequest.yaml"
+    PlayerUpdateRequest:
+      $ref: "./components/schemas/playerUpdateRequest.yaml"
+    MatchStatus:
+      $ref: "./components/schemas/matchStatus.yaml"
+    Match:
+      $ref: "./components/schemas/match.yaml"
+    MatchCreateRequest:
+      $ref: "./components/schemas/matchCreateRequest.yaml"
+    MatchUpdateRequest:
+      $ref: "./components/schemas/matchUpdateRequest.yaml"
+    MatchSheet:
+      $ref: "./components/schemas/matchSheet.yaml"
+    LineupRole:
+      $ref: "./components/schemas/lineupRole.yaml"
+    LineupEntry:
+      $ref: "./components/schemas/lineupEntry.yaml"
+    LineupCreateRequest:
+      $ref: "./components/schemas/lineupCreateRequest.yaml"
+    LineupUpdateRequest:
+      $ref: "./components/schemas/lineupUpdateRequest.yaml"
+    OccurrenceType:
+      $ref: "./components/schemas/occurrenceType.yaml"
+    Occurrence:
+      $ref: "./components/schemas/occurrence.yaml"
+    OccurrenceCreateRequest:
+      $ref: "./components/schemas/occurrenceCreateRequest.yaml"

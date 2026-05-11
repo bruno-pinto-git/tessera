@@ -1,0 +1,24 @@
+type: object
+description: Payload to create a new venue. `id` and `createdAt` are server-assigned.
+required:
+  - name
+  - capacity
+properties:
+  name:
+    type: string
+    minLength: 2
+    maxLength: 200
+    examples:
+      - "Estádio do SU 1.º Dezembro"
+  capacity:
+    type: integer
+    format: int32
+    minimum: 0
+    maximum: 200000
+    examples:
+      - 1500
+  address:
+    type: [string, "null"]
+    maxLength: 500
+    examples:
+      - "Rua do Estádio, 2670-001 Loures"

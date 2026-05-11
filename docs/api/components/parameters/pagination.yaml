@@ -1,0 +1,35 @@
+Page:
+  name: page
+  in: query
+  description: Zero-based page index.
+  required: false
+  schema:
+    type: integer
+    minimum: 0
+    default: 0
+  example: 0
+
+Size:
+  name: size
+  in: query
+  description: Number of items per page.
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 100
+    default: 20
+  example: 20
+
+Sort:
+  name: sort
+  in: query
+  description: |
+    Sort directive in the form `field,asc` or `field,desc`. May be repeated
+    for multi-field sorting. Allowed fields are documented per endpoint.
+  required: false
+  schema:
+    type: array
+    items:
+      type: string
+  example: ["kickoffAt,desc"]

@@ -1,0 +1,81 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Stable numeric identifier of the team.
+
+get:
+  operationId: getTeamById
+  tags: [Teams]
+  summary: Get a team by id
+  description: Returns the team with the given id. Public endpoint.
+  security: []
+  responses:
+    "200":
+      description: The team.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/team.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+patch:
+  operationId: updateTeam
+  tags: [Teams]
+  summary: Partially update a team
+  description: |
+    Updates fields of an existing team. Currently only `category` is updatable.
+    Changing the category to one that already exists for the same club is
+    rejected with 409. Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/teamUpdateRequest.yaml"
+  responses:
+    "200":
+      description: Team updated.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/team.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+delete:
+  operationId: deleteTeam
+  tags: [Teams]
+  summary: Soft-delete a team
+  description: |
+    Marks the team as deleted (sets `deletedAt`). Requires the `admin` role.
+  x-required-roles: [admin]
+  responses:
+    "204":
+      description: Team deleted.
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

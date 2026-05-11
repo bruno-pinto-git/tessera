@@ -1,0 +1,22 @@
+type: object
+description: Append a new occurrence to the match sheet.
+required:
+  - minute
+  - type
+  - playerId
+properties:
+  minute:
+    type: integer
+    format: int32
+    minimum: 0
+    maximum: 200
+  type:
+    $ref: "./occurrenceType.yaml"
+  playerId:
+    type: integer
+    format: int64
+  replacedPlayerId:
+    type: [integer, "null"]
+    format: int64
+    description: |
+      Required for SUBSTITUTION (player coming on). Must be null otherwise.

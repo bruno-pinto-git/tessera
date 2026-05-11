@@ -1,0 +1,30 @@
+type: object
+description: |
+  A team within a club, identified by its `category` (age group + gender).
+  A club has at most one active team per category.
+required:
+  - id
+  - clubId
+  - category
+  - createdAt
+properties:
+  id:
+    type: integer
+    format: int64
+    readOnly: true
+    examples:
+      - 1
+  clubId:
+    type: integer
+    format: int64
+    description: Identifier of the parent club.
+    examples:
+      - 1
+  category:
+    $ref: "./teamCategory.yaml"
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true
+    examples:
+      - "2026-05-02T10:00:00Z"

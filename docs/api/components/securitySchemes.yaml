@@ -1,0 +1,28 @@
+bearerAuth:
+  type: http
+  scheme: bearer
+  bearerFormat: JWT
+  description: |
+    Bearer JWT issued by Keycloak. Token must contain a `realm_access.roles`
+    claim with one of: `admin`, `staff`, `fan`.
+
+    Endpoint authorization rules are described per-operation. The `x-required-roles`
+    extension lists the roles allowed for that endpoint; absence of the extension
+    means any authenticated user can call it.
+
+oauth2:
+  type: oauth2
+  description: |
+    OpenID Connect via Keycloak realm `tessera`. Web SPA uses the
+    `tessera-web` client; Android uses `tessera-android`. Both are public
+    clients with PKCE.
+  flows:
+    authorizationCode:
+      authorizationUrl: http://localhost:8180/realms/tessera/protocol/openid-connect/auth
+      tokenUrl: http://localhost:8180/realms/tessera/protocol/openid-connect/token
+      refreshUrl: http://localhost:8180/realms/tessera/protocol/openid-connect/token
+      scopes:
+        openid: OpenID Connect identity
+        profile: User profile claims
+        email: Email claim
+        roles: Realm roles claim

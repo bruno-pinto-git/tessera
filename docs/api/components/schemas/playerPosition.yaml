@@ -1,0 +1,15 @@
+type: string
+description: |
+  Player's primary position on the pitch. Coarse-grained enum aligned with
+  match-sheet conventions:
+    - GK: goalkeeper
+    - DF: defender
+    - MF: midfielder
+    - FW: forward
+enum:
+  - GK
+  - DF
+  - MF
+  - FW
+examples:
+  - "FW"

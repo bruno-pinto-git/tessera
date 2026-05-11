@@ -1,0 +1,347 @@
+openapi: 3.1.0
+info:
+  title: Tessera API
+  version: 0.1.0
+  description: |
+    REST API for the Tessera platform — match management, ticketing,
+    and statistics for lower-division football clubs.
+
+    This document is the source of truth for the contract between the
+    backend (BFF + microservices) and its consumers (web SPA, Android
+    apps for fans and staff). Implementations are derived from this spec.
+  contact:
+    name: Tessera Team
+  license:
+    name: Academic project
+    url: https://example.invalid/license
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development (via NGINX)
+  - url: http://localhost:8080/api/v1
+    description: Local development (BFF direct)
+security:
+  - bearerAuth: []
+tags:
+  - name: Profile
+    description: Information about the authenticated user.
+  - name: Clubs
+    description: Football clubs.
+  - name: Teams
+    description: Teams within a club (senior, sub-19, female, ...).
+  - name: Players
+    description: Players belonging to a team.
+  - name: Venues
+    description: Stadiums and grounds where matches are played.
+  - name: Matches
+    description: Scheduled, live and finished matches.
+  - name: Match sheets
+    description: Lineups and in-game occurrences (goals, cards, subs).
+  - name: Statistics
+    description: Aggregated read-side data on matches, players, teams and sales.
+  - name: Tickets
+    description: Owned by ticket-service. Specified separately by the ticket team.
+  - name: Events
+    description: Sellable bundles of tickets attached to a match.
+paths:
+  /me:
+    get:
+      operationId: getMe
+      tags:
+        - Profile
+      summary: Get the authenticated user's profile
+      description: |
+        Returns the profile of the currently authenticated user, projected
+        from the bearer token. Useful for the SPA and Android apps to
+        discover the user's role and decide which screens to render.
+      responses:
+        '200':
+          description: Profile of the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/me'
+              example:
+                username: adepto
+                email: adepto@tessera.pt
+                firstName: Adepto
+                lastName: Tessera
+                roles:
+                  - fan
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Bearer JWT issued by Keycloak. Token must contain a `realm_access.roles`
+        claim with one of: `admin`, `staff`, `fan`.
+
+        Endpoint authorization rules are described per-operation. The `x-required-roles`
+        extension lists the roles allowed for that endpoint; absence of the extension
+        means any authenticated user can call it.
+    oauth2:
+      type: oauth2
+      description: |
+        OpenID Connect via Keycloak realm `tessera`. Web SPA uses the
+        `tessera-web` client; Android uses `tessera-android`. Both are public
+        clients with PKCE.
+      flows:
+        authorizationCode:
+          authorizationUrl: http://localhost:8180/realms/tessera/protocol/openid-connect/auth
+          tokenUrl: http://localhost:8180/realms/tessera/protocol/openid-connect/token
+          refreshUrl: http://localhost:8180/realms/tessera/protocol/openid-connect/token
+          scopes:
+            openid: OpenID Connect identity
+            profile: User profile claims
+            email: Email claim
+            roles: Realm roles claim
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Zero-based page index.
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      example: 0
+    Size:
+      name: size
+      in: query
+      description: Number of items per page.
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+    Sort:
+      name: sort
+      in: query
+      description: |
+        Sort directive in the form `field,asc` or `field,desc`. May be repeated
+        for multi-field sorting. Allowed fields are documented per endpoint.
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+      example:
+        - kickoffAt,desc
+  responses:
+    BadRequest:
+      description: Request was malformed or failed validation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem'
+          example:
+            type: https://tessera/api/errors/validation
+            title: Validation failed
+            status: 400
+            detail: One or more fields are invalid.
+            errors:
+              - field: kickoffAt
+                message: must be in the future
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem'
+          example:
+            type: https://tessera/api/errors/unauthorized
+            title: Unauthorized
+            status: 401
+            detail: Bearer token is missing or expired.
+    Forbidden:
+      description: Authenticated, but the user lacks the required role.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem'
+          example:
+            type: https://tessera/api/errors/forbidden
+            title: Forbidden
+            status: 403
+            detail: Role 'admin' is required for this operation.
+    NotFound:
+      description: The requested resource does not exist (or is soft-deleted).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem'
+          example:
+            type: https://tessera/api/errors/not-found
+            title: Not found
+            status: 404
+            detail: Match 42 does not exist.
+    Conflict:
+      description: Request conflicts with the current state of the resource.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem'
+          example:
+            type: https://tessera/api/errors/conflict
+            title: Conflict
+            status: 409
+            detail: Match sheet is locked and cannot be modified.
+    InternalServerError:
+      description: Unexpected error on the server side.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem'
+          example:
+            type: https://tessera/api/errors/internal
+            title: Internal Server Error
+            status: 500
+            detail: An unexpected error occurred. Please retry.
+  schemas:
+    Problem:
+      $ref: '#/components/schemas/problem'
+    PageEnvelope:
+      $ref: '#/components/schemas/pageEnvelope'
+    Me:
+      $ref: '#/components/schemas/me'
+    me:
+      type: object
+      description: Profile information about the currently authenticated user, derived from the bearer token.
+      required:
+        - username
+        - roles
+      properties:
+        username:
+          type: string
+          description: Keycloak `preferred_username` claim.
+          examples:
+            - adepto
+        email:
+          type: string
+          format: email
+          description: Keycloak `email` claim. Absent when the token lacks the email scope.
+          examples:
+            - adepto@tessera.pt
+        firstName:
+          type: string
+          examples:
+            - Adepto
+        lastName:
+          type: string
+          examples:
+            - Tessera
+        roles:
+          type: array
+          description: Realm roles relevant to Tessera.
+          items:
+            type: string
+            enum:
+              - admin
+              - staff
+              - fan
+          examples:
+            - - fan
+    problem:
+      type: object
+      description: |
+        RFC 7807 Problem Details for HTTP APIs. Returned with media type
+        `application/problem+json` for all error responses.
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          description: A URI reference identifying the problem type.
+          examples:
+            - https://tessera/api/errors/validation
+        title:
+          type: string
+          description: Short, human-readable summary of the problem type.
+          examples:
+            - Validation failed
+        status:
+          type: integer
+          format: int32
+          description: HTTP status code generated by the origin server.
+          examples:
+            - 400
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence.
+          examples:
+            - Field 'kickoffAt' must be in the future.
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying the specific occurrence.
+          examples:
+            - /api/v1/matches/42
+        errors:
+          type: array
+          description: Field-level errors when `type` is a validation problem.
+          items:
+            type: object
+            required:
+              - field
+              - message
+            properties:
+              field:
+                type: string
+                description: Dotted path to the offending field.
+                examples:
+                  - kickoffAt
+              message:
+                type: string
+                examples:
+                  - must be in the future
+    pageEnvelope:
+      type: object
+      description: |
+        Standard pagination envelope for list endpoints. The `content` array
+        carries the page items; concrete endpoints document its element type.
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+      properties:
+        content:
+          type: array
+          description: Items on this page.
+          items: {}
+        page:
+          type: integer
+          minimum: 0
+          description: Zero-based page index.
+          examples:
+            - 0
+        size:
+          type: integer
+          minimum: 1
+          description: Page size requested.
+          examples:
+            - 20
+        totalElements:
+          type: integer
+          minimum: 0
+          description: Total number of items across all pages.
+          examples:
+            - 137
+        totalPages:
+          type: integer
+          minimum: 0
+          description: Total number of pages.
+          examples:
+            - 7

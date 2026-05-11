@@ -1,0 +1,10 @@
+type: string
+description: |
+  Role of a player in the match-day lineup:
+    - STARTER: starts the match on the pitch
+    - SUBSTITUTE: on the bench, eligible to come on
+enum:
+  - STARTER
+  - SUBSTITUTE
+examples:
+  - "STARTER"

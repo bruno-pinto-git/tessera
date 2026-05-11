@@ -41,16 +41,21 @@ O Tessera e uma plataforma digital de gestao de bilheteira e ficha tecnica para 
 
 ### BFF Service (Backend for Frontend) — Porta 8080
 
+**Estado:** funcional (proxy completo para match-service; ticket-service legado).
+
 O BFF e o ponto de entrada unico para todas as chamadas API dos clientes (SPA web e aplicacao Android). As suas responsabilidades incluem:
 
-- Agregar chamadas a multiplos microsservicos numa unica resposta
-- Validar tokens JWT emitidos pelo Keycloak
-- Adaptar respostas ao formato esperado por cada frontend
+- **Validar tokens JWT** emitidos pelo Keycloak (resource server)
+- **Encaminhar pedidos** aos microsservicos internos preservando o cabecalho `Authorization`
+- **Agregar chamadas** a multiplos microsservicos numa unica resposta (a desenvolver)
+- **Adaptar respostas** ao formato esperado por cada frontend
 - Desacoplar os clientes da topologia interna dos servicos
 
-O BFF nao possui base de dados propria. Utiliza `RestTemplate` para comunicar com os servicos internos.
+O BFF nao possui base de dados propria. Utiliza `RestTemplate` para comunicar com os servicos internos. Detalhes em [bff.md](bff.md).
 
 ### Ticket Service — Porta 8081
+
+**Estado:** funcional, em refactor (migracao para `/api/v1`).
 
 Responsavel por toda a gestao de bilheteira:
 
@@ -63,19 +68,24 @@ Base de dados: `tessera_tickets`
 
 ### Match Service — Porta 8082
 
+**Estado:** **feature-complete**. Todos os recursos do dominio implementados.
+
 Gere toda a informacao relacionada com a atividade desportiva:
 
 - Gestao de clubes e equipas
 - Gestao de jogadores e planteis
-- Criacao e gestao de jogos (calendario)
-- Ficha tecnica dos jogos (golos, cartoes, substituicoes)
-- Registo de ocorrencias em tempo real
+- Gestao de estadios (venues)
+- Criacao e gestao de jogos (calendario, status state machine)
+- Ficha tecnica dos jogos (lineup, golos, cartoes, substituicoes)
+- Lock/unlock de fichas + auto-lock quando o jogo termina
 
-Base de dados: `tessera_matches`
+Base de dados: `tessera_matches`. Detalhes em [match-service.md](match-service.md).
 
 **Decisao de design:** Os clubes, equipas e jogadores vivem neste servico (em vez de um servico separado) porque sao constantemente referenciados pela ficha tecnica. Separar criaria dependencias excessivas entre servicos e pontos de falha durante os jogos.
 
 ### Statistics Service — Porta 8083
+
+**Estado:** esqueleto; implementacao a iniciar.
 
 Servico de leitura e agregacao de dados:
 
@@ -110,6 +120,23 @@ Os clientes (SPA e Android) nunca comunicam diretamente com os microsservicos. T
 ```
 Cliente → NGINX (:8000) → BFF (:8080) → Servico Interno (:808X) → PostgreSQL
 ```
+
+## Autenticacao e Autorizacao
+
+O sistema usa **OAuth 2.0 / OpenID Connect** com Keycloak como Identity Provider, seguindo o padrao **JWT pass-through**:
+
+1. Cliente faz login no Keycloak e recebe um JWT
+2. Cliente envia JWT em cada pedido (`Authorization: Bearer ...`)
+3. BFF valida o token (assinatura via JWKS) e encaminha o `Authorization` ao servico downstream
+4. Servico downstream re-valida o JWT e aplica `@PreAuthorize` por papel
+
+```
+Browser ──JWT──> NGINX ──> BFF (valida JWT) ──Authorization fwd──> match-service (re-valida + check role)
+```
+
+**Tres papeis** no realm `tessera`: `admin`, `staff`, `fan`. Cada endpoint declara o papel exigido.
+
+Defesa em profundidade: mesmo que a rede interna do Docker fosse comprometida, todos os servicos ainda exigem JWT valido. Detalhes em [security.md](security.md).
 
 ## Isolamento de Dados
 
@@ -158,5 +185,21 @@ tessera/
 │   └── run/                  # Scripts PowerShell de execucao/reset
 ├── db/                       # (reservado para scripts de BD)
 ├── docs/                     # Documentacao do projeto
+│   ├── api/                  # Spec OpenAPI 3.1
+│   └── http-tests/           # Smoke tests .http (IntelliJ / VS Code)
 └── docker-compose.yml        # Orquestracao de todos os containers
 ```
+
+## Indice da documentacao
+
+| Documento | Conteudo |
+|-----------|----------|
+| [architecture.md](architecture.md) | Este documento — visao geral |
+| [security.md](security.md) | Autenticacao, autorizacao, JWT pass-through, RBAC |
+| [bff.md](bff.md) | Padrao proxy, controllers, configuracao |
+| [match-service.md](match-service.md) | Recursos, endpoints, regras de negocio |
+| [keycloak.md](keycloak.md) | Realm, clients, roles, utilizadores |
+| [nginx.md](nginx.md) | Configuracao do reverse proxy |
+| [docker.md](docker.md) | Compose, networks, volumes |
+| [scripts.md](scripts.md) | Build / start / reset scripts |
+| [getting-started.md](getting-started.md) | Setup local rapido |

@@ -1,0 +1,89 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Stable numeric identifier of the match.
+
+get:
+  operationId: getMatchById
+  tags: [Matches]
+  summary: Get a match by id
+  description: |
+    Returns the match with the given id. Public endpoint.
+    The BFF aggregates the linked Event (if any) when serving this endpoint
+    to fans.
+  security: []
+  responses:
+    "200":
+      description: The match.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/match.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+patch:
+  operationId: updateMatch
+  tags: [Matches]
+  summary: Partially update a match
+  description: |
+    Updates fields of an existing match. Status transitions are validated
+    server-side; invalid transitions return 409.
+    Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/matchUpdateRequest.yaml"
+        example:
+          status: "FINISHED"
+          homeScore: 2
+          awayScore: 1
+  responses:
+    "200":
+      description: Match updated.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/match.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+delete:
+  operationId: deleteMatch
+  tags: [Matches]
+  summary: Soft-delete a match
+  description: |
+    Marks the match as deleted. Match-sheet and ticket references remain
+    intact. Requires the `admin` role.
+  x-required-roles: [admin]
+  responses:
+    "204":
+      description: Match deleted.
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

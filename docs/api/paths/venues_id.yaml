@@ -1,0 +1,81 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Stable numeric identifier of the venue.
+
+get:
+  operationId: getVenueById
+  tags: [Venues]
+  summary: Get a venue by id
+  description: Returns the venue with the given id. Public endpoint.
+  security: []
+  responses:
+    "200":
+      description: The venue.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/venue.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+patch:
+  operationId: updateVenue
+  tags: [Venues]
+  summary: Partially update a venue
+  description: |
+    Updates fields of an existing venue. Omitted fields are left unchanged.
+    Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/venueUpdateRequest.yaml"
+  responses:
+    "200":
+      description: Venue updated.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/venue.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+delete:
+  operationId: deleteVenue
+  tags: [Venues]
+  summary: Soft-delete a venue
+  description: |
+    Marks the venue as deleted (sets `deletedAt`). Existing match references
+    remain intact. Requires the `admin` role.
+  x-required-roles: [admin]
+  responses:
+    "204":
+      description: Venue deleted.
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

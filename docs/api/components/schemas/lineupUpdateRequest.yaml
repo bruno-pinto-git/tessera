@@ -1,0 +1,11 @@
+type: object
+description: Partial update of an existing lineup entry. At least one field required.
+minProperties: 1
+properties:
+  shirtNumber:
+    type: [integer, "null"]
+    format: int32
+    minimum: 1
+    maximum: 99
+  role:
+    $ref: "./lineupRole.yaml"

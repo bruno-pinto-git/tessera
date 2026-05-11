@@ -4,9 +4,24 @@ server:
 spring:
   application:
     name: bff-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWKS_URI:http://keycloak:8180/realms/tessera/protocol/openid-connect/certs}
 
 # Internal service URLs
 services:
   ticket-url: http://localhost:8081
   match-url: http://localhost:8082
   statistics-url: http://localhost:8083
+
+# OpenAPI / Swagger UI — serve our hand-written spec, not one generated from controllers.
+# The spec at /static/openapi.yaml is produced by `npm run bundle:bff` in docs/api/.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    path: /api/docs
+    url: /api/openapi.yaml
+    disable-swagger-default-url: true

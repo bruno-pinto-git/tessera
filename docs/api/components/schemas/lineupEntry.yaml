@@ -1,0 +1,28 @@
+type: object
+description: A single player listed on the match-day lineup of one team.
+required:
+  - playerId
+  - teamId
+  - role
+properties:
+  playerId:
+    type: integer
+    format: int64
+    examples:
+      - 1
+  teamId:
+    type: integer
+    format: int64
+    description: Must equal the match's homeTeamId or awayTeamId.
+    examples:
+      - 1
+  shirtNumber:
+    type: [integer, "null"]
+    format: int32
+    minimum: 1
+    maximum: 99
+    description: |
+      Shirt worn for this match. Defaults to the player's current shirtNumber
+      but can be overridden per match (e.g. number changes, special editions).
+  role:
+    $ref: "./lineupRole.yaml"

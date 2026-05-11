@@ -1,0 +1,49 @@
+type: object
+description: |
+  Payload to create a player in a team. The `teamId` comes from the path.
+  `status` defaults to ACTIVE if omitted.
+required:
+  - firstName
+  - lastName
+  - position
+properties:
+  firstName:
+    type: string
+    minLength: 1
+    maxLength: 100
+  lastName:
+    type: string
+    minLength: 1
+    maxLength: 100
+  birthdate:
+    type: [string, "null"]
+    format: date
+  nationality:
+    type: [string, "null"]
+    pattern: "^[A-Z]{3}$"
+  position:
+    $ref: "./playerPosition.yaml"
+  shirtNumber:
+    type: [integer, "null"]
+    format: int32
+    minimum: 1
+    maximum: 99
+  photoUrl:
+    type: [string, "null"]
+    format: uri
+  dominantFoot:
+    oneOf:
+      - $ref: "./dominantFoot.yaml"
+      - type: "null"
+  height:
+    type: [integer, "null"]
+    format: int32
+    minimum: 100
+    maximum: 250
+  weight:
+    type: [integer, "null"]
+    format: int32
+    minimum: 30
+    maximum: 200
+  status:
+    $ref: "./playerStatus.yaml"

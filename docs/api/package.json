@@ -1,0 +1,21 @@
+{
+  "name": "tessera-api-spec",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tessera OpenAPI specification — tooling for linting, bundling, doc generation and client codegen.",
+  "scripts": {
+    "validate": "redocly lint openapi.yaml",
+    "prelint": "redocly bundle openapi.yaml -o .bundled.yaml",
+    "lint": "spectral lint .bundled.yaml",
+    "bundle:bff": "redocly bundle openapi.yaml -o ../../backend/bff-service/src/main/resources/static/api/openapi.yaml",
+    "build:redoc": "redocly build-docs openapi.yaml -o redoc.html",
+    "build": "npm run validate && npm run lint && npm run bundle:bff && npm run build:redoc",
+    "generate:web": "openapi-generator-cli generate -i openapi.yaml -g typescript-fetch -o ../../frontend/src/api/generated --additional-properties=supportsES6=true,typescriptThreePlus=true",
+    "generate:android": "openapi-generator-cli generate -i openapi.yaml -g kotlin -o ../../android/app/src/generated --additional-properties=library=jvm-retrofit2,serializationLibrary=moshi"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.13.4",
+    "@redocly/cli": "^1.25.11",
+    "@stoplight/spectral-cli": "^6.13.1"
+  }
+}

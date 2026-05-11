@@ -1,0 +1,54 @@
+# =====================================================================
+#  02-venues.http — Venue CRUD
+# =====================================================================
+
+### List venues
+GET {{matchServiceUrl}}/api/v1/venues
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}
+
+
+### Create a venue
+# Timestamp on the name keeps the file re-runnable (UNIQUE constraint on name).
+POST {{matchServiceUrl}}/api/v1/venues
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "Estádio do SU 1.º Dezembro {{$timestamp}}",
+  "capacity": 1500,
+  "address": "Rua do Estádio, 2670-001 Loures"
+}
+
+> {%
+client.global.set("venueId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### Get venue
+GET {{matchServiceUrl}}/api/v1/venues/{{venueId}}
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}
+
+
+### PATCH capacity
+PATCH {{matchServiceUrl}}/api/v1/venues/{{venueId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "capacity": 2000
+}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("capacity updated", () =>
+    client.assert(response.body.capacity === 2000));
+%}
+
+
+### Search by name
+GET {{matchServiceUrl}}/api/v1/venues?name=Estádio
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}

@@ -1,0 +1,42 @@
+parameters:
+  - in: path
+    name: clubId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the club.
+
+get:
+  operationId: listPlayersOfClub
+  tags: [Players]
+  summary: List all players of a club
+  description: |
+    Returns a paginated list of active players belonging to **any** active
+    team of the club. Useful when you want the entire roster of a club
+    without iterating each team. Public endpoint.
+
+    Sort order: by last name then first name (alphabetical).
+  security: []
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+  responses:
+    "200":
+      description: Page of players.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/player.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

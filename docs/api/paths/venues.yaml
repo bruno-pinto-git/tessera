@@ -1,0 +1,71 @@
+get:
+  operationId: listVenues
+  tags: [Venues]
+  summary: List venues
+  description: |
+    Returns a paginated list of venues. Soft-deleted venues are excluded.
+    Public endpoint.
+  security: []
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+    - $ref: "../components/parameters/pagination.yaml#/Sort"
+    - in: query
+      name: name
+      required: false
+      schema:
+        type: string
+      description: Case-insensitive substring match on venue name.
+  responses:
+    "200":
+      description: Page of venues.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/venue.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createVenue
+  tags: [Venues]
+  summary: Create a new venue
+  description: Creates a new venue. Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/venueCreateRequest.yaml"
+  responses:
+    "201":
+      description: Venue created.
+      headers:
+        Location:
+          schema:
+            type: string
+            format: uri
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/venue.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

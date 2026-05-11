@@ -1,0 +1,29 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the match.
+
+get:
+  operationId: getMatchSheet
+  tags: [Match sheets]
+  summary: Get the match sheet
+  description: |
+    Returns the match sheet (lineups + occurrences). If the sheet does not
+    exist yet, it is created lazily and returned empty. Public endpoint.
+  security: []
+  responses:
+    "200":
+      description: The match sheet.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/matchSheet.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

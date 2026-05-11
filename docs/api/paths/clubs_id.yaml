@@ -1,0 +1,85 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Stable numeric identifier of the club.
+    example: 1
+
+get:
+  operationId: getClubById
+  tags: [Clubs]
+  summary: Get a club by id
+  description: Returns the club with the given id. Public endpoint.
+  security: []
+  responses:
+    "200":
+      description: The club.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/club.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+patch:
+  operationId: updateClub
+  tags: [Clubs]
+  summary: Partially update a club
+  description: |
+    Updates fields of an existing club. Omitted fields are left unchanged.
+    Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/clubUpdateRequest.yaml"
+        example:
+          foundedYear: 1953
+          crestUrl: "https://tessera.example/clubs/1/crest.png"
+  responses:
+    "200":
+      description: Club updated.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/club.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+delete:
+  operationId: deleteClub
+  tags: [Clubs]
+  summary: Soft-delete a club
+  description: |
+    Marks the club as deleted (sets `deletedAt`). Existing matches and
+    historical references remain intact. Requires the `admin` role.
+  x-required-roles: [admin]
+  responses:
+    "204":
+      description: Club deleted.
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

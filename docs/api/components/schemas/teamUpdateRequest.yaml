@@ -1,0 +1,8 @@
+type: object
+description: |
+  Partial update payload (PATCH). Currently only `category` is updatable.
+  At least one field must be provided.
+minProperties: 1
+properties:
+  category:
+    $ref: "./teamCategory.yaml"

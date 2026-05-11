@@ -1,0 +1,33 @@
+type: object
+description: Profile information about the currently authenticated user, derived from the bearer token.
+required:
+  - username
+  - roles
+properties:
+  username:
+    type: string
+    description: Keycloak `preferred_username` claim.
+    examples:
+      - "adepto"
+  email:
+    type: string
+    format: email
+    description: Keycloak `email` claim. Absent when the token lacks the email scope.
+    examples:
+      - "adepto@tessera.pt"
+  firstName:
+    type: string
+    examples:
+      - "Adepto"
+  lastName:
+    type: string
+    examples:
+      - "Tessera"
+  roles:
+    type: array
+    description: Realm roles relevant to Tessera.
+    items:
+      type: string
+      enum: [admin, staff, fan]
+    examples:
+      - ["fan"]

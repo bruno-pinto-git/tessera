@@ -1,0 +1,68 @@
+type: object
+description: |
+  A scheduled, live or finished football match between two teams. Soft-deleted
+  to preserve historical records (match sheets, ticket sales).
+required:
+  - id
+  - homeTeamId
+  - awayTeamId
+  - kickoffAt
+  - status
+  - createdAt
+properties:
+  id:
+    type: integer
+    format: int64
+    readOnly: true
+    examples:
+      - 1
+  homeTeamId:
+    type: integer
+    format: int64
+    examples:
+      - 1
+  awayTeamId:
+    type: integer
+    format: int64
+    examples:
+      - 2
+  venueId:
+    type: [integer, "null"]
+    format: int64
+    description: |
+      Identifier of the venue. May be null while the match is being scheduled
+      and the venue is yet to be confirmed.
+    examples:
+      - 1
+  kickoffAt:
+    type: string
+    format: date-time
+    description: Scheduled (or actual) kickoff date-time, ISO 8601 with offset.
+    examples:
+      - "2026-09-15T20:30:00Z"
+  status:
+    $ref: "./matchStatus.yaml"
+  homeScore:
+    type: [integer, "null"]
+    format: int32
+    minimum: 0
+    description: Home team's goals. Required once status reaches FINISHED.
+    examples:
+      - 2
+  awayScore:
+    type: [integer, "null"]
+    format: int32
+    minimum: 0
+    description: Away team's goals. Required once status reaches FINISHED.
+    examples:
+      - 1
+  refereeName:
+    type: [string, "null"]
+    maxLength: 200
+    description: Free-text referee name (no separate referee resource for v1).
+    examples:
+      - "Maria Santos"
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true

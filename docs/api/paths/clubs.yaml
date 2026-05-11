@@ -1,0 +1,88 @@
+get:
+  operationId: listClubs
+  tags: [Clubs]
+  summary: List clubs
+  description: |
+    Returns a paginated list of clubs. Soft-deleted clubs are excluded.
+    Public endpoint — no role required.
+  security: []
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+    - $ref: "../components/parameters/pagination.yaml#/Sort"
+    - in: query
+      name: name
+      required: false
+      schema:
+        type: string
+      description: Case-insensitive substring match on club name.
+      example: "Dezembro"
+  responses:
+    "200":
+      description: Page of clubs.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/club.yaml"
+          example:
+            content:
+              - id: 1
+                name: "SU 1.º Dezembro"
+                foundedYear: 1953
+                crestUrl: null
+                createdAt: "2026-04-28T10:00:00Z"
+            page: 0
+            size: 20
+            totalElements: 1
+            totalPages: 1
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createClub
+  tags: [Clubs]
+  summary: Create a new club
+  description: Creates a new club. Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/clubCreateRequest.yaml"
+        example:
+          name: "SU 1.º Dezembro"
+          foundedYear: 1953
+  responses:
+    "201":
+      description: Club created.
+      headers:
+        Location:
+          description: URI of the created club.
+          schema:
+            type: string
+            format: uri
+            example: "/api/v1/clubs/1"
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/club.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

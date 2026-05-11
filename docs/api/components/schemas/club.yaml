@@ -1,0 +1,45 @@
+type: object
+description: |
+  A football club. Owns one or more teams (senior, youth, female, etc.).
+  Identified by a stable numeric `id`; clubs are soft-deleted to preserve
+  historical match records.
+required:
+  - id
+  - name
+  - createdAt
+properties:
+  id:
+    type: integer
+    format: int64
+    readOnly: true
+    description: Stable numeric identifier assigned by the server.
+    examples:
+      - 1
+  name:
+    type: string
+    minLength: 2
+    maxLength: 200
+    description: Official name of the club.
+    examples:
+      - "SU 1.º Dezembro"
+  foundedYear:
+    type: [integer, "null"]
+    format: int32
+    minimum: 1850
+    maximum: 2100
+    description: Year the club was founded.
+    examples:
+      - 1953
+  crestUrl:
+    type: [string, "null"]
+    format: uri
+    description: URL to the club crest / logo image.
+    examples:
+      - "https://tessera.example/clubs/1/crest.png"
+  createdAt:
+    type: string
+    format: date-time
+    readOnly: true
+    description: Server-assigned creation timestamp.
+    examples:
+      - "2026-04-28T10:00:00Z"

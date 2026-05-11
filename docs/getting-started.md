@@ -94,7 +94,62 @@ Para testar os utilizadores do realm tessera:
 | staff | staff | Staff do clube |
 | adepto | adepto | Adepto |
 
-## 6. Comandos Uteis
+### Obter um JWT manualmente (PowerShell)
+
+```powershell
+function Get-JWT($username, $password) {
+    $r = Invoke-RestMethod -Method POST `
+      -Uri "http://localhost:8180/realms/tessera/protocol/openid-connect/token" `
+      -ContentType "application/x-www-form-urlencoded" `
+      -Body @{
+          client_id  = "tessera-web"
+          username   = $username
+          password   = $password
+          grant_type = "password"
+      }
+    return $r.access_token
+}
+$token = Get-JWT "admin" "admin"
+
+# Usar o token
+Invoke-RestMethod -Method POST -Uri http://localhost:8000/api/v1/clubs `
+  -ContentType "application/json" -Body '{"name":"Teste"}' `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+## 6. Smoke tests (.http)
+
+Os ficheiros em `docs/http-tests/` automatizam dezenas de pedidos com
+asserts (status code, body, etc.). Funcionam no **IntelliJ IDEA**
+nativamente e no **VS Code** com a extensao [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client).
+
+```
+docs/http-tests/
+├── http-client.env.json         # Environments (local-direct, local-via-nginx)
+├── 00-auth.http                 # Obtem JWTs e guarda como variaveis globais
+├── 01-clubs.http
+├── 02-venues.http
+├── 03-teams.http
+├── 04-players.http
+├── 05-matches.http
+├── 06-match-sheets.http
+├── 10-bff-passthrough.http      # Valida fluxo via BFF
+└── 99-rbac-checks.http          # Tests negativos (401, 403)
+```
+
+**Como correr (IntelliJ):**
+
+1. Abrir `docs/http-tests/00-auth.http`
+2. Canto superior direito → escolher environment `local-direct` (servicos
+   directos nas suas portas) ou `local-via-nginx` (tudo via NGINX :8000)
+3. Clicar ▶ ao lado de cada bloco — ou correr o ficheiro todo
+4. Correr os ficheiros pela ordem (`00 → 01 → ...`); os tokens
+   guardados pelo `00-auth.http` sao referenciados pelos restantes via
+   `{{adminToken}}`
+
+Total de aprox. **56 asserts** automaticos.
+
+## 7. Comandos Uteis
 
 ### Parar tudo
 ```powershell

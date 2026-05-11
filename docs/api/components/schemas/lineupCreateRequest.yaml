@@ -1,0 +1,17 @@
+type: object
+description: Add a player to the match-sheet lineup.
+required:
+  - playerId
+  - role
+properties:
+  playerId:
+    type: integer
+    format: int64
+  shirtNumber:
+    type: [integer, "null"]
+    format: int32
+    minimum: 1
+    maximum: 99
+    description: Optional override; defaults to the player's current shirt.
+  role:
+    $ref: "./lineupRole.yaml"

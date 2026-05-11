@@ -1,0 +1,23 @@
+extends:
+  - spectral:oas
+
+# Tessera-specific rules. Start permissive — tighten over time.
+rules:
+  # Custom: operationIds must be camelCase
+  operation-operationId-camelcase:
+    description: operationId should be camelCase (e.g. listMatches, getMatchById)
+    severity: warn
+    given: $.paths[*][*].operationId
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-zA-Z0-9]*$"
+
+  # Custom: every error response should use application/problem+json
+  problem-content-type:
+    description: Error responses (4xx/5xx) should use application/problem+json
+    severity: warn
+    given: $.paths[*][*].responses[?(@property.match(/^[45]\d\d$/))].content
+    then:
+      field: "application/problem+json"
+      function: truthy

@@ -1,0 +1,53 @@
+# =====================================================================
+#  00-auth.http
+#  Run this first. It fetches JWTs from Keycloak for the three test
+#  users (admin, staff, adepto) and stores them as global variables
+#  used by every other .http file.
+# =====================================================================
+
+### Login as admin → stores global `adminToken`
+POST {{keycloakUrl}}/realms/tessera/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=tessera-web&grant_type=password&username=admin&password=admin
+
+> {%
+client.global.set("adminToken", response.body.access_token);
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("token present", () =>
+    client.assert(response.body.access_token != null));
+%}
+
+
+### Login as staff → stores global `staffToken`
+POST {{keycloakUrl}}/realms/tessera/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=tessera-web&grant_type=password&username=staff&password=staff
+
+> {%
+client.global.set("staffToken", response.body.access_token);
+client.test("status 200", () => client.assert(response.status === 200));
+%}
+
+
+### Login as adepto → stores global `adeptoToken`
+POST {{keycloakUrl}}/realms/tessera/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=tessera-web&grant_type=password&username=adepto&password=adepto
+
+> {%
+client.global.set("adeptoToken", response.body.access_token);
+client.test("status 200", () => client.assert(response.status === 200));
+%}
+
+
+### Sanity check: hit a public match-service endpoint with admin token
+GET {{matchServiceUrl}}/api/v1/clubs
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.log("Auth setup OK — tokens stored: adminToken, staffToken, adeptoToken");
+%}

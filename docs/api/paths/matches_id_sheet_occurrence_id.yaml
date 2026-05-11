@@ -1,0 +1,39 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the match.
+  - in: path
+    name: occId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the occurrence to remove.
+
+delete:
+  operationId: removeOccurrence
+  tags: [Match sheets]
+  summary: Remove an occurrence from the match sheet
+  description: |
+    Hard-deletes the occurrence. Allowed only while the sheet is unlocked and
+    the match status allows edits. Requires `staff` or `admin`.
+  x-required-roles: [staff, admin]
+  responses:
+    "204":
+      description: Occurrence removed.
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

@@ -1,0 +1,19 @@
+type: string
+description: |
+  Team category — combines age group and gender. A club may have at most
+  one active team per category.
+enum:
+  - SENIOR_M
+  - SENIOR_F
+  - SUB_23
+  - SUB_19
+  - SUB_17
+  - SUB_15
+  - SUB_13
+  - SUB_11
+  - SUB_9
+  - SUB_7
+  - VETERANS
+  - OTHER
+examples:
+  - "SENIOR_M"

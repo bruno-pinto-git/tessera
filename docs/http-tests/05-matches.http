@@ -1,0 +1,163 @@
+# =====================================================================
+#  05-matches.http — Match CRUD + status transitions
+#  Requires teamSeniorMId, venueId, plus an away team.
+# =====================================================================
+
+### Setup: create away club + team (re-runnable via timestamp)
+POST {{matchServiceUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "name": "Away Club {{$timestamp}}" }
+
+> {% client.global.set("awayClubId", response.body.id); %}
+
+
+###
+POST {{matchServiceUrl}}/api/v1/clubs/{{awayClubId}}/teams
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "category": "SENIOR_M" }
+
+> {% client.global.set("awayTeamId", response.body.id); %}
+
+
+### List matches (empty)
+GET {{matchServiceUrl}}/api/v1/matches
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}
+
+
+### Create match
+POST {{matchServiceUrl}}/api/v1/matches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "homeTeamId": {{teamSeniorMId}},
+  "awayTeamId": {{awayTeamId}},
+  "venueId":    {{venueId}},
+  "kickoffAt":  "2026-09-15T20:30:00Z",
+  "refereeName": "Maria Santos"
+}
+
+> {%
+client.global.set("matchId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+client.test("status SCHEDULED", () =>
+    client.assert(response.body.status === "SCHEDULED"));
+%}
+
+
+### home == away → 400
+POST {{matchServiceUrl}}/api/v1/matches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "homeTeamId": {{teamSeniorMId}},
+  "awayTeamId": {{teamSeniorMId}},
+  "kickoffAt":  "2026-09-15T20:30:00Z"
+}
+
+> {% client.test("status 400", () => client.assert(response.status === 400)); %}
+
+
+### Filter by clubId
+GET {{matchServiceUrl}}/api/v1/matches?clubId={{teamsClubId}}
+
+> {%
+client.test("at least one match", () =>
+    client.assert(response.body.totalElements >= 1));
+%}
+
+
+### Transition SCHEDULED → LIVE
+PATCH {{matchServiceUrl}}/api/v1/matches/{{matchId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "LIVE" }
+
+> {%
+client.test("status LIVE", () =>
+    client.assert(response.body.status === "LIVE"));
+%}
+
+
+### Invalid transition LIVE → SCHEDULED → 409
+PATCH {{matchServiceUrl}}/api/v1/matches/{{matchId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "SCHEDULED" }
+
+> {% client.test("status 409", () => client.assert(response.status === 409)); %}
+
+
+### FINISHED without scores → 400
+PATCH {{matchServiceUrl}}/api/v1/matches/{{matchId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "FINISHED" }
+
+> {% client.test("status 400", () => client.assert(response.status === 400)); %}
+
+
+### FINISHED with scores
+PATCH {{matchServiceUrl}}/api/v1/matches/{{matchId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "FINISHED", "homeScore": 2, "awayScore": 1 }
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("homeScore=2", () =>
+    client.assert(response.body.homeScore === 2));
+%}
+
+
+### Cancel a match: create a fresh one in SCHEDULED
+POST {{matchServiceUrl}}/api/v1/matches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "homeTeamId": {{teamSeniorMId}},
+  "awayTeamId": {{awayTeamId}},
+  "kickoffAt":  "2026-11-30T20:00:00Z"
+}
+
+> {%
+client.global.set("cancelMatchId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### SCHEDULED → CANCELLED
+PATCH {{matchServiceUrl}}/api/v1/matches/{{cancelMatchId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "CANCELLED" }
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("status CANCELLED", () =>
+    client.assert(response.body.status === "CANCELLED"));
+%}
+
+
+### Once CANCELLED, no further transitions allowed (terminal) → 409
+PATCH {{matchServiceUrl}}/api/v1/matches/{{cancelMatchId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "SCHEDULED" }
+
+> {%
+client.test("status 409", () => client.assert(response.status === 409));
+%}

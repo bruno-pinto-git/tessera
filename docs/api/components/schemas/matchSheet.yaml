@@ -1,0 +1,32 @@
+type: object
+description: |
+  The technical match record (lineups + occurrences). Created lazily on the
+  first GET. Edits require:
+    - `locked = false`, AND
+    - parent match's status ∈ {SCHEDULED, LIVE}.
+  When the match transitions to FINISHED/ABANDONED/POSTPONED, the sheet is
+  locked automatically. An admin can unlock it via `POST /unlock`.
+required:
+  - matchId
+  - locked
+  - lineup
+  - occurrences
+properties:
+  matchId:
+    type: integer
+    format: int64
+  locked:
+    type: boolean
+  lockedAt:
+    type: [string, "null"]
+    format: date-time
+  lineup:
+    type: array
+    description: All lineup entries (both teams), ordered by team then shirt number.
+    items:
+      $ref: "./lineupEntry.yaml"
+  occurrences:
+    type: array
+    description: Match events ordered by minute ascending, then by id.
+    items:
+      $ref: "./occurrence.yaml"

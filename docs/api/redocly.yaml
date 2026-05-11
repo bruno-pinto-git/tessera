@@ -1,0 +1,23 @@
+apis:
+  tessera@v1:
+    root: openapi.yaml
+
+extends:
+  - recommended
+
+# Suppress noisy rules while we're still skeletonized; tighten over time.
+rules:
+  no-empty-servers: warn
+  operation-4xx-response: warn
+  operation-2xx-response: warn
+
+# Redoc HTML output styling.
+theme:
+  openapi:
+    disableSearch: false
+    expandDefaultServerVariables: true
+    hideDownloadButton: false
+    hideHostname: false
+    pathInMiddlePanel: true
+    requiredPropsFirst: true
+    sortPropsAlphabetically: false

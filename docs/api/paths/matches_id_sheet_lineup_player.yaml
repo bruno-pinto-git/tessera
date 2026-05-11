@@ -1,0 +1,76 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the match.
+  - in: path
+    name: playerId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the player whose lineup entry is being targeted.
+
+patch:
+  operationId: updateLineupEntry
+  tags: [Match sheets]
+  summary: Update a lineup entry
+  description: |
+    Changes the role and/or shirt number of an existing lineup entry.
+    Requires `staff` or `admin`. Rejected with 409 if the sheet is locked
+    or the match is in a terminal status.
+  x-required-roles: [staff, admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/lineupUpdateRequest.yaml"
+  responses:
+    "200":
+      description: Updated lineup entry.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/lineupEntry.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+delete:
+  operationId: removeLineupEntry
+  tags: [Match sheets]
+  summary: Remove a player from the lineup
+  description: |
+    Removes the player from the match-sheet lineup. Hard delete (the lineup
+    is rebuilt freely while unlocked). Requires `staff` or `admin`.
+    Rejected with 409 if the sheet is locked or the match is in a terminal
+    status.
+  x-required-roles: [staff, admin]
+  responses:
+    "204":
+      description: Lineup entry removed.
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

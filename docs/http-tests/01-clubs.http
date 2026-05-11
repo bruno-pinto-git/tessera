@@ -1,0 +1,83 @@
+# =====================================================================
+#  01-clubs.http — Club CRUD
+#  Requires: 00-auth.http already executed (sets adminToken).
+# =====================================================================
+
+### List clubs (public, no token)
+GET {{matchServiceUrl}}/api/v1/clubs
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+%}
+
+
+### Create a club (admin only)
+# Timestamp on the name keeps the file re-runnable (UNIQUE constraint on name).
+POST {{matchServiceUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "SU 1.º Dezembro {{$timestamp}}",
+  "foundedYear": 1953
+}
+
+> {%
+client.global.set("clubId", response.body.id);
+client.global.set("clubName", response.body.name);
+client.test("status 201", () => client.assert(response.status === 201));
+client.test("id assigned", () => client.assert(response.body.id != null));
+%}
+
+
+### Get club by id (public)
+GET {{matchServiceUrl}}/api/v1/clubs/{{clubId}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("name matches", () =>
+    client.assert(response.body.name === client.global.get("clubName")));
+%}
+
+
+### Search by name (public)
+GET {{matchServiceUrl}}/api/v1/clubs?name=Dezembro
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("at least one result", () =>
+    client.assert(response.body.totalElements >= 1));
+%}
+
+
+### PATCH a club (admin only)
+PATCH {{matchServiceUrl}}/api/v1/clubs/{{clubId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "crestUrl": "https://example.com/crest.png"
+}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("crestUrl saved", () =>
+    client.assert(response.body.crestUrl === "https://example.com/crest.png"));
+%}
+
+
+### Soft-delete a club (admin only)
+DELETE {{matchServiceUrl}}/api/v1/clubs/{{clubId}}
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 204", () => client.assert(response.status === 204));
+%}
+
+
+### Get deleted club → 404
+GET {{matchServiceUrl}}/api/v1/clubs/{{clubId}}
+
+> {%
+client.test("status 404", () => client.assert(response.status === 404));
+%}

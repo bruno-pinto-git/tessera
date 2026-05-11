@@ -1,0 +1,77 @@
+# =====================================================================
+#  99-rbac-checks.http
+#  Negative authentication / authorization tests. Each one asserts a
+#  specific non-2xx status with a Problem JSON body.
+# =====================================================================
+
+### POST without token → 401
+POST {{matchServiceUrl}}/api/v1/clubs
+Content-Type: application/json
+
+{ "name": "should fail" }
+
+> {%
+client.test("status 401", () => client.assert(response.status === 401));
+client.test("problem+json", () =>
+    client.assert(response.contentType.mimeType === "application/problem+json"));
+%}
+
+
+### POST with garbage token → 401
+POST {{matchServiceUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer this.is.garbage
+
+{ "name": "should fail" }
+
+> {% client.test("status 401", () => client.assert(response.status === 401)); %}
+
+
+### POST as adepto (no admin role) → 403
+POST {{matchServiceUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "name": "should fail" }
+
+> {% client.test("status 403", () => client.assert(response.status === 403)); %}
+
+
+### Staff trying to create a club → 403 (only admin)
+POST {{matchServiceUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "name": "should fail" }
+
+> {% client.test("status 403", () => client.assert(response.status === 403)); %}
+
+
+### Adepto trying to add lineup entry → 403 (only staff/admin)
+# (We need an existing match; reuse sheetMatchId from 06.)
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "playerId": {{playerFwId}}, "role": "STARTER" }
+
+> {% client.test("status 403", () => client.assert(response.status === 403)); %}
+
+
+### Public read endpoints stay public — no token, 200 expected
+GET {{matchServiceUrl}}/api/v1/clubs
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}
+
+
+### Public read with bad token → still 401? Let's verify
+# Spring Security with oauth2ResourceServer treats invalid bearer as 401
+# even on permitAll endpoints. This is a known behavior.
+GET {{matchServiceUrl}}/api/v1/clubs
+Authorization: Bearer garbage.token
+
+> {%
+// Either 401 (token validation runs) or 200 (permitAll bypasses token).
+// Both are acceptable; we just print the actual status.
+client.log("Bad token on public GET → status: " + response.status);
+%}

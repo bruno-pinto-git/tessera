@@ -1,0 +1,94 @@
+# =====================================================================
+#  03-teams.http — Team CRUD (nested under club)
+# =====================================================================
+
+### Setup: create a club to host the teams
+# Timestamp on the name keeps the file re-runnable.
+POST {{matchServiceUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "name": "Teams Test Club {{$timestamp}}" }
+
+> {% client.global.set("teamsClubId", response.body.id); %}
+
+
+### List teams of the club (empty)
+GET {{matchServiceUrl}}/api/v1/clubs/{{teamsClubId}}/teams
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("empty array", () => client.assert(response.body.length === 0));
+%}
+
+
+### Create senior men team
+POST {{matchServiceUrl}}/api/v1/clubs/{{teamsClubId}}/teams
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "category": "SENIOR_M" }
+
+> {%
+client.global.set("teamSeniorMId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### Create sub-19 team
+POST {{matchServiceUrl}}/api/v1/clubs/{{teamsClubId}}/teams
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "category": "SUB_19" }
+
+> {%
+client.global.set("teamSub19Id", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### Duplicate category → 409
+POST {{matchServiceUrl}}/api/v1/clubs/{{teamsClubId}}/teams
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "category": "SENIOR_M" }
+
+> {% client.test("status 409", () => client.assert(response.status === 409)); %}
+
+
+### List teams (now 2)
+GET {{matchServiceUrl}}/api/v1/clubs/{{teamsClubId}}/teams
+
+> {%
+client.test("two teams", () => client.assert(response.body.length === 2));
+%}
+
+
+### Get team by id
+GET {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}
+
+
+### PATCH category
+PATCH {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "category": "VETERANS" }
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("category changed", () =>
+    client.assert(response.body.category === "VETERANS"));
+%}
+
+
+### Restore the SENIOR_M category for use by later test files
+PATCH {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "category": "SENIOR_M" }

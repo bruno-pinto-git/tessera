@@ -1,0 +1,27 @@
+type: object
+description: |
+  Payload to create a match. The match always starts in SCHEDULED status.
+  Constraints validated by the server:
+    - `homeTeamId` ≠ `awayTeamId`
+    - both teams must exist and be active
+    - `venueId`, if provided, must exist and be active
+required:
+  - homeTeamId
+  - awayTeamId
+  - kickoffAt
+properties:
+  homeTeamId:
+    type: integer
+    format: int64
+  awayTeamId:
+    type: integer
+    format: int64
+  venueId:
+    type: [integer, "null"]
+    format: int64
+  kickoffAt:
+    type: string
+    format: date-time
+  refereeName:
+    type: [string, "null"]
+    maxLength: 200

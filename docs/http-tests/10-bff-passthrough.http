@@ -1,0 +1,97 @@
+# =====================================================================
+#  10-bff-passthrough.http
+#  Verifies that the BFF correctly:
+#    1. validates the JWT before forwarding
+#    2. passes the Authorization header through to match-service
+#    3. surfaces downstream status codes (4xx/5xx) verbatim
+#
+#  Switch the IDE environment to either `local-direct` (hits BFF directly
+#  on :8080) or `local-via-nginx` (goes through NGINX on :8000).
+#  Both should behave identically.
+#
+#  Requires 00-auth.http to have run first.
+# =====================================================================
+
+### Public read via BFF — no token, expect 200
+GET {{bffUrl}}/api/v1/clubs
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+%}
+
+
+### Write via BFF without token → 401 from BFF (it validates first)
+POST {{bffUrl}}/api/v1/clubs
+Content-Type: application/json
+
+{ "name": "should fail at BFF" }
+
+> {%
+client.test("status 401", () => client.assert(response.status === 401));
+client.test("problem+json", () =>
+    client.assert(response.contentType.mimeType === "application/problem+json"));
+%}
+
+
+### Write via BFF with adepto token → 403 from match-service
+# (BFF validates the token, forwards to match-service, which rejects with 403
+#  because adepto lacks the admin role.)
+POST {{bffUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer {{adeptoToken}}
+
+{ "name": "should be 403 at match-service" }
+
+> {%
+client.test("status 403", () => client.assert(response.status === 403));
+%}
+
+
+### Write via BFF with admin token → 201 (full happy path through BFF)
+POST {{bffUrl}}/api/v1/clubs
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "name": "Created via BFF {{$timestamp}}" }
+
+> {%
+client.global.set("bffClubId", response.body.id);
+client.global.set("bffClubName", response.body.name);
+client.test("status 201", () => client.assert(response.status === 201));
+client.test("id assigned", () => client.assert(response.body.id != null));
+%}
+
+
+### Read it back via BFF
+GET {{bffUrl}}/api/v1/clubs/{{bffClubId}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("name matches", () =>
+    client.assert(response.body.name === client.global.get("bffClubName")));
+%}
+
+
+### Soft-delete via BFF (admin)
+DELETE {{bffUrl}}/api/v1/clubs/{{bffClubId}}
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 204", () => client.assert(response.status === 204));
+%}
+
+
+### Get deleted via BFF → 404
+GET {{bffUrl}}/api/v1/clubs/{{bffClubId}}
+
+> {%
+client.test("status 404", () => client.assert(response.status === 404));
+%}
+
+
+### Search query string is forwarded
+GET {{bffUrl}}/api/v1/clubs?name=Sheet
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+%}

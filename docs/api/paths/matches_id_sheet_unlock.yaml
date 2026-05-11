@@ -1,0 +1,35 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the match.
+
+post:
+  operationId: unlockMatchSheet
+  tags: [Match sheets]
+  summary: Unlock the match sheet (admin override)
+  description: |
+    Re-opens a locked sheet for editing. Note: even if the sheet is unlocked,
+    edits are still blocked when the parent match status is terminal
+    (FINISHED / ABANDONED / POSTPONED) — the admin must first PATCH the match
+    status. Requires `admin`.
+  x-required-roles: [admin]
+  responses:
+    "200":
+      description: Sheet unlocked.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/matchSheet.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

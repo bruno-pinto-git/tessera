@@ -1,0 +1,121 @@
+# =====================================================================
+#  04-players.http — Player CRUD (nested under team)
+#  Requires teamSeniorMId from 03-teams.http.
+# =====================================================================
+
+### List players (empty)
+GET {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+
+> {% client.test("status 200", () => client.assert(response.status === 200)); %}
+
+
+### Create goalkeeper
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "Pedro",
+  "lastName":  "Costa",
+  "position":  "GK",
+  "shirtNumber": 1
+}
+
+> {%
+client.global.set("playerGkId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### Create forward
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName":  "João",
+  "lastName":   "Silva",
+  "position":   "FW",
+  "shirtNumber": 9,
+  "nationality": "PRT",
+  "birthdate":  "1998-03-12",
+  "dominantFoot": "RIGHT",
+  "height": 178,
+  "weight": 72
+}
+
+> {%
+client.global.set("playerFwId", response.body.id);
+client.test("status 201", () => client.assert(response.status === 201));
+%}
+
+
+### Duplicate shirt → 409
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "X", "lastName": "Y", "position": "MF", "shirtNumber": 9 }
+
+> {% client.test("status 409", () => client.assert(response.status === 409)); %}
+
+
+### Validation: shirt > 99 → 400
+POST {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "X", "lastName": "Y", "position": "MF", "shirtNumber": 150 }
+
+> {% client.test("status 400", () => client.assert(response.status === 400)); %}
+
+
+### List (2 players, ordered by shirt: 1, 9)
+GET {{matchServiceUrl}}/api/v1/teams/{{teamSeniorMId}}/players
+
+> {%
+client.test("two players", () =>
+    client.assert(response.body.totalElements === 2));
+%}
+
+
+### PATCH player status
+PATCH {{matchServiceUrl}}/api/v1/players/{{playerFwId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "INJURED" }
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("status updated", () =>
+    client.assert(response.body.status === "INJURED"));
+%}
+
+
+### Restore ACTIVE for later tests
+PATCH {{matchServiceUrl}}/api/v1/players/{{playerFwId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "status": "ACTIVE" }
+
+
+### List all players of the club (across all teams)
+# `teamsClubId` was set in 03-teams.http (only one team, but the endpoint
+# should still work — and prove pagination via PageEnvelope).
+GET {{matchServiceUrl}}/api/v1/clubs/{{teamsClubId}}/players
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("has at least 2 players", () =>
+    client.assert(response.body.totalElements >= 2));
+%}
+
+
+### List players of a non-existent club → 404
+GET {{matchServiceUrl}}/api/v1/clubs/9999/players
+
+> {%
+client.test("status 404", () => client.assert(response.status === 404));
+%}

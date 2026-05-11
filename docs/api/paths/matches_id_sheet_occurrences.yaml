@@ -1,0 +1,52 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the match.
+
+post:
+  operationId: addOccurrence
+  tags: [Match sheets]
+  summary: Add an occurrence to the match sheet
+  description: |
+    Appends a new occurrence (goal, card, substitution) to the match sheet.
+    Validates that:
+      - sheet is not locked AND match status ∈ {SCHEDULED, LIVE}
+      - player is in the lineup
+      - SUBSTITUTION requires `replacedPlayerId` and both players in same team
+      - non-SUBSTITUTION must NOT include `replacedPlayerId`
+    Requires `staff` or `admin`.
+  x-required-roles: [staff, admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/occurrenceCreateRequest.yaml"
+        example:
+          minute: 34
+          type: "GOAL"
+          playerId: 2
+  responses:
+    "201":
+      description: Occurrence appended.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/occurrence.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

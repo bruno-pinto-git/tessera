@@ -1,0 +1,155 @@
+# =====================================================================
+#  06-match-sheets.http — Lineup, occurrences, lock/unlock
+#
+#  This file uses its OWN match (because 05-matches.http leaves the
+#  match in FINISHED status, which auto-locks the sheet). We create a
+#  fresh match in SCHEDULED status here.
+# =====================================================================
+
+### Setup: a fresh match for sheet testing
+POST {{matchServiceUrl}}/api/v1/matches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "homeTeamId": {{teamSeniorMId}},
+  "awayTeamId": {{awayTeamId}},
+  "venueId":    {{venueId}},
+  "kickoffAt":  "2026-10-15T18:00:00Z"
+}
+
+> {% client.global.set("sheetMatchId", response.body.id); %}
+
+
+### Setup: away players (we already have home players from 04-players)
+POST {{matchServiceUrl}}/api/v1/teams/{{awayTeamId}}/players
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{ "firstName": "Rui", "lastName": "Marques", "position": "GK", "shirtNumber": 1 }
+
+> {% client.global.set("awayGkId", response.body.id); %}
+
+
+### GET sheet (lazy create, empty)
+GET {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("not locked", () => client.assert(response.body.locked === false));
+client.test("empty lineup", () =>
+    client.assert(response.body.lineup.length === 0));
+%}
+
+
+### Add home GK to lineup (staff/admin)
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "playerId": {{playerGkId}}, "role": "STARTER" }
+
+> {% client.test("status 201", () => client.assert(response.status === 201)); %}
+
+
+### Add home FW to lineup
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "playerId": {{playerFwId}}, "role": "STARTER" }
+
+
+### Add away GK
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/lineup
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "playerId": {{awayGkId}}, "role": "STARTER" }
+
+
+### GET sheet (3 lineup entries)
+GET {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet
+
+> {%
+client.test("3 entries", () =>
+    client.assert(response.body.lineup.length === 3));
+%}
+
+
+### Goal at minute 34
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "minute": 34, "type": "GOAL", "playerId": {{playerFwId}} }
+
+> {%
+client.test("status 201", () => client.assert(response.status === 201));
+client.global.set("goalOccId", response.body.id);
+%}
+
+
+### Yellow card at minute 50 (away GK)
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "minute": 50, "type": "YELLOW_CARD", "playerId": {{awayGkId}} }
+
+
+### SUBSTITUTION without replacedPlayerId → 400
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "minute": 60, "type": "SUBSTITUTION", "playerId": {{playerFwId}} }
+
+> {% client.test("status 400", () => client.assert(response.status === 400)); %}
+
+
+### GOAL with replacedPlayerId → 400 (only allowed for SUBSTITUTION)
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "minute": 60, "type": "GOAL", "playerId": {{playerFwId}}, "replacedPlayerId": {{playerGkId}} }
+
+> {% client.test("status 400", () => client.assert(response.status === 400)); %}
+
+
+### Lock sheet
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/lock
+Authorization: Bearer {{staffToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("locked", () => client.assert(response.body.locked === true));
+%}
+
+
+### Try to add occurrence on locked sheet → 409
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/occurrences
+Content-Type: application/json
+Authorization: Bearer {{staffToken}}
+
+{ "minute": 80, "type": "GOAL", "playerId": {{playerFwId}} }
+
+> {% client.test("status 409", () => client.assert(response.status === 409)); %}
+
+
+### Unlock (admin only)
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/unlock
+Authorization: Bearer {{adminToken}}
+
+> {%
+client.test("status 200", () => client.assert(response.status === 200));
+client.test("unlocked", () => client.assert(response.body.locked === false));
+%}
+
+
+### Staff trying to unlock → 403
+POST {{matchServiceUrl}}/api/v1/matches/{{sheetMatchId}}/sheet/unlock
+Authorization: Bearer {{staffToken}}
+
+> {% client.test("status 403", () => client.assert(response.status === 403)); %}

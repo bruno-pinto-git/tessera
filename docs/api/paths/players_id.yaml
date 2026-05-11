@@ -1,0 +1,82 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Stable numeric identifier of the player.
+
+get:
+  operationId: getPlayerById
+  tags: [Players]
+  summary: Get a player by id
+  description: Returns the player with the given id. Public endpoint.
+  security: []
+  responses:
+    "200":
+      description: The player.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/player.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+patch:
+  operationId: updatePlayer
+  tags: [Players]
+  summary: Partially update a player
+  description: |
+    Updates fields of an existing player. Omitted fields are left unchanged.
+    Changing `shirtNumber` to one already in use within the same team is
+    rejected with 409. Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/playerUpdateRequest.yaml"
+  responses:
+    "200":
+      description: Player updated.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/player.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+delete:
+  operationId: deletePlayer
+  tags: [Players]
+  summary: Soft-delete a player
+  description: |
+    Marks the player as deleted (sets `deletedAt`). Existing match-sheet
+    references remain intact. Requires the `admin` role.
+  x-required-roles: [admin]
+  responses:
+    "204":
+      description: Player deleted.
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

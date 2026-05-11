@@ -1,0 +1,34 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the match.
+
+post:
+  operationId: lockMatchSheet
+  tags: [Match sheets]
+  summary: Lock the match sheet
+  description: |
+    Marks the match sheet as locked, preventing further edits to the lineup
+    or occurrences. Idempotent — locking an already-locked sheet is a no-op.
+    Requires `staff` or `admin`.
+  x-required-roles: [staff, admin]
+  responses:
+    "200":
+      description: Sheet locked.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/matchSheet.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

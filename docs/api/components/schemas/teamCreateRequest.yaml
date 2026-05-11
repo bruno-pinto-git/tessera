@@ -1,0 +1,9 @@
+type: object
+description: |
+  Payload to create a team in a club. The `clubId` comes from the path;
+  only `category` is needed in the body.
+required:
+  - category
+properties:
+  category:
+    $ref: "./teamCategory.yaml"

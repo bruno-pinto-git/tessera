@@ -1,0 +1,26 @@
+type: object
+description: |
+  Partial update payload (PATCH). Omitted fields are left unchanged.
+  At least one field must be provided. Status transitions are validated
+  server-side; invalid transitions are rejected with 409.
+minProperties: 1
+properties:
+  venueId:
+    type: [integer, "null"]
+    format: int64
+  kickoffAt:
+    type: string
+    format: date-time
+  status:
+    $ref: "./matchStatus.yaml"
+  homeScore:
+    type: [integer, "null"]
+    format: int32
+    minimum: 0
+  awayScore:
+    type: [integer, "null"]
+    format: int32
+    minimum: 0
+  refereeName:
+    type: [string, "null"]
+    maxLength: 200

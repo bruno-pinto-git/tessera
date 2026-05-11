@@ -1,0 +1,103 @@
+get:
+  operationId: listMatches
+  tags: [Matches]
+  summary: List matches
+  description: |
+    Returns a paginated list of matches. Soft-deleted matches are excluded.
+    Public endpoint.
+
+    Filters can be combined; results are ordered by `kickoffAt` ascending.
+  security: []
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+    - in: query
+      name: from
+      required: false
+      schema:
+        type: string
+        format: date-time
+      description: Lower bound (inclusive) on `kickoffAt`.
+      example: "2026-09-01T00:00:00Z"
+    - in: query
+      name: to
+      required: false
+      schema:
+        type: string
+        format: date-time
+      description: Upper bound (exclusive) on `kickoffAt`.
+      example: "2026-10-01T00:00:00Z"
+    - in: query
+      name: clubId
+      required: false
+      schema:
+        type: integer
+        format: int64
+      description: Match must involve a team belonging to this club (home or away).
+    - in: query
+      name: status
+      required: false
+      schema:
+        $ref: "../components/schemas/matchStatus.yaml"
+  responses:
+    "200":
+      description: Page of matches.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/match.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createMatch
+  tags: [Matches]
+  summary: Create a new match
+  description: |
+    Creates a new match in SCHEDULED status. Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/matchCreateRequest.yaml"
+        example:
+          homeTeamId: 1
+          awayTeamId: 2
+          venueId: 1
+          kickoffAt: "2026-09-15T20:30:00Z"
+          refereeName: "Maria Santos"
+  responses:
+    "201":
+      description: Match created.
+      headers:
+        Location:
+          schema:
+            type: string
+            format: uri
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/match.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

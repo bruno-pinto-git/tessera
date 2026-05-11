@@ -1,0 +1,49 @@
+parameters:
+  - in: path
+    name: id
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the match.
+
+post:
+  operationId: addLineupEntry
+  tags: [Match sheets]
+  summary: Add a player to the lineup
+  description: |
+    Adds a player to the match-sheet lineup. The player's `teamId` is derived
+    from the player record and must equal the match's homeTeamId or awayTeamId.
+    Editing is rejected with 409 if the sheet is locked or the match is in a
+    terminal status. Requires `staff` or `admin`.
+  x-required-roles: [staff, admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/lineupCreateRequest.yaml"
+        example:
+          playerId: 1
+          role: "STARTER"
+          shirtNumber: 9
+  responses:
+    "201":
+      description: Player added to the lineup.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/lineupEntry.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

@@ -1,0 +1,86 @@
+parameters:
+  - in: path
+    name: teamId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Identifier of the parent team.
+
+get:
+  operationId: listPlayersOfTeam
+  tags: [Players]
+  summary: List players of a team
+  description: |
+    Returns the active players belonging to the team, ordered by shirt number
+    (nulls last) then by last name. Public endpoint.
+  security: []
+  parameters:
+    - $ref: "../components/parameters/pagination.yaml#/Page"
+    - $ref: "../components/parameters/pagination.yaml#/Size"
+  responses:
+    "200":
+      description: Page of players.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "../components/schemas/pageEnvelope.yaml"
+              - type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: "../components/schemas/player.yaml"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createPlayer
+  tags: [Players]
+  summary: Create a player in a team
+  description: |
+    Creates a new player in the team. If `shirtNumber` is provided, it must
+    not collide with another active player in the same team — duplicates
+    are rejected with 409. Requires the `admin` role.
+  x-required-roles: [admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/playerCreateRequest.yaml"
+        example:
+          firstName: "João"
+          lastName: "Silva"
+          position: "FW"
+          shirtNumber: 9
+          nationality: "PRT"
+          birthdate: "1998-03-12"
+  responses:
+    "201":
+      description: Player created.
+      headers:
+        Location:
+          schema:
+            type: string
+            format: uri
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/player.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

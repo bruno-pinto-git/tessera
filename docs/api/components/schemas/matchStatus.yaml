@@ -1,0 +1,21 @@
+type: string
+description: |
+  Lifecycle of a match. Allowed transitions (server-enforced):
+    - SCHEDULED → LIVE | POSTPONED | ABANDONED | CANCELLED
+    - LIVE → FINISHED | ABANDONED
+    - POSTPONED → SCHEDULED  (rescheduled)
+    - FINISHED, ABANDONED, CANCELLED — terminal
+
+  Distinction between terminal states:
+    - FINISHED: completed normally, scores recorded.
+    - ABANDONED: started but had to be stopped (weather, safety).
+    - CANCELLED: called off before kickoff, no intent to reschedule.
+enum:
+  - SCHEDULED
+  - LIVE
+  - FINISHED
+  - POSTPONED
+  - ABANDONED
+  - CANCELLED
+examples:
+  - "SCHEDULED"
