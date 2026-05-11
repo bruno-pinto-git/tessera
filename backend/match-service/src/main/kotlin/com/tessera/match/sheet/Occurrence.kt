@@ -4,7 +4,7 @@ import jakarta.persistence.*
 import java.time.OffsetDateTime
 
 enum class OccurrenceType {
-    GOAL, OWN_GOAL, YELLOW_CARD, RED_CARD, SUBSTITUTION
+    GOAL, OWN_GOAL, YELLOW_CARD, RED_CARD, SUBSTITUTION, FOUL
 }
 
 @Entity

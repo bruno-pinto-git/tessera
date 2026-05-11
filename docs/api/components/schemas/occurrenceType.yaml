@@ -6,11 +6,13 @@ description: |
     - YELLOW_CARD: yellow card shown
     - RED_CARD: red card shown (direct, or second yellow)
     - SUBSTITUTION: tactical substitution; replacedPlayerId is required
+    - FOUL: foul committed (single tactical event; does not imply a card)
 enum:
   - GOAL
   - OWN_GOAL
   - YELLOW_CARD
   - RED_CARD
   - SUBSTITUTION
+  - FOUL
 examples:
   - "GOAL"

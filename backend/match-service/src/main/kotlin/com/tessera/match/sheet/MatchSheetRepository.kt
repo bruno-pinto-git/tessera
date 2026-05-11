@@ -46,4 +46,20 @@ interface LineupEntryRepository : JpaRepository<LineupEntry, LineupEntryId> {
         @Param("teamId") teamId: Long,
         @Param("shirtNumber") shirtNumber: Int,
     ): Boolean
+
+    /**
+     * Count of lineup entries in the given role for a given team on a given
+     * sheet. Used to enforce roster limits (e.g. max 11 STARTERs).
+     */
+    @Query("""
+        SELECT COUNT(e) FROM LineupEntry e
+         WHERE e.id.matchSheetId = :sheetId
+           AND e.teamId = :teamId
+           AND e.role = :role
+    """)
+    fun countBySheetTeamRole(
+        @Param("sheetId") sheetId: Long,
+        @Param("teamId") teamId: Long,
+        @Param("role") role: LineupRole,
+    ): Long
 }

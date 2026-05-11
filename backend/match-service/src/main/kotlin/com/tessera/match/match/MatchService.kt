@@ -1,10 +1,11 @@
 package com.tessera.match.match
 
-import com.tessera.match.sheet.MatchSheetRepository
+import com.tessera.match.sheet.MatchSheetService
 import com.tessera.match.team.TeamNotFoundException
 import com.tessera.match.team.TeamRepository
 import com.tessera.match.venue.VenueNotFoundException
 import com.tessera.match.venue.VenueRepository
+import org.springframework.context.annotation.Lazy
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -16,7 +17,9 @@ class MatchService(
     private val repo: MatchRepository,
     private val teamRepo: TeamRepository,
     private val venueRepo: VenueRepository,
-    private val sheetRepo: MatchSheetRepository,
+    // @Lazy avoids a potential circular dependency: MatchSheetService depends
+    // on MatchRepository (and indirectly on MatchService via the publisher).
+    @Lazy private val sheetService: MatchSheetService,
 ) {
 
     @Transactional(readOnly = true)
@@ -69,13 +72,12 @@ class MatchService(
             val previous = match.status
             match.status = newStatus
             // Auto-lock match-sheet when match enters a terminal status.
+            // We must flush the new match status to the DB before the sheet
+            // service publishes its event, otherwise consumers would see a
+            // stale matchStatus. Spring auto-flushes inside the transaction
+            // when MatchSheetService.autoLockIfPresent reads the entity.
             if (newStatus in TERMINAL_STATUSES && previous !in TERMINAL_STATUSES) {
-                sheetRepo.findByMatchId(match.id)?.let {
-                    if (!it.locked) {
-                        it.locked = true
-                        it.lockedAt = OffsetDateTime.now()
-                    }
-                }
+                sheetService.autoLockIfPresent(match.id)
             }
         }
         req.venueId?.let { venueId ->

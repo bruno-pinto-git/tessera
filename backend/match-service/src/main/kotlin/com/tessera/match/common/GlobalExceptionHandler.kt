@@ -8,9 +8,12 @@ import com.tessera.match.player.PlayerNotFoundException
 import com.tessera.match.player.PlayerShirtConflictException
 import com.tessera.match.sheet.LineupConflictException
 import com.tessera.match.sheet.LineupEntryNotFoundException
+import com.tessera.match.sheet.LineupRoleLimitException
 import com.tessera.match.sheet.OccurrenceNotFoundException
+import com.tessera.match.sheet.PlayerSentOffException
 import com.tessera.match.sheet.SheetLockedException
 import com.tessera.match.sheet.SheetNotEditableException
+import com.tessera.match.sheet.TooManySubstitutionsException
 import com.tessera.match.team.TeamCategoryConflictException
 import com.tessera.match.team.TeamNotFoundException
 import com.tessera.match.venue.VenueNameConflictException
@@ -59,6 +62,9 @@ class GlobalExceptionHandler {
         PlayerShirtConflictException::class,
         InvalidMatchTransitionException::class,
         LineupConflictException::class,
+        LineupRoleLimitException::class,
+        TooManySubstitutionsException::class,
+        PlayerSentOffException::class,
         SheetLockedException::class,
         SheetNotEditableException::class,
     ])

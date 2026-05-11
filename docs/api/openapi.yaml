@@ -78,6 +78,16 @@ paths:
     $ref: "./paths/matches_id_sheet_lineup.yaml"
   /matches/{id}/sheet/lineup/{playerId}:
     $ref: "./paths/matches_id_sheet_lineup_player.yaml"
+  /stats/match-sheets:
+    $ref: "./paths/stats_match_sheets.yaml"
+  /stats/match-sheets/{matchId}:
+    $ref: "./paths/stats_match_sheets_id.yaml"
+  /stats/sales/summary:
+    $ref: "./paths/stats_sales_summary.yaml"
+  /stats/sales/by-match/{matchId}:
+    $ref: "./paths/stats_sales_by_match.yaml"
+  /stats/sales/range:
+    $ref: "./paths/stats_sales_range.yaml"
   /matches/{id}/sheet/occurrences:
     $ref: "./paths/matches_id_sheet_occurrences.yaml"
   /matches/{id}/sheet/occurrences/{occId}:
@@ -176,3 +186,11 @@ components:
       $ref: "./components/schemas/occurrence.yaml"
     OccurrenceCreateRequest:
       $ref: "./components/schemas/occurrenceCreateRequest.yaml"
+    MatchSummary:
+      $ref: "./components/schemas/matchSummary.yaml"
+    MatchSheetHistory:
+      $ref: "./components/schemas/matchSheetHistory.yaml"
+    SalesSummary:
+      $ref: "./components/schemas/salesSummary.yaml"
+    SalesByMatch:
+      $ref: "./components/schemas/salesByMatch.yaml"

@@ -266,7 +266,22 @@ Se qualquer destas condicoes falhar, a operacao devolve **409**.
 | POST | `/matches/{id}/sheet/lock` | staff / admin |
 | POST | `/matches/{id}/sheet/unlock` | **admin** |
 
-### Validacoes especificas de occurrences
+### Tipos de occurrence
+
+`GOAL`, `OWN_GOAL`, `YELLOW_CARD`, `RED_CARD`, `SUBSTITUTION`, `FOUL`.
+
+### Validacoes de lineup (regras de elenco)
+
+| Regra | Limite | Resposta se violada |
+|-------|--------|---------------------|
+| Max titulares por equipa | 11 STARTER | 409 |
+| Max suplentes por equipa | 12 SUBSTITUTE | 409 |
+
+Aplicado em `POST /sheet/lineup` e em `PATCH /sheet/lineup/{playerId}`
+quando o role muda. Mover SUBSTITUTE → STARTER se ja ha 11 STARTERs e
+rejeitado.
+
+### Validacoes de occurrences
 
 - O `playerId` tem de estar no lineup da sheet
 - Se `type = SUBSTITUTION`: `replacedPlayerId` obrigatorio, ambos os
@@ -274,6 +289,9 @@ Se qualquer destas condicoes falhar, a operacao devolve **409**.
 - Se `type != SUBSTITUTION`: `replacedPlayerId` proibido
 - `playerId != replacedPlayerId`
 - `minute ∈ [0, 200]`
+- **Max 5 substituicoes por equipa por jogo** (FIFA modern) — 409
+- **Bloqueio por cartao vermelho**: depois de receber `RED_CARD`, o
+  jogador nao pode ser autor de occurrences subsequentes — 409
 
 ## Migracoes Flyway
 
@@ -288,6 +306,7 @@ Se qualquer destas condicoes falhar, a operacao devolve **409**.
 | V7 | `V7__match_sheet_lineup.sql` | `match_sheet` + `lineup_entry` |
 | V8 | `V8__occurrence.sql` | tabela `occurrence` |
 | V9 | `V9__match_status_cancelled.sql` | adiciona `CANCELLED` aos status validos |
+| V10 | `V10__occurrence_foul.sql` | adiciona `FOUL` aos tipos de occurrence |
 
 ## Tratamento de erros
 
@@ -297,7 +316,7 @@ Details:
 | Excecao | Status | Type |
 |---------|--------|------|
 | `ClubNotFoundException`, `VenueNotFoundException`, `TeamNotFoundException`, `PlayerNotFoundException`, `MatchNotFoundException`, `LineupEntryNotFoundException`, `OccurrenceNotFoundException` | 404 | `.../errors/not-found` |
-| `*NameConflictException`, `*CategoryConflictException`, `*ShirtConflictException`, `InvalidMatchTransitionException`, `LineupConflictException`, `SheetLockedException`, `SheetNotEditableException` | 409 | `.../errors/conflict` |
+| `*NameConflictException`, `*CategoryConflictException`, `*ShirtConflictException`, `InvalidMatchTransitionException`, `LineupConflictException`, `LineupRoleLimitException`, `TooManySubstitutionsException`, `PlayerSentOffException`, `SheetLockedException`, `SheetNotEditableException` | 409 | `.../errors/conflict` |
 | `MethodArgumentNotValidException` (bean validation) | 400 | `.../errors/validation` |
 | `HttpMessageNotReadableException` (JSON malformado) | 400 | `.../errors/malformed-json` |
 | `AccessDeniedException` | 403 | `.../errors/forbidden` |

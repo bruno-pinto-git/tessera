@@ -85,16 +85,26 @@ Base de dados: `tessera_matches`. Detalhes em [match-service.md](match-service.m
 
 ### Statistics Service — Porta 8083
 
-**Estado:** esqueleto; implementacao a iniciar.
+**Estado:** funcional (fichas tecnicas via eventos RabbitMQ; vendas
+ficam a 0 ate o producer do ticket-service ser implementado).
 
-Servico de leitura e agregacao de dados:
+Servico read-side de relatorios historicos. Recebe eventos assincronos
+via RabbitMQ:
 
-- Relatorios de bilheteira (vendas, receitas, ocupacao)
-- Estatisticas de jogos e jogadores
-- Historico de fichas tecnicas
-- Dados agregados para dashboards
+- `match.sheet.closed` do match-service → snapshot da ficha tecnica
+- `ticket.ticket.paid` / `ticket.ticket.validated` do ticket-service → vendas
 
-Base de dados: `tessera_statistics`
+Expoe endpoints de consulta:
+
+- `GET /api/v1/stats/match-sheets` (com filtros `clubId`, `playerId`,
+  `season`, `status`)
+- `GET /api/v1/stats/match-sheets/{matchId}` (snapshot completo)
+- `GET /api/v1/stats/sales/summary` (admin)
+- `GET /api/v1/stats/sales/by-match/{matchId}` (admin)
+- `GET /api/v1/stats/sales/range?from=...&to=...` (admin)
+
+Base de dados: `tessera_statistics`. Detalhes em
+[statistics-service.md](statistics-service.md).
 
 ## Stack Tecnologica
 
@@ -106,6 +116,7 @@ Base de dados: `tessera_statistics`
 | Base de Dados | PostgreSQL | 16 (Alpine) |
 | Migracoes BD | Flyway | — |
 | Autenticacao | Keycloak | 26.0 |
+| Event bus | RabbitMQ | 3.13 |
 | Reverse Proxy | NGINX | Alpine |
 | Contentorizacao | Docker + Docker Compose | — |
 | Build Tool | Gradle (Kotlin DSL) | 8.13 |
@@ -198,6 +209,8 @@ tessera/
 | [security.md](security.md) | Autenticacao, autorizacao, JWT pass-through, RBAC |
 | [bff.md](bff.md) | Padrao proxy, controllers, configuracao |
 | [match-service.md](match-service.md) | Recursos, endpoints, regras de negocio |
+| [statistics-service.md](statistics-service.md) | Read-side tables, consumers, endpoints de historico e vendas |
+| [events/async-contracts.md](events/async-contracts.md) | Contratos dos eventos RabbitMQ |
 | [keycloak.md](keycloak.md) | Realm, clients, roles, utilizadores |
 | [nginx.md](nginx.md) | Configuracao do reverse proxy |
 | [docker.md](docker.md) | Compose, networks, volumes |
