@@ -18,11 +18,11 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   }, [initialized, authenticated, login]);
 
   if (!initialized) {
-    return <p style={{ padding: 16 }}>A carregar...</p>;
+    return <p className="text-sm text-muted-foreground p-4">A carregar…</p>;
   }
 
   if (!authenticated) {
-    return <p style={{ padding: 16 }}>A redirecionar para o login...</p>;
+    return <p className="text-sm text-muted-foreground p-4">A redirecionar para o login…</p>;
   }
 
   if (roles && roles.length > 0 && !roles.some((r) => hasRole(r))) {

@@ -1,6 +1,9 @@
 FROM node:20-alpine AS frontend-build
 WORKDIR /app
-COPY frontend/package.json frontend/package-lock.json ./
+# Include .npmrc so the build picks up `legacy-peer-deps=true` (needed
+# because openapi-typescript@7 still declares its TS peer as ^5 while
+# the project uses TS 6). Without this, `npm ci` would ERESOLVE.
+COPY frontend/.npmrc frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ .
 RUN npm run build

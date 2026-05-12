@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { createTicket } from "../../../api/ticketApi";
+import { createTicket } from "@/api/ticketApi";
+import { ApiError } from "@/api/client";
 import type { Ticket } from "../types";
 
 export function useCreateTicket() {
@@ -14,7 +15,13 @@ export function useCreateTicket() {
       const result = await createTicket({ eventId, supporter });
       setTicket(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      if (err instanceof ApiError) {
+        setError(`${err.status} — ${err.statusText}`);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erro desconhecido");
+      }
     } finally {
       setLoading(false);
     }

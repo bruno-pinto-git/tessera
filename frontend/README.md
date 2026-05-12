@@ -1,73 +1,111 @@
-# React + TypeScript + Vite
+# Tessera Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + TypeScript + Vite 8 SPA for the Tessera platform.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Build**: Vite 8 + `@vitejs/plugin-react`
+- **Styling**: Tailwind CSS v4 (CSS-first config), shadcn/ui primitives,
+  lucide-react icons
+- **Routing**: react-router-dom v7
+- **Auth**: keycloak-js (JWT pass-through to the BFF)
+- **API**: typed wrapper over `fetch` in `src/api/client.ts`; types
+  generated from the backend OpenAPI 3.1 spec
 
-## React Compiler
+## Getting started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+# from frontend/
+npm install
+npm run codegen:api      # generate types from ../docs/api/openapi.yaml
+npm run dev              # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The dev server proxies `/api/**` to `VITE_API_PROXY_TARGET`
+(default `http://localhost:8080` — the BFF). Adjust in `.env.development`
+if you need to point elsewhere.
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+## Scripts
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+| Command | What it does |
+|---|---|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | TS check + production bundle into `dist/` |
+| `npm run preview` | Serve the built bundle for sanity checks |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier write |
+| `npm run format:check` | Prettier check (CI-friendly) |
+| `npm run codegen:api` | Regenerate `src/api/schema.gen.ts` from `../docs/api/openapi.yaml` |
+
+## Project layout
+
 ```
+src/
+├── api/                  # API layer (typed)
+│   ├── http.ts           # low-level fetch + JWT
+│   ├── client.ts         # typed apiGet/apiPost/...
+│   ├── schema.gen.ts     # GENERATED — do not edit
+│   └── ticketApi.ts      # ticket-service endpoints
+├── auth/                 # Keycloak wiring
+│   ├── keycloak.ts
+│   ├── AuthProvider.tsx
+│   ├── AuthContext.ts
+│   ├── useAuth.ts
+│   └── ProtectedRoute.tsx
+├── components/
+│   ├── Layout.tsx        # app shell (header + main + footer)
+│   └── ui/               # shadcn primitives (button, card, input, ...)
+├── config/
+│   └── env.ts            # required env-var helpers
+├── features/             # feature folders (each with pages/, components/, hooks/)
+│   ├── events/
+│   ├── tickets/
+│   └── validation/
+├── lib/
+│   └── utils.ts          # `cn()` helper for Tailwind class composition
+├── pages/                # cross-feature pages (Home, 404, 403)
+├── routes/
+│   └── AppRoutes.tsx
+├── App.tsx
+├── main.tsx
+└── index.css             # Tailwind v4 + design tokens
+```
+
+## Design system
+
+The visual identity, design tokens, and component library are documented
+in **[DESIGN.md](./DESIGN.md)**. Read that file before designing new
+screens — Claude Design should ingest it during onboarding.
+
+## Adding shadcn components
+
+```bash
+npx shadcn@latest add dialog form select tabs
+```
+
+Components land in `src/components/ui/` and pick up our tokens from
+`index.css` automatically.
+
+## Designing with Claude Design
+
+1. Run `npm install` and `npm run dev` so the project compiles
+2. Open [claude.ai/design](https://claude.ai/design)
+3. Connect / upload this `frontend/` folder so it reads:
+   - `DESIGN.md` (the source of truth for tokens + patterns)
+   - `src/components/ui/` (the existing primitives)
+   - `../docs/api/openapi.yaml` (the API contract)
+4. Ask it to design a page (e.g. "écran de listagem dos meus bilhetes,
+   com QR grande para os PAID"). Iterate.
+5. Export the handoff bundle and bring it back to Claude Code (in the
+   repo) to implement.
+
+## Env vars
+
+| Var | Example | Used by |
+|---|---|---|
+| `VITE_KEYCLOAK_URL` | `http://localhost:8000` (via NGINX) or `http://localhost:8180` (direct) | `auth/keycloak.ts` |
+| `VITE_KEYCLOAK_REALM` | `tessera` | `auth/keycloak.ts` |
+| `VITE_KEYCLOAK_CLIENT_ID` | `tessera-web` | `auth/keycloak.ts` |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8080` | `vite.config.ts` (dev only) |
+
+See `.env.example` for the full list.
