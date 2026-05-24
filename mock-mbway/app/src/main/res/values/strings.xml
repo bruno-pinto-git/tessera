@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">MB WAY Mock</string>
+
+    <string name="header_eyebrow">Tessera · Mock SIBS</string>
+    <string name="header_title">MB WAY</string>
+
+    <string name="server_label">Gateway HTTP em</string>
+    <string name="empty_title">Sem pagamentos pendentes</string>
+    <string name="empty_subtitle">À espera de pedidos do ticket-service.</string>
+
+    <string name="action_accept">Aceitar</string>
+    <string name="action_decline">Recusar</string>
+
+    <string name="amount_label">Montante</string>
+    <string name="phone_label">Telemóvel</string>
+    <string name="reference_label">Referência</string>
+
+    <string name="notif_channel_name">Pedidos MB WAY</string>
+    <string name="notif_channel_description">Notificações de pedidos de pagamento recebidos pela app mock.</string>
+    <string name="notif_title">Pedido MB WAY</string>
+
+    <string name="section_pending">Pendentes</string>
+    <string name="section_history">Histórico</string>
+    <string name="resolution_accepted">Aceite</string>
+    <string name="resolution_declined">Recusado</string>
+    <string name="resolution_expired">Expirado</string>
+</resources>
