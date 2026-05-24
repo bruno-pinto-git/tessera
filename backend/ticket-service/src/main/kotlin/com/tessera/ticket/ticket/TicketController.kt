@@ -25,6 +25,7 @@ data class CreateTicketRequest(
 data class PayTicketRequest(
     @field:NotBlank val paymentMethod: String?,
     val mbwayReference: String? = null,
+    val phoneNumber: String? = null,
 )
 
 data class ValidateTicketRequest(
@@ -86,9 +87,9 @@ class TicketController(
             throw AccessDeniedException("Only the ticket owner or staff/admin can pay for this ticket.")
         }
         val method = request.paymentMethod ?: throw IllegalArgumentException("paymentMethod is required")
-        val paid = ticketService.pay(id, method, request.mbwayReference)
-        log.info("Paid ticket id={} method={}", paid.id, paid.paymentMethod)
-        return toResponse(paid)
+        val updated = ticketService.pay(id, method, request.phoneNumber, request.mbwayReference)
+        log.info("Pay ticket id={} method={} status={}", updated.id, updated.paymentMethod, updated.status)
+        return toResponse(updated)
     }
 
     /**

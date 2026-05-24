@@ -9,9 +9,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { MatchDetail, PriceTier } from "../mockMatches";
 import { cn } from "@/lib/utils";
+import { createTicket, getTicket, payTicket, type Ticket } from "@/api/ticketApi";
+import { ApiError } from "@/api/client";
 
 type Step = 1 | 2 | 3;
 type PaymentMethod = "MBWAY" | "CARD" | "CASH";
@@ -23,26 +26,24 @@ interface PurchaseModalProps {
 }
 
 /**
- * 3-step purchase flow:
+ * 3-step purchase flow wired to the real ticket-service:
  *
- *   1. choose a price tier (and toggle "sou sócio")
- *   2. pick payment method, review total
- *   3. show the QR + ticket id, plus shortcut links
- *
- * State stays local — no Redux/Zustand needed for a single modal. The
- * actual `POST /tickets` + `POST /tickets/{id}/pay` calls happen between
- * step 2 and 3 once the events catalog is wired to real data; for now the
- * step 3 surface only renders mock data.
+ *   1. choose a price tier (+ "sou sócio" toggle)
+ *   2. pick payment method, type phone number (MBWAY), confirm
+ *      → POST /tickets → POST /tickets/{id}/pay
+ *      → for MBWAY: poll GET /tickets/{id} until status === PAID
+ *   3. show the real QR + ticket id, plus shortcut links
  */
 export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [tier, setTier] = useState<PriceTier>(match.tiers[0]);
   const [supporter, setSupporter] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("MBWAY");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [ticketCode] = useState(() =>
-    "tkt-" + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6),
-  );
+  const [awaitingMbway, setAwaitingMbway] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ticket, setTicket] = useState<Ticket | null>(null);
 
   const total = supporter ? tier.socio : tier.normal;
 
@@ -51,18 +52,50 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
     setTier(match.tiers[0]);
     setSupporter(false);
     setPaymentMethod("MBWAY");
+    setPhoneNumber("");
     setSubmitting(false);
+    setAwaitingMbway(false);
+    setError(null);
+    setTicket(null);
   };
 
   async function confirmPayment() {
+    setError(null);
+
+    if (paymentMethod === "MBWAY" && !isValidPhone(phoneNumber)) {
+      setError("Telemóvel inválido. Usa o formato 351XXXXXXXXX.");
+      return;
+    }
+
     setSubmitting(true);
-    // TODO: real call sequence —
-    //   const ticket = await createTicket({ eventId, supporter });
-    //   await payTicket(ticket.id, { paymentMethod });
-    // For the visual implementation we just simulate latency.
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitting(false);
-    setStep(3);
+    try {
+      const created = await createTicket({ eventId: match.eventId, supporter });
+      const paid = await payTicket(created.id, {
+        paymentMethod,
+        phoneNumber: paymentMethod === "MBWAY" ? normalisePhone(phoneNumber) : undefined,
+      });
+
+      if (paid.status === "PAID") {
+        setTicket(paid);
+        setStep(3);
+      } else {
+        // MBWAY: ticket is PENDING until the gateway pushes the customer's
+        // phone and they accept. We poll the ticket every 2s.
+        setAwaitingMbway(true);
+        const finalTicket = await pollUntilResolved(paid.id);
+        if (finalTicket.status === "PAID") {
+          setTicket(finalTicket);
+          setStep(3);
+        } else {
+          setError("O pagamento expirou ou foi recusado. Tenta de novo.");
+        }
+      }
+    } catch (e) {
+      setError(messageFromError(e));
+    } finally {
+      setSubmitting(false);
+      setAwaitingMbway(false);
+    }
   }
 
   return (
@@ -106,16 +139,20 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
             total={total}
             paymentMethod={paymentMethod}
             onPaymentMethod={setPaymentMethod}
+            phoneNumber={phoneNumber}
+            onPhoneNumber={setPhoneNumber}
             submitting={submitting}
+            awaitingMbway={awaitingMbway}
+            error={error}
             onBack={() => setStep(1)}
             onConfirm={confirmPayment}
           />
         )}
 
-        {step === 3 && (
+        {step === 3 && ticket && (
           <StepConfirmation
             tier={tier}
-            ticketCode={ticketCode}
+            ticket={ticket}
             onClose={() => onOpenChange(false)}
           />
         )}
@@ -233,7 +270,11 @@ function StepPayment({
   total,
   paymentMethod,
   onPaymentMethod,
+  phoneNumber,
+  onPhoneNumber,
   submitting,
+  awaitingMbway,
+  error,
   onBack,
   onConfirm,
 }: {
@@ -241,7 +282,11 @@ function StepPayment({
   total: number;
   paymentMethod: PaymentMethod;
   onPaymentMethod: (p: PaymentMethod) => void;
+  phoneNumber: string;
+  onPhoneNumber: (v: string) => void;
   submitting: boolean;
+  awaitingMbway: boolean;
+  error: string | null;
   onBack: () => void;
   onConfirm: () => void;
 }) {
@@ -289,6 +334,27 @@ function StepPayment({
           );
         })}
       </div>
+
+      {paymentMethod === "MBWAY" && (
+        <div className="space-y-1.5">
+          <label htmlFor="mbway-phone" className="text-xs text-muted-foreground">
+            Telemóvel MB WAY
+          </label>
+          <Input
+            id="mbway-phone"
+            inputMode="tel"
+            placeholder="351912345678"
+            value={phoneNumber}
+            onChange={(e) => onPhoneNumber(e.target.value)}
+            disabled={submitting}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Formato internacional sem espaços. A notificação chega ao telemóvel
+            registado no MB WAY.
+          </p>
+        </div>
+      )}
+
       <div className="rounded-md border bg-muted/50 px-3 py-2.5 text-xs space-y-1">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Lugar</span>
@@ -299,6 +365,13 @@ function StepPayment({
           <span className="font-semibold">{total},00 €</span>
         </div>
       </div>
+
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+
       <div className="flex justify-between gap-2 pt-2">
         <Button variant="ghost" onClick={onBack} disabled={submitting}>
           ← Voltar
@@ -306,7 +379,8 @@ function StepPayment({
         <Button onClick={onConfirm} disabled={submitting}>
           {submitting ? (
             <>
-              <Loader2 className="size-4 animate-spin" />A processar…
+              <Loader2 className="size-4 animate-spin" />
+              {awaitingMbway ? "A aguardar MB WAY…" : "A processar…"}
             </>
           ) : (
             <>Confirmar pagamento</>
@@ -319,22 +393,22 @@ function StepPayment({
 
 function StepConfirmation({
   tier,
-  ticketCode,
+  ticket,
   onClose,
 }: {
   tier: PriceTier;
-  ticketCode: string;
+  ticket: Ticket;
   onClose: () => void;
 }) {
   return (
     <div className="space-y-5 text-center">
       <div className="mx-auto rounded-md border bg-white p-3 w-fit">
-        <QRCodeSVG value={ticketCode} size={156} />
+        <QRCodeSVG value={ticket.code} size={156} />
       </div>
       <div className="space-y-1">
-        <StatusBadge status="PAID" />
+        <StatusBadge status={ticket.status} />
         <div className="font-mono text-[11px] text-muted-foreground mt-2">
-          {ticketCode.slice(0, 8)}…{ticketCode.slice(-4)}
+          {ticket.code.slice(0, 8)}…{ticket.code.slice(-4)}
         </div>
         <div className="text-sm">{tier.name}</div>
       </div>
@@ -348,4 +422,42 @@ function StepConfirmation({
       </div>
     </div>
   );
+}
+
+// ───── helpers ─────
+
+const POLL_INTERVAL_MS = 2_000;
+const POLL_TIMEOUT_MS = 180_000;
+
+async function pollUntilResolved(ticketId: number): Promise<Ticket> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+  let latest = await getTicket(ticketId);
+  while (latest.status === "PENDING" && Date.now() < deadline) {
+    await sleep(POLL_INTERVAL_MS);
+    latest = await getTicket(ticketId);
+  }
+  return latest;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isValidPhone(phone: string): boolean {
+  const normalised = normalisePhone(phone);
+  return /^\d{9,15}$/.test(normalised);
+}
+
+function normalisePhone(phone: string): string {
+  return phone.replace(/[\s+]/g, "");
+}
+
+function messageFromError(e: unknown): string {
+  if (e instanceof ApiError) {
+    return `Erro ${e.status}: ${e.statusText}`;
+  }
+  if (e instanceof Error) {
+    return e.message;
+  }
+  return "Erro desconhecido.";
 }

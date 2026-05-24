@@ -56,7 +56,15 @@ class ProxyService(
         val entity = HttpEntity(body, headers)
 
         return try {
-            restTemplate.exchange(targetUrl, httpMethod, entity, String::class.java)
+            val downstream = restTemplate.exchange(targetUrl, httpMethod, entity, String::class.java)
+            // Filter downstream headers — copying them verbatim leaks
+            // hop-by-hop headers like `Transfer-Encoding: chunked` which
+            // Tomcat then duplicates on its own response, leading to an
+            // invalid `chunked,chunked` that NGINX (rightly) rejects.
+            ResponseEntity
+                .status(downstream.statusCode)
+                .headers(passthroughHeaders(downstream.headers))
+                .body(downstream.body)
         } catch (e: HttpStatusCodeException) {
             // Surface downstream 4xx/5xx with the original body and status.
             ResponseEntity

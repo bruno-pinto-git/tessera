@@ -9,4 +9,5 @@ interface TicketRepository : JpaRepository<Ticket, Long> {
     fun findByCode(code: UUID): Ticket?
     fun findByOwnerSub(ownerSub: String, pageable: Pageable): Page<Ticket>
     fun findByEventId(eventId: Long, pageable: Pageable): Page<Ticket>
+    fun findByMbwayTransactionId(mbwayTransactionId: String): Ticket?
 }

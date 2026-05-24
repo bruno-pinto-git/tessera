@@ -39,6 +39,14 @@ class Ticket(
     @Column(name = "mbway_reference")
     var mbwayReference: String? = null,
 
+    /**
+     * Gateway-side transaction id returned by the MB WAY gateway (SIBS in
+     * production; mock-mbway in dev) when a payment is initiated. Lets the
+     * webhook handler correlate the asynchronous callback back to this ticket.
+     */
+    @Column(name = "mbway_transaction_id")
+    var mbwayTransactionId: String? = null,
+
     /** Keycloak subject UUID of the buyer. Null only for legacy rows. */
     @Column(name = "owner_sub")
     val ownerSub: String? = null,

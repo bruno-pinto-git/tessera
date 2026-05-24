@@ -45,6 +45,10 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 // Public reads (browsing the event catalog before login)
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
+                // MB WAY gateway calls our webhook server-to-server with no JWT.
+                // In production-SIBS the payload is AES-GCM-signed; verification
+                // would happen in MbwayWebhookController before delegating.
+                auth.requestMatchers(HttpMethod.POST, "/api/v1/webhooks/mbway").permitAll()
                 // Anything else needs authentication; @PreAuthorize handles roles.
                 auth.anyRequest().authenticated()
             }

@@ -2,6 +2,7 @@ package com.tessera.ticket.ticket
 
 import com.tessera.ticket.event.EventRepository
 import com.tessera.ticket.events.TicketEventPublisher
+import com.tessera.ticket.payments.MbwayGatewayClient
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -16,6 +17,7 @@ class TicketService(
     private val ticketRepository: TicketRepository,
     private val eventRepository: EventRepository,
     private val publisher: TicketEventPublisher,
+    private val mbwayGateway: MbwayGatewayClient,
 ) {
 
     @Transactional
@@ -48,12 +50,19 @@ class TicketService(
         ticketRepository.findByEventId(eventId, pageable)
 
     /**
-     * Transition PENDING → PAID. Stamps the chosen payment method, an optional
-     * MB WAY reference, and the `paymentDate`. Publishes `ticket.ticket.paid`
-     * once the surrounding transaction commits.
+     * Pays a PENDING ticket. Two flavours:
+     *
+     *  - **CASH / CARD** — synchronous: the ticket transitions PENDING → PAID
+     *    immediately and `ticket.ticket.paid` is published on commit. There is
+     *    no external gateway in the loop.
+     *
+     *  - **MBWAY** — asynchronous: we call [MbwayGatewayClient] to push a
+     *    request to the customer's phone. The ticket stays PENDING (with
+     *    `mbwayTransactionId` stamped). The transition to PAID happens later,
+     *    in `MbwayWebhookService`, when the gateway calls our webhook.
      */
     @Transactional
-    fun pay(id: Long, paymentMethod: String, mbwayReference: String?): Ticket {
+    fun pay(id: Long, paymentMethod: String, phoneNumber: String?, mbwayReference: String?): Ticket {
         val ticket = ticketRepository.findById(id)
             .orElseThrow { TicketNotFoundException("Ticket not found: $id") }
 
@@ -69,14 +78,22 @@ class TicketService(
             )
         }
 
-        ticket.status = TicketStatus.PAID
         ticket.paymentMethod = method
         ticket.mbwayReference = mbwayReference
-        ticket.paymentDate = OffsetDateTime.now()
 
-        val saved = ticketRepository.save(ticket)
-        publishOnCommit { publisher.publishTicketPaid(saved) }
-        return saved
+        return if (method == "MBWAY") {
+            val phone = phoneNumber?.takeIf { it.isNotBlank() }
+                ?: throw IllegalArgumentException("phoneNumber is required for MBWAY payments")
+            val transactionId = mbwayGateway.initiatePayment(ticket, phone)
+            ticket.mbwayTransactionId = transactionId
+            ticketRepository.save(ticket)
+        } else {
+            ticket.status = TicketStatus.PAID
+            ticket.paymentDate = OffsetDateTime.now()
+            val saved = ticketRepository.save(ticket)
+            publishOnCommit { publisher.publishTicketPaid(saved) }
+            saved
+        }
     }
 
     /**

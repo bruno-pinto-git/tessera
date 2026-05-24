@@ -6,8 +6,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tessera.android.screens.MainMenuScreen
 import com.tessera.android.screens.ValidateScreen
+import com.tessera.android.screens.WelcomeScreen
 
 object Routes {
+    const val WELCOME = "welcome"
     const val MAIN_MENU = "main_menu"
     const val VALIDATE = "validate"
 }
@@ -18,11 +20,20 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.MAIN_MENU
+        startDestination = Routes.WELCOME,
     ) {
+        composable(Routes.WELCOME) {
+            WelcomeScreen(
+                onContinue = {
+                    navController.navigate(Routes.MAIN_MENU) {
+                        popUpTo(Routes.WELCOME) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(Routes.MAIN_MENU) {
             MainMenuScreen(
-                onValidateClick = { navController.navigate(Routes.VALIDATE) }
+                onValidateClick = { navController.navigate(Routes.VALIDATE) },
             )
         }
         composable(Routes.VALIDATE) {

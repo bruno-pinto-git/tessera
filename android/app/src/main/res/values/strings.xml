@@ -1,3 +1,42 @@
 <resources>
     <string name="app_name">Tessera</string>
+
+    <string name="menu_tagline">Gestão de bilheteira digital</string>
+    <string name="menu_validate_tickets">Validar bilhetes</string>
+
+    <string name="welcome_logo_desc">Logótipo Tessera</string>
+
+    <string name="validate_eyebrow">Tessera · Portão</string>
+    <string name="validate_title">Validação de bilhetes</string>
+
+    <string name="validate_idle_title">Apresenta o QR ao leitor</string>
+    <string name="validate_idle_subtitle">Carrega num dos botões laterais para começar a leitura.</string>
+    <string name="validate_idle_icon_desc">Ler QR code</string>
+
+    <string name="validate_scanning_title">A ler…</string>
+    <string name="validate_scanning_subtitle">Aproxima o QR do leitor.</string>
+
+    <string name="validate_valid_title">Bilhete válido</string>
+    <string name="validate_valid_subtitle">Pode entrar.</string>
+    <string name="validate_valid_icon_desc">Bilhete válido</string>
+
+    <string name="validate_invalid_used_title">Bilhete já utilizado</string>
+    <string name="validate_invalid_used_subtitle">Foi validado anteriormente. Recusar entrada.</string>
+
+    <string name="validate_invalid_notfound_title">Bilhete não encontrado</string>
+    <string name="validate_invalid_notfound_subtitle">O código não existe no sistema. Recusar entrada.</string>
+
+    <string name="validate_invalid_badcode_title">Código inválido</string>
+    <string name="validate_invalid_badcode_subtitle">Verifica se o QR é mesmo de bilhete Tessera.</string>
+
+    <string name="validate_invalid_auth_title">Sessão expirada</string>
+    <string name="validate_invalid_auth_subtitle">Volta a iniciar sessão para continuar.</string>
+
+    <string name="validate_invalid_network_title">Sem ligação</string>
+    <string name="validate_invalid_network_subtitle">O servidor não respondeu. Tenta novamente.</string>
+
+    <string name="validate_invalid_unknown_title">Bilhete inválido</string>
+    <string name="validate_invalid_unknown_subtitle">Procurar um responsável.</string>
+
+    <string name="validate_invalid_icon_desc">Bilhete inválido</string>
 </resources>

@@ -128,6 +128,14 @@ export interface PriceTier {
 
 export interface MatchDetail extends MatchListItem {
   matchday: string; // "Jornada 28"
+  /**
+   * ID of the ticket-service `event` row backing this match. The
+   * PurchaseModal uses this to POST /api/v1/tickets. Until the catalog
+   * is wired to a real `GET /events` endpoint, the value comes from the
+   * mock and the admin is expected to seed the matching event in the
+   * ticket-service DB.
+   */
+  eventId: number;
   capacity: number;
   sold: number;
   pending: number;
@@ -142,6 +150,7 @@ export const MOCK_MATCH_DETAIL: Record<number, MatchDetail> = {
   1: {
     ...MOCK_MATCHES[0],
     matchday: "Jornada 28",
+    eventId: 1,
     capacity: 2800,
     sold: 1240,
     pending: 86,

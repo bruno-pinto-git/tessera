@@ -1,0 +1,18 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <title>Tessera — logo mark</title>
+  <rect width="256" height="256" rx="56" fill="#2E7D40"/>
+
+  <rect x="40" y="80" width="176" height="96" rx="12" fill="#FFFFFF"/>
+
+  <circle cx="40" cy="128" r="12" fill="#2E7D40"/>
+  <circle cx="216" cy="128" r="12" fill="#2E7D40"/>
+
+  <line x1="168" y1="92" x2="168" y2="164" stroke="#2E7D40" stroke-width="2.5" stroke-dasharray="4 4" opacity="0.4"/>
+
+  <rect x="76" y="106" width="68" height="16" rx="2" fill="#2E7D40"/>
+  <rect x="102" y="106" width="16" height="46" rx="2" fill="#2E7D40"/>
+
+  <rect x="184" y="110" width="20" height="6" rx="1.5" fill="#2E7D40" opacity="0.75"/>
+  <rect x="184" y="122" width="14" height="6" rx="1.5" fill="#2E7D40" opacity="0.5"/>
+  <rect x="184" y="134" width="18" height="6" rx="1.5" fill="#2E7D40" opacity="0.35"/>
+</svg>

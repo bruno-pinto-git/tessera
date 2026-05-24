@@ -35,3 +35,15 @@ spring:
 tessera:
   events:
     exchange: tessera.events
+  mbway:
+    # URL of the MB WAY gateway the ticket-service calls when a customer
+    # picks MB WAY as payment method. Override at deploy time with
+    # MBWAY_GATEWAY_URL=http://<device-ip>:8443 — typically the LAN IP of
+    # the phone running the mock-mbway app, or in prod the real SIBS host.
+    gateway-url: ${MBWAY_GATEWAY_URL:http://host.docker.internal:8443}
+    # Base URL the gateway uses to call our webhook back. From inside the
+    # gateway (running on a phone on the LAN), that means our LAN-reachable
+    # IP — not host.docker.internal. Set MBWAY_WEBHOOK_BASE_URL=http://<host-lan-ip>:8081.
+    webhook-base-url: ${MBWAY_WEBHOOK_BASE_URL:http://host.docker.internal:8081}
+    terminal-id: ${MBWAY_TERMINAL_ID:47215}
+    client-id: ${MBWAY_CLIENT_ID:tessera-mock}

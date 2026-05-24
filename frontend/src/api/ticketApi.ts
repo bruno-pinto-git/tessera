@@ -45,6 +45,8 @@ export interface CreateTicketRequest {
 export interface PayTicketRequest {
   paymentMethod: "MBWAY" | "CARD" | "CASH";
   mbwayReference?: string;
+  /** Required when paymentMethod === "MBWAY". Format: "351912345678". */
+  phoneNumber?: string;
 }
 
 export interface ValidateTicketRequest {
