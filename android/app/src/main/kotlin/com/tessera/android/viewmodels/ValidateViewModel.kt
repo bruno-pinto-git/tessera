@@ -1,17 +1,18 @@
 package com.tessera.android.viewmodels
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.newland.nsdk.core.api.internal.barcodedecoder.DecodingCallback
 import com.newland.nsdk.core.api.internal.barcodescanner.ScanParameters
+import com.tessera.android.data.KeycloakClient
 import com.tessera.android.data.NsdkRepository
 import com.tessera.android.data.Sounder
-import com.tessera.android.data.StaffAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -37,12 +38,13 @@ enum class InvalidReason {
     UNKNOWN,
 }
 
-class ValidateViewModel : ViewModel() {
+class ValidateViewModel(application: Application) : AndroidViewModel(application) {
 
     var validationState: ValidationState by mutableStateOf(ValidationState.Idle, neverEqualPolicy())
         private set
 
     private val scanner = NsdkRepository.barcodeScanner
+    private val keycloak = KeycloakClient(application)
     private var resetJob: Job? = null
 
     init {
@@ -56,10 +58,6 @@ class ValidateViewModel : ViewModel() {
                     return@DecodingCallback
                 }
                 if (!UUID_REGEX.matches(code)) {
-                    // Firmware sometimes fires the callback at end-of-session
-                    // with non-QR strings (timeout markers, residual bytes).
-                    // Tessera tickets are UUIDs by construction — anything
-                    // else is noise we shouldn't surface as "invalid ticket".
                     Log.w(TAG, "Decode callback: non-UUID result, dropping: $code")
                     return@DecodingCallback
                 }
@@ -101,7 +99,7 @@ class ValidateViewModel : ViewModel() {
         Log.d(TAG, "Scanned code: $code")
         viewModelScope.launch {
             val result = try {
-                val statusCode = withContext(Dispatchers.IO) { callValidate(code) }
+                val statusCode = callValidate(code)
                 mapStatusToState(statusCode)
             } catch (e: Exception) {
                 Log.e(TAG, "Request failed", e)
@@ -111,19 +109,18 @@ class ValidateViewModel : ViewModel() {
         }
     }
 
-    private fun callValidate(code: String): Int {
-        val client = OkHttp()
-        val body = """{"code": "$code"}"""
-
-        var token = StaffAuth.getToken()
-        var resp = sendValidate(client, body, token)
-        if (resp == 401) {
-            Log.w(TAG, "401 from backend — refreshing staff token and retrying")
-            StaffAuth.invalidate()
-            token = StaffAuth.getToken()
-            resp = sendValidate(client, body, token)
+    /**
+     * Acquires a fresh Keycloak token (refreshes if expiring) and POSTs to
+     * `/api/v1/tickets/validate`. Returns the HTTP status code so the caller
+     * maps it to a UI state.
+     */
+    private suspend fun callValidate(code: String): Int {
+        val token = keycloak.freshAccessToken()
+        return withContext(Dispatchers.IO) {
+            val client = OkHttp()
+            val body = """{"code": "$code"}"""
+            sendValidate(client, body, token)
         }
-        return resp
     }
 
     private fun sendValidate(client: HttpHandler, body: String, token: String?): Int {
@@ -169,13 +166,14 @@ class ValidateViewModel : ViewModel() {
     }
 
     override fun onCleared() {
-        Log.i(TAG, "onCleared() — releasing scanner")
+        Log.i(TAG, "onCleared() — releasing scanner + keycloak client")
         super.onCleared()
         try {
             scanner.releaseScan()
         } catch (e: Exception) {
             Log.d(TAG, "releaseScan: ${e.message}")
         }
+        keycloak.dispose()
     }
 
     private companion object {

@@ -4,12 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.tessera.android.screens.LoginScreen
 import com.tessera.android.screens.MainMenuScreen
 import com.tessera.android.screens.ValidateScreen
 import com.tessera.android.screens.WelcomeScreen
+import com.tessera.android.shared.AuthSession
 
 object Routes {
     const val WELCOME = "welcome"
+    const val LOGIN = "login"
     const val MAIN_MENU = "main_menu"
     const val VALIDATE = "validate"
 }
@@ -25,8 +28,18 @@ fun AppNavigation() {
         composable(Routes.WELCOME) {
             WelcomeScreen(
                 onContinue = {
-                    navController.navigate(Routes.MAIN_MENU) {
+                    val next = if (AuthSession.isAuthenticated) Routes.MAIN_MENU else Routes.LOGIN
+                    navController.navigate(next) {
                         popUpTo(Routes.WELCOME) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(Routes.LOGIN) {
+            LoginScreen(
+                onAuthenticated = {
+                    navController.navigate(Routes.MAIN_MENU) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
                     }
                 },
             )
@@ -34,6 +47,12 @@ fun AppNavigation() {
         composable(Routes.MAIN_MENU) {
             MainMenuScreen(
                 onValidateClick = { navController.navigate(Routes.VALIDATE) },
+                onLogout = {
+                    AuthSession.clear()
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.MAIN_MENU) { inclusive = true }
+                    }
+                },
             )
         }
         composable(Routes.VALIDATE) {
