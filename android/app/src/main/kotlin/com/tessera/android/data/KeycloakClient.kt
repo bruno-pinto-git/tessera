@@ -28,6 +28,7 @@ class KeycloakClient(context: Context) {
     private val tag = "KeycloakClient"
     private val client = OkHttp()
     private val refreshMutex = Mutex()
+    private val tokenStore = TokenStore(context)
 
     fun buildAuthRequest(): AuthRequest {
         val verifier = randomBase64Url(64)
@@ -87,8 +88,32 @@ class KeycloakClient(context: Context) {
             }.onFailure {
                 Log.w(tag, "Refresh failed", it)
                 AuthSession.clear()
+                tokenStore.clear()
             }.getOrNull()?.accessToken
         }
+    }
+
+    suspend fun bootstrap() {
+        val saved = runCatching { tokenStore.load() }.getOrNull() ?: return
+        AuthSession.update(saved)
+        val refreshExpired = saved.refreshExpiresAtMs?.let {
+            System.currentTimeMillis() >= it - SKEW_MS
+        } ?: false
+        if (refreshExpired) {
+            Log.i(tag, "Saved refresh token expired — clearing session")
+            AuthSession.clear()
+            tokenStore.clear()
+            return
+        }
+        if (System.currentTimeMillis() >= saved.expiresAtMs - SKEW_MS) {
+            Log.i(tag, "Saved access token expired — attempting refresh")
+            freshAccessToken()
+        }
+    }
+
+    fun logout() {
+        AuthSession.clear()
+        tokenStore.clear()
     }
 
     fun dispose() = Unit
@@ -118,6 +143,7 @@ class KeycloakClient(context: Context) {
             refreshExpiresAtMs = refreshExpiresIn?.let { now + it * 1000L },
         )
         AuthSession.update(set)
+        tokenStore.save(set)
         Log.i(tag, "Token exchange OK — user=${AuthSession.username}, roles=${AuthSession.roles}")
         return set
     }

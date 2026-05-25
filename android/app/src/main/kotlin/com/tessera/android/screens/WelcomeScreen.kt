@@ -22,11 +22,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tessera.android.R
+import com.tessera.android.data.KeycloakClient
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val LOGO_FADE_MS = 600
 private const val TEXT_DELAY_MS = 350
@@ -35,6 +39,7 @@ private const val FADE_OUT_MS = 300
 
 @Composable
 fun WelcomeScreen(onContinue: () -> Unit) {
+    val context = LocalContext.current
     var logoVisible by remember { mutableStateOf(false) }
     var textVisible by remember { mutableStateOf(false) }
     var leaving by remember { mutableStateOf(false) }
@@ -56,10 +61,15 @@ fun WelcomeScreen(onContinue: () -> Unit) {
     )
 
     LaunchedEffect(Unit) {
-        logoVisible = true
-        delay(TEXT_DELAY_MS.toLong())
-        textVisible = true
-        delay(LOGO_FADE_MS.toLong() + HOLD_MS)
+        coroutineScope {
+            launch {
+                runCatching { KeycloakClient(context).bootstrap() }
+            }
+            logoVisible = true
+            delay(TEXT_DELAY_MS.toLong())
+            textVisible = true
+            delay(LOGO_FADE_MS.toLong() + HOLD_MS)
+        }
         leaving = true
         delay(FADE_OUT_MS.toLong())
         onContinue()

@@ -1,9 +1,11 @@
 package com.tessera.android.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.tessera.android.data.KeycloakClient
 import com.tessera.android.screens.LoginScreen
 import com.tessera.android.screens.MainMenuScreen
 import com.tessera.android.screens.ValidateScreen
@@ -45,10 +47,11 @@ fun AppNavigation() {
             )
         }
         composable(Routes.MAIN_MENU) {
+            val context = LocalContext.current
             MainMenuScreen(
                 onValidateClick = { navController.navigate(Routes.VALIDATE) },
                 onLogout = {
-                    AuthSession.clear()
+                    KeycloakClient(context).logout()
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.MAIN_MENU) { inclusive = true }
                     }

@@ -42,5 +42,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("org.http4k:http4k-core:5.32.4.0")
     implementation("org.http4k:http4k-client-okhttp:5.32.4.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
