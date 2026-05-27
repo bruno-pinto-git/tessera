@@ -3,31 +3,47 @@ description: Profile information about the currently authenticated user, derived
 required:
   - username
   - roles
+  - clubMemberships
 properties:
+  sub:
+    type: string
+    description: Stable Keycloak user id (`sub` claim).
+    examples:
+      - "5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e"
   username:
     type: string
     description: Keycloak `preferred_username` claim.
     examples:
-      - "adepto"
+      - "gestor"
   email:
     type: string
     format: email
     description: Keycloak `email` claim. Absent when the token lacks the email scope.
     examples:
-      - "adepto@tessera.pt"
+      - "gestor@tessera.pt"
   firstName:
     type: string
     examples:
-      - "Adepto"
+      - "Gestor"
   lastName:
     type: string
     examples:
-      - "Tessera"
+      - "Clube"
   roles:
     type: array
-    description: Realm roles relevant to Tessera.
+    description: Realm roles relevant to Tessera. Filtered to known values.
     items:
       type: string
-      enum: [admin, staff, fan]
+      enum: [platform-admin, club-manager, staff, fan]
     examples:
-      - ["fan"]
+      - ["club-manager"]
+  clubMemberships:
+    type: array
+    description: |
+      Clubs this user is bound to, derived from the `groups` claim
+      (`/clubs/<id>/managers` and `/clubs/<id>/staff` paths). Empty for
+      platform admins, fans, and users without any club assignment.
+    items:
+      $ref: "./clubMembership.yaml"
+    examples:
+      - [{ clubId: 1, role: "MANAGER" }]

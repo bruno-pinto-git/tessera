@@ -1,0 +1,15 @@
+type: object
+description: |
+  All members of a club, split by role. `managers` may edit the club's
+  teams and players; `staff` operate the match-day flows (ticket
+  validation, match sheet entry).
+required: [managers, staff]
+properties:
+  managers:
+    type: array
+    items:
+      $ref: "./clubMember.yaml"
+  staff:
+    type: array
+    items:
+      $ref: "./clubMember.yaml"

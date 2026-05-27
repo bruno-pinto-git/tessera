@@ -26,6 +26,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search users in Keycloak
+         * @description Returns Keycloak users matching the optional `search` term. The
+         *     search is performed by Keycloak across username, email, first name
+         *     and last name. Used by the admin UI to find existing users for
+         *     attaching to clubs.
+         */
+        get: operations["searchUsers"];
+        put?: never;
+        /**
+         * Create a new Keycloak user
+         * @description Creates a user in the Tessera realm, sets their initial password, and
+         *     assigns the chosen realm role. Does **not** bind the user to any club
+         *     — that's a separate step via `POST /clubs/{id}/members`.
+         */
+        post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Keycloak user id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a user
+         * @description Returns the Keycloak user with the given id.
+         */
+        get: operations["getUserById"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a user
+         * @description Permanently removes the user from Keycloak. Any club memberships are
+         *     revoked at the same time (the user falls out of the corresponding
+         *     groups). This is **not** reversible — for a temporary lock, disable
+         *     the user from the Keycloak admin console instead.
+         */
+        delete: operations["deleteUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clubs": {
         parameters: {
             query?: never;
@@ -85,6 +144,65 @@ export interface paths {
          *     Requires the `admin` role.
          */
         patch: operations["updateClub"];
+        trace?: never;
+    };
+    "/clubs/{clubId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * List a club's managers and staff
+         * @description Returns the union of users in the Keycloak groups
+         *     `/clubs/<clubId>/managers` and `/clubs/<clubId>/staff`, grouped by
+         *     role. Empty arrays are returned if no members of a given role exist.
+         */
+        get: operations["listClubMembers"];
+        put?: never;
+        /**
+         * Attach an existing user to the club
+         * @description Adds the given user to the Keycloak group corresponding to `role`.
+         *     If they are already a member, the operation is a no-op (idempotent).
+         *     The user must already exist in Keycloak — create one first via
+         *     `POST /users` if needed.
+         */
+        post: operations["addClubMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clubs/{clubId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+                /** @description Keycloak user id of the member being removed. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a club membership
+         * @description Removes the user from the Keycloak group corresponding to `role`.
+         *     The user itself is preserved — only the membership goes away. If the
+         *     user wasn't actually in the group, the operation is a no-op.
+         */
+        delete: operations["removeClubMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/venues": {
@@ -831,6 +949,12 @@ export interface components {
         Problem: components["schemas"]["problem"];
         PageEnvelope: components["schemas"]["pageEnvelope"];
         Me: components["schemas"]["me"];
+        ClubMembership: components["schemas"]["clubMembership"];
+        UserSummary: components["schemas"]["userSummary"];
+        CreateUserRequest: components["schemas"]["createUserRequest"];
+        ClubMember: components["schemas"]["clubMember"];
+        ClubMembers: components["schemas"]["clubMembers"];
+        AddMemberRequest: components["schemas"]["addMemberRequest"];
         Club: components["schemas"]["club"];
         ClubCreateRequest: components["schemas"]["clubCreateRequest"];
         ClubUpdateRequest: components["schemas"]["clubUpdateRequest"];
@@ -870,30 +994,65 @@ export interface components {
         TicketCreateRequest: components["schemas"]["ticketCreateRequest"];
         TicketPayRequest: components["schemas"]["ticketPayRequest"];
         TicketValidateRequest: components["schemas"]["ticketValidateRequest"];
+        /**
+         * @description Membership of a user in a specific club, derived from Keycloak group
+         *     paths. `clubId` references the `id` of an active club. `role` is
+         *     `MANAGER` (full CRUD on the club's data) or `STAFF` (operational tasks
+         *     only — ticket validation, match sheet entry).
+         */
+        clubMembership: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            clubId: number;
+            /**
+             * @example MANAGER
+             * @enum {string}
+             */
+            role: "MANAGER" | "STAFF";
+        };
         /** @description Profile information about the currently authenticated user, derived from the bearer token. */
         me: {
             /**
+             * @description Stable Keycloak user id (`sub` claim).
+             * @example 5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e
+             */
+            sub?: string;
+            /**
              * @description Keycloak `preferred_username` claim.
-             * @example adepto
+             * @example gestor
              */
             username: string;
             /**
              * Format: email
              * @description Keycloak `email` claim. Absent when the token lacks the email scope.
-             * @example adepto@tessera.pt
+             * @example gestor@tessera.pt
              */
             email?: string;
-            /** @example Adepto */
+            /** @example Gestor */
             firstName?: string;
-            /** @example Tessera */
+            /** @example Clube */
             lastName?: string;
             /**
-             * @description Realm roles relevant to Tessera.
+             * @description Realm roles relevant to Tessera. Filtered to known values.
              * @example [
-             *       "fan"
+             *       "club-manager"
              *     ]
              */
-            roles: ("admin" | "staff" | "fan")[];
+            roles: ("platform-admin" | "club-manager" | "staff" | "fan")[];
+            /**
+             * @description Clubs this user is bound to, derived from the `groups` claim
+             *     (`/clubs/<id>/managers` and `/clubs/<id>/staff` paths). Empty for
+             *     platform admins, fans, and users without any club assignment.
+             * @example [
+             *       {
+             *         "clubId": 1,
+             *         "role": "MANAGER"
+             *       }
+             *     ]
+             */
+            clubMemberships: components["schemas"]["clubMembership"][];
         };
         /**
          * @description RFC 7807 Problem Details for HTTP APIs. Returned with media type
@@ -938,6 +1097,65 @@ export interface components {
                 /** @example must be in the future */
                 message: string;
             }[];
+        };
+        /**
+         * @description Summary of a Keycloak user as exposed by the admin endpoints. The `id`
+         *     is the Keycloak UUID — used as the path parameter in user-scoped routes
+         *     and as the `userId` when adding/removing club memberships.
+         */
+        userSummary: {
+            /**
+             * Format: uuid
+             * @description Keycloak user id.
+             * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
+             */
+            id: string;
+            /** @example gestor */
+            username?: string;
+            /**
+             * Format: email
+             * @example gestor@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName?: string;
+            /** @example Clube */
+            lastName?: string;
+            /**
+             * @description Whether the user can log in. Disabled users keep their data but cannot authenticate.
+             * @example true
+             */
+            enabled?: boolean;
+        };
+        /**
+         * @description Payload for creating a new Keycloak user. The realm role is set at the
+         *     same time as the user — the API restricts it to `club-manager` or
+         *     `staff` (platform-admins are bootstrapped via realm-export and fans
+         *     inherit the realm's default role).
+         */
+        createUserRequest: {
+            /** @example gestor2 */
+            username: string;
+            /**
+             * Format: email
+             * @example gestor2@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName: string;
+            /** @example Dois */
+            lastName: string;
+            /**
+             * @description Initial password. The user can change it later.
+             * @example gestor12345
+             */
+            password: string;
+            /**
+             * @description Realm role to assign. Restricted to operational roles.
+             * @example club-manager
+             * @enum {string}
+             */
+            role: "club-manager" | "staff";
         };
         /**
          * @description Standard pagination envelope for list endpoints. The `content` array
@@ -1028,6 +1246,64 @@ export interface components {
             foundedYear?: number | null;
             /** Format: uri */
             crestUrl?: string | null;
+        };
+        /**
+         * @description A user attached to a club via the `/clubs/<id>/managers` or
+         *     `/clubs/<id>/staff` Keycloak group, projected with the role they hold
+         *     within the club.
+         */
+        clubMember: {
+            /**
+             * Format: uuid
+             * @description Keycloak user id.
+             * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
+             */
+            userId: string;
+            /** @example gestor */
+            username?: string;
+            /**
+             * Format: email
+             * @example gestor@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName?: string;
+            /** @example Clube */
+            lastName?: string;
+            /**
+             * @description Membership role within this club.
+             * @example MANAGER
+             * @enum {string}
+             */
+            role: "MANAGER" | "STAFF";
+        };
+        /**
+         * @description All members of a club, split by role. `managers` may edit the club's
+         *     teams and players; `staff` operate the match-day flows (ticket
+         *     validation, match sheet entry).
+         */
+        clubMembers: {
+            managers: components["schemas"]["clubMember"][];
+            staff: components["schemas"]["clubMember"][];
+        };
+        /**
+         * @description Payload to attach an existing user to a club as a manager or staff
+         *     member. The user must already exist in Keycloak — to create one in the
+         *     same flow, use `POST /users` first.
+         */
+        addMemberRequest: {
+            /**
+             * Format: uuid
+             * @description Keycloak user id of the user being added.
+             * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
+             */
+            userId: string;
+            /**
+             * @description Role to grant within this club.
+             * @example MANAGER
+             * @enum {string}
+             */
+            role: "MANAGER" | "STAFF";
         };
         /**
          * @description A stadium or ground where matches are played. Soft-deleted to preserve
@@ -1836,12 +2112,19 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "username": "adepto",
-                     *       "email": "adepto@tessera.pt",
-                     *       "firstName": "Adepto",
-                     *       "lastName": "Tessera",
+                     *       "sub": "5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e",
+                     *       "username": "gestor",
+                     *       "email": "gestor@tessera.pt",
+                     *       "firstName": "Gestor",
+                     *       "lastName": "Clube",
                      *       "roles": [
-                     *         "fan"
+                     *         "club-manager"
+                     *       ],
+                     *       "clubMemberships": [
+                     *         {
+                     *           "clubId": 1,
+                     *           "role": "MANAGER"
+                     *         }
                      *       ]
                      *     }
                      */
@@ -1849,6 +2132,132 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    searchUsers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Substring matched against username/email/name.
+                 * @example gestor
+                 */
+                search?: string;
+                /** @description Offset for pagination. */
+                first?: number;
+                /** @description Maximum results to return. */
+                max?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching users (may be empty). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userSummary"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "username": "gestor2",
+                 *       "email": "gestor2@tessera.pt",
+                 *       "firstName": "Gestor",
+                 *       "lastName": "Dois",
+                 *       "password": "gestor12345",
+                 *       "role": "club-manager"
+                 *     }
+                 */
+                "application/json": components["schemas"]["createUserRequest"];
+            };
+        };
+        responses: {
+            /** @description User created. */
+            201: {
+                headers: {
+                    /** @description URI of the created user. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getUserById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Keycloak user id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Keycloak user id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalServerError"];
         };
     };
@@ -2049,6 +2458,118 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listClubMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Members grouped by role. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "managers": [
+                     *         {
+                     *           "userId": "c03c87a1-eb23-4e5b-be4e-ed172797d08c",
+                     *           "username": "gestor",
+                     *           "email": "gestor@tessera.pt",
+                     *           "firstName": "Gestor",
+                     *           "lastName": "Clube",
+                     *           "role": "MANAGER"
+                     *         }
+                     *       ],
+                     *       "staff": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["clubMembers"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    addClubMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "userId": "c03c87a1-eb23-4e5b-be4e-ed172797d08c",
+                 *       "role": "MANAGER"
+                 *     }
+                 */
+                "application/json": components["schemas"]["addMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership granted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeClubMember: {
+        parameters: {
+            query: {
+                /**
+                 * @description Which role to revoke.
+                 * @example MANAGER
+                 */
+                role: "MANAGER" | "STAFF";
+            };
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+                /** @description Keycloak user id of the member being removed. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalServerError"];
         };
     };

@@ -14,11 +14,15 @@ get:
           schema:
             $ref: "../components/schemas/me.yaml"
           example:
-            username: "adepto"
-            email: "adepto@tessera.pt"
-            firstName: "Adepto"
-            lastName: "Tessera"
-            roles: ["fan"]
+            sub: "5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e"
+            username: "gestor"
+            email: "gestor@tessera.pt"
+            firstName: "Gestor"
+            lastName: "Clube"
+            roles: ["club-manager"]
+            clubMemberships:
+              - clubId: 1
+                role: "MANAGER"
     "401":
       $ref: "../components/responses/errors.yaml#/Unauthorized"
     "500":

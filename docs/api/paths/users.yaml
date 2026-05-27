@@ -1,0 +1,97 @@
+get:
+  operationId: searchUsers
+  tags: [Users]
+  summary: Search users in Keycloak
+  description: |
+    Returns Keycloak users matching the optional `search` term. The
+    search is performed by Keycloak across username, email, first name
+    and last name. Used by the admin UI to find existing users for
+    attaching to clubs.
+  x-required-roles: [platform-admin]
+  parameters:
+    - in: query
+      name: search
+      required: false
+      schema:
+        type: string
+      description: Substring matched against username/email/name.
+      example: "gestor"
+    - in: query
+      name: first
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Offset for pagination.
+    - in: query
+      name: max
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Maximum results to return.
+  responses:
+    "200":
+      description: Matching users (may be empty).
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "../components/schemas/userSummary.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: createUser
+  tags: [Users]
+  summary: Create a new Keycloak user
+  description: |
+    Creates a user in the Tessera realm, sets their initial password, and
+    assigns the chosen realm role. Does **not** bind the user to any club
+    — that's a separate step via `POST /clubs/{id}/members`.
+  x-required-roles: [platform-admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/createUserRequest.yaml"
+        example:
+          username: "gestor2"
+          email: "gestor2@tessera.pt"
+          firstName: "Gestor"
+          lastName: "Dois"
+          password: "gestor12345"
+          role: "club-manager"
+  responses:
+    "201":
+      description: User created.
+      headers:
+        Location:
+          description: URI of the created user.
+          schema:
+            type: string
+            format: uri
+            example: "/api/v1/users/c03c87a1-eb23-4e5b-be4e-ed172797d08c"
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/userSummary.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "409":
+      $ref: "../components/responses/errors.yaml#/Conflict"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

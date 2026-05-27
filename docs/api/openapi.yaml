@@ -45,6 +45,17 @@ tags:
       The QR code rendered by clients is simply the ticket's `code` UUID.
   - name: Events
     description: Sellable bundles of tickets attached to a match.
+  - name: Users
+    description: |
+      Keycloak user administration (search, create, delete). Restricted
+      to `platform-admin`. Used by the admin UI to bootstrap accounts
+      before attaching them to clubs.
+  - name: Members
+    description: |
+      Per-club membership operations (managers and staff). Memberships
+      are stored as Keycloak group entries under
+      `/clubs/<clubId>/{managers,staff}` and propagate to the JWT
+      `groups` claim used by `@clubAuthz` scope checks.
 
 security:
   - bearerAuth: []
@@ -52,10 +63,18 @@ security:
 paths:
   /me:
     $ref: "./paths/me.yaml"
+  /users:
+    $ref: "./paths/users.yaml"
+  /users/{id}:
+    $ref: "./paths/users_id.yaml"
   /clubs:
     $ref: "./paths/clubs.yaml"
   /clubs/{id}:
     $ref: "./paths/clubs_id.yaml"
+  /clubs/{clubId}/members:
+    $ref: "./paths/clubs_id_members.yaml"
+  /clubs/{clubId}/members/{userId}:
+    $ref: "./paths/clubs_id_members_userId.yaml"
   /venues:
     $ref: "./paths/venues.yaml"
   /venues/{id}:
@@ -146,6 +165,18 @@ components:
       $ref: "./components/schemas/pageEnvelope.yaml"
     Me:
       $ref: "./components/schemas/me.yaml"
+    ClubMembership:
+      $ref: "./components/schemas/clubMembership.yaml"
+    UserSummary:
+      $ref: "./components/schemas/userSummary.yaml"
+    CreateUserRequest:
+      $ref: "./components/schemas/createUserRequest.yaml"
+    ClubMember:
+      $ref: "./components/schemas/clubMember.yaml"
+    ClubMembers:
+      $ref: "./components/schemas/clubMembers.yaml"
+    AddMemberRequest:
+      $ref: "./components/schemas/addMemberRequest.yaml"
     Club:
       $ref: "./components/schemas/club.yaml"
     ClubCreateRequest:

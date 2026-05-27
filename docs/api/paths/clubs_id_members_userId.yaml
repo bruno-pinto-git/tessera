@@ -1,0 +1,48 @@
+parameters:
+  - in: path
+    name: clubId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Tessera club id.
+  - in: path
+    name: userId
+    required: true
+    schema:
+      type: string
+      format: uuid
+    description: Keycloak user id of the member being removed.
+
+delete:
+  operationId: removeClubMember
+  tags: [Members]
+  summary: Revoke a club membership
+  description: |
+    Removes the user from the Keycloak group corresponding to `role`.
+    The user itself is preserved — only the membership goes away. If the
+    user wasn't actually in the group, the operation is a no-op.
+  x-required-roles: [platform-admin]
+  parameters:
+    - in: query
+      name: role
+      required: true
+      schema:
+        type: string
+        enum: [MANAGER, STAFF]
+      description: Which role to revoke.
+      example: "MANAGER"
+  responses:
+    "204":
+      description: Membership revoked.
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

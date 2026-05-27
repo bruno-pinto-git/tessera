@@ -1,0 +1,44 @@
+type: object
+description: |
+  Payload for creating a new Keycloak user. The realm role is set at the
+  same time as the user — the API restricts it to `club-manager` or
+  `staff` (platform-admins are bootstrapped via realm-export and fans
+  inherit the realm's default role).
+required: [username, firstName, lastName, password, role]
+properties:
+  username:
+    type: string
+    minLength: 3
+    maxLength: 60
+    examples:
+      - "gestor2"
+  email:
+    type: string
+    format: email
+    examples:
+      - "gestor2@tessera.pt"
+  firstName:
+    type: string
+    minLength: 1
+    maxLength: 100
+    examples:
+      - "Gestor"
+  lastName:
+    type: string
+    minLength: 1
+    maxLength: 100
+    examples:
+      - "Dois"
+  password:
+    type: string
+    minLength: 6
+    maxLength: 200
+    description: Initial password. The user can change it later.
+    examples:
+      - "gestor12345"
+  role:
+    type: string
+    enum: [club-manager, staff]
+    description: Realm role to assign. Restricted to operational roles.
+    examples:
+      - "club-manager"

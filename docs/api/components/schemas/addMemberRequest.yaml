@@ -1,0 +1,19 @@
+type: object
+description: |
+  Payload to attach an existing user to a club as a manager or staff
+  member. The user must already exist in Keycloak — to create one in the
+  same flow, use `POST /users` first.
+required: [userId, role]
+properties:
+  userId:
+    type: string
+    format: uuid
+    description: Keycloak user id of the user being added.
+    examples:
+      - "c03c87a1-eb23-4e5b-be4e-ed172797d08c"
+  role:
+    type: string
+    enum: [MANAGER, STAFF]
+    description: Role to grant within this club.
+    examples:
+      - "MANAGER"

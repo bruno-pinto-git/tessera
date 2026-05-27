@@ -1,0 +1,76 @@
+parameters:
+  - in: path
+    name: clubId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+    description: Tessera club id.
+
+get:
+  operationId: listClubMembers
+  tags: [Members]
+  summary: List a club's managers and staff
+  description: |
+    Returns the union of users in the Keycloak groups
+    `/clubs/<clubId>/managers` and `/clubs/<clubId>/staff`, grouped by
+    role. Empty arrays are returned if no members of a given role exist.
+  x-required-roles: [platform-admin]
+  responses:
+    "200":
+      description: Members grouped by role.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/clubMembers.yaml"
+          example:
+            managers:
+              - userId: "c03c87a1-eb23-4e5b-be4e-ed172797d08c"
+                username: "gestor"
+                email: "gestor@tessera.pt"
+                firstName: "Gestor"
+                lastName: "Clube"
+                role: "MANAGER"
+            staff: []
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
+post:
+  operationId: addClubMember
+  tags: [Members]
+  summary: Attach an existing user to the club
+  description: |
+    Adds the given user to the Keycloak group corresponding to `role`.
+    If they are already a member, the operation is a no-op (idempotent).
+    The user must already exist in Keycloak — create one first via
+    `POST /users` if needed.
+  x-required-roles: [platform-admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/addMemberRequest.yaml"
+        example:
+          userId: "c03c87a1-eb23-4e5b-be4e-ed172797d08c"
+          role: "MANAGER"
+  responses:
+    "204":
+      description: Membership granted.
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

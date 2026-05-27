@@ -1,0 +1,36 @@
+type: object
+description: |
+  A user attached to a club via the `/clubs/<id>/managers` or
+  `/clubs/<id>/staff` Keycloak group, projected with the role they hold
+  within the club.
+required: [userId, role]
+properties:
+  userId:
+    type: string
+    format: uuid
+    description: Keycloak user id.
+    examples:
+      - "c03c87a1-eb23-4e5b-be4e-ed172797d08c"
+  username:
+    type: string
+    examples:
+      - "gestor"
+  email:
+    type: string
+    format: email
+    examples:
+      - "gestor@tessera.pt"
+  firstName:
+    type: string
+    examples:
+      - "Gestor"
+  lastName:
+    type: string
+    examples:
+      - "Clube"
+  role:
+    type: string
+    enum: [MANAGER, STAFF]
+    description: Membership role within this club.
+    examples:
+      - "MANAGER"

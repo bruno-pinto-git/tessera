@@ -1,0 +1,35 @@
+type: object
+description: |
+  Summary of a Keycloak user as exposed by the admin endpoints. The `id`
+  is the Keycloak UUID — used as the path parameter in user-scoped routes
+  and as the `userId` when adding/removing club memberships.
+required: [id]
+properties:
+  id:
+    type: string
+    format: uuid
+    description: Keycloak user id.
+    examples:
+      - "c03c87a1-eb23-4e5b-be4e-ed172797d08c"
+  username:
+    type: string
+    examples:
+      - "gestor"
+  email:
+    type: string
+    format: email
+    examples:
+      - "gestor@tessera.pt"
+  firstName:
+    type: string
+    examples:
+      - "Gestor"
+  lastName:
+    type: string
+    examples:
+      - "Clube"
+  enabled:
+    type: boolean
+    description: Whether the user can log in. Disabled users keep their data but cannot authenticate.
+    examples:
+      - true

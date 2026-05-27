@@ -1,0 +1,20 @@
+type: object
+description: |
+  Membership of a user in a specific club, derived from Keycloak group
+  paths. `clubId` references the `id` of an active club. `role` is
+  `MANAGER` (full CRUD on the club's data) or `STAFF` (operational tasks
+  only — ticket validation, match sheet entry).
+required:
+  - clubId
+  - role
+properties:
+  clubId:
+    type: integer
+    format: int64
+    examples:
+      - 1
+  role:
+    type: string
+    enum: [MANAGER, STAFF]
+    examples:
+      - "MANAGER"

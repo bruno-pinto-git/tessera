@@ -39,9 +39,22 @@ tags:
   - name: Statistics
     description: Aggregated read-side data on matches, players, teams and sales.
   - name: Tickets
-    description: Owned by ticket-service. Specified separately by the ticket team.
+    description: |
+      Digital tickets — creation, payment, listing, and gate validation.
+      The QR code rendered by clients is simply the ticket's `code` UUID.
   - name: Events
     description: Sellable bundles of tickets attached to a match.
+  - name: Users
+    description: |
+      Keycloak user administration (search, create, delete). Restricted
+      to `platform-admin`. Used by the admin UI to bootstrap accounts
+      before attaching them to clubs.
+  - name: Members
+    description: |
+      Per-club membership operations (managers and staff). Memberships
+      are stored as Keycloak group entries under
+      `/clubs/<clubId>/{managers,staff}` and propagate to the JWT
+      `groups` claim used by `@clubAuthz` scope checks.
 paths:
   /me:
     get:
@@ -61,14 +74,2054 @@ paths:
               schema:
                 $ref: '#/components/schemas/me'
               example:
-                username: adepto
-                email: adepto@tessera.pt
-                firstName: Adepto
-                lastName: Tessera
+                sub: 5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e
+                username: gestor
+                email: gestor@tessera.pt
+                firstName: Gestor
+                lastName: Clube
                 roles:
-                  - fan
+                  - club-manager
+                clubMemberships:
+                  - clubId: 1
+                    role: MANAGER
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users:
+    get:
+      operationId: searchUsers
+      tags:
+        - Users
+      summary: Search users in Keycloak
+      description: |
+        Returns Keycloak users matching the optional `search` term. The
+        search is performed by Keycloak across username, email, first name
+        and last name. Used by the admin UI to find existing users for
+        attaching to clubs.
+      x-required-roles:
+        - platform-admin
+      parameters:
+        - in: query
+          name: search
+          required: false
+          schema:
+            type: string
+          description: Substring matched against username/email/name.
+          example: gestor
+        - in: query
+          name: first
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Offset for pagination.
+        - in: query
+          name: max
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum results to return.
+      responses:
+        '200':
+          description: Matching users (may be empty).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/userSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createUser
+      tags:
+        - Users
+      summary: Create a new Keycloak user
+      description: |
+        Creates a user in the Tessera realm, sets their initial password, and
+        assigns the chosen realm role. Does **not** bind the user to any club
+        — that's a separate step via `POST /clubs/{id}/members`.
+      x-required-roles:
+        - platform-admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/createUserRequest'
+            example:
+              username: gestor2
+              email: gestor2@tessera.pt
+              firstName: Gestor
+              lastName: Dois
+              password: gestor12345
+              role: club-manager
+      responses:
+        '201':
+          description: User created.
+          headers:
+            Location:
+              description: URI of the created user.
+              schema:
+                type: string
+                format: uri
+                example: /api/v1/users/c03c87a1-eb23-4e5b-be4e-ed172797d08c
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/userSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /users/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Keycloak user id.
+    get:
+      operationId: getUserById
+      tags:
+        - Users
+      summary: Get a user
+      description: Returns the Keycloak user with the given id.
+      x-required-roles:
+        - platform-admin
+      responses:
+        '200':
+          description: User.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/userSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteUser
+      tags:
+        - Users
+      summary: Delete a user
+      description: |
+        Permanently removes the user from Keycloak. Any club memberships are
+        revoked at the same time (the user falls out of the corresponding
+        groups). This is **not** reversible — for a temporary lock, disable
+        the user from the Keycloak admin console instead.
+      x-required-roles:
+        - platform-admin
+      responses:
+        '204':
+          description: User deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /clubs:
+    get:
+      operationId: listClubs
+      tags:
+        - Clubs
+      summary: List clubs
+      description: |
+        Returns a paginated list of clubs. Soft-deleted clubs are excluded.
+        Public endpoint — no role required.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Sort'
+        - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+          description: Case-insensitive substring match on club name.
+          example: Dezembro
+      responses:
+        '200':
+          description: Page of clubs.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/club'
+              example:
+                content:
+                  - id: 1
+                    name: SU 1.º Dezembro
+                    foundedYear: 1953
+                    crestUrl: null
+                    createdAt: '2026-04-28T10:00:00Z'
+                page: 0
+                size: 20
+                totalElements: 1
+                totalPages: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createClub
+      tags:
+        - Clubs
+      summary: Create a new club
+      description: Creates a new club. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/clubCreateRequest'
+            example:
+              name: SU 1.º Dezembro
+              foundedYear: 1953
+      responses:
+        '201':
+          description: Club created.
+          headers:
+            Location:
+              description: URI of the created club.
+              schema:
+                type: string
+                format: uri
+                example: /api/v1/clubs/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /clubs/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Stable numeric identifier of the club.
+        example: 1
+    get:
+      operationId: getClubById
+      tags:
+        - Clubs
+      summary: Get a club by id
+      description: Returns the club with the given id. Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: The club.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      operationId: updateClub
+      tags:
+        - Clubs
+      summary: Partially update a club
+      description: |
+        Updates fields of an existing club. Omitted fields are left unchanged.
+        Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/clubUpdateRequest'
+            example:
+              foundedYear: 1953
+              crestUrl: https://tessera.example/clubs/1/crest.png
+      responses:
+        '200':
+          description: Club updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteClub
+      tags:
+        - Clubs
+      summary: Soft-delete a club
+      description: |
+        Marks the club as deleted (sets `deletedAt`). Existing matches and
+        historical references remain intact. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      responses:
+        '204':
+          description: Club deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /clubs/{clubId}/members:
+    parameters:
+      - in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Tessera club id.
+    get:
+      operationId: listClubMembers
+      tags:
+        - Members
+      summary: List a club's managers and staff
+      description: |
+        Returns the union of users in the Keycloak groups
+        `/clubs/<clubId>/managers` and `/clubs/<clubId>/staff`, grouped by
+        role. Empty arrays are returned if no members of a given role exist.
+      x-required-roles:
+        - platform-admin
+      responses:
+        '200':
+          description: Members grouped by role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/clubMembers'
+              example:
+                managers:
+                  - userId: c03c87a1-eb23-4e5b-be4e-ed172797d08c
+                    username: gestor
+                    email: gestor@tessera.pt
+                    firstName: Gestor
+                    lastName: Clube
+                    role: MANAGER
+                staff: []
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: addClubMember
+      tags:
+        - Members
+      summary: Attach an existing user to the club
+      description: |
+        Adds the given user to the Keycloak group corresponding to `role`.
+        If they are already a member, the operation is a no-op (idempotent).
+        The user must already exist in Keycloak — create one first via
+        `POST /users` if needed.
+      x-required-roles:
+        - platform-admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/addMemberRequest'
+            example:
+              userId: c03c87a1-eb23-4e5b-be4e-ed172797d08c
+              role: MANAGER
+      responses:
+        '204':
+          description: Membership granted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /clubs/{clubId}/members/{userId}:
+    parameters:
+      - in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Tessera club id.
+      - in: path
+        name: userId
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Keycloak user id of the member being removed.
+    delete:
+      operationId: removeClubMember
+      tags:
+        - Members
+      summary: Revoke a club membership
+      description: |
+        Removes the user from the Keycloak group corresponding to `role`.
+        The user itself is preserved — only the membership goes away. If the
+        user wasn't actually in the group, the operation is a no-op.
+      x-required-roles:
+        - platform-admin
+      parameters:
+        - in: query
+          name: role
+          required: true
+          schema:
+            type: string
+            enum:
+              - MANAGER
+              - STAFF
+          description: Which role to revoke.
+          example: MANAGER
+      responses:
+        '204':
+          description: Membership revoked.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /venues:
+    get:
+      operationId: listVenues
+      tags:
+        - Venues
+      summary: List venues
+      description: |
+        Returns a paginated list of venues. Soft-deleted venues are excluded.
+        Public endpoint.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Sort'
+        - in: query
+          name: name
+          required: false
+          schema:
+            type: string
+          description: Case-insensitive substring match on venue name.
+      responses:
+        '200':
+          description: Page of venues.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/venue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createVenue
+      tags:
+        - Venues
+      summary: Create a new venue
+      description: Creates a new venue. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/venueCreateRequest'
+      responses:
+        '201':
+          description: Venue created.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /venues/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Stable numeric identifier of the venue.
+    get:
+      operationId: getVenueById
+      tags:
+        - Venues
+      summary: Get a venue by id
+      description: Returns the venue with the given id. Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: The venue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venue'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      operationId: updateVenue
+      tags:
+        - Venues
+      summary: Partially update a venue
+      description: |
+        Updates fields of an existing venue. Omitted fields are left unchanged.
+        Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/venueUpdateRequest'
+      responses:
+        '200':
+          description: Venue updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/venue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteVenue
+      tags:
+        - Venues
+      summary: Soft-delete a venue
+      description: |
+        Marks the venue as deleted (sets `deletedAt`). Existing match references
+        remain intact. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      responses:
+        '204':
+          description: Venue deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /clubs/{clubId}/teams:
+    parameters:
+      - in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the parent club.
+    get:
+      operationId: listTeamsOfClub
+      tags:
+        - Teams
+      summary: List teams of a club
+      description: |
+        Returns all active teams belonging to the club, ordered by category.
+        Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: List of teams.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/team'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createTeam
+      tags:
+        - Teams
+      summary: Create a team in a club
+      description: |
+        Creates a new team in the club. A club may have at most one active team
+        per category — duplicate categories are rejected with 409. Requires the
+        `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/teamCreateRequest'
+            example:
+              category: SENIOR_M
+      responses:
+        '201':
+          description: Team created.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /teams/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Stable numeric identifier of the team.
+    get:
+      operationId: getTeamById
+      tags:
+        - Teams
+      summary: Get a team by id
+      description: Returns the team with the given id. Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: The team.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/team'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      operationId: updateTeam
+      tags:
+        - Teams
+      summary: Partially update a team
+      description: |
+        Updates fields of an existing team. Currently only `category` is updatable.
+        Changing the category to one that already exists for the same club is
+        rejected with 409. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/teamUpdateRequest'
+      responses:
+        '200':
+          description: Team updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/team'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteTeam
+      tags:
+        - Teams
+      summary: Soft-delete a team
+      description: |
+        Marks the team as deleted (sets `deletedAt`). Requires the `admin` role.
+      x-required-roles:
+        - admin
+      responses:
+        '204':
+          description: Team deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /teams/{teamId}/players:
+    parameters:
+      - in: path
+        name: teamId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the parent team.
+    get:
+      operationId: listPlayersOfTeam
+      tags:
+        - Players
+      summary: List players of a team
+      description: |
+        Returns the active players belonging to the team, ordered by shirt number
+        (nulls last) then by last name. Public endpoint.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of players.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/player'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createPlayer
+      tags:
+        - Players
+      summary: Create a player in a team
+      description: |
+        Creates a new player in the team. If `shirtNumber` is provided, it must
+        not collide with another active player in the same team — duplicates
+        are rejected with 409. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/playerCreateRequest'
+            example:
+              firstName: João
+              lastName: Silva
+              position: FW
+              shirtNumber: 9
+              nationality: PRT
+              birthdate: '1998-03-12'
+      responses:
+        '201':
+          description: Player created.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/player'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /clubs/{clubId}/players:
+    parameters:
+      - in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the club.
+    get:
+      operationId: listPlayersOfClub
+      tags:
+        - Players
+      summary: List all players of a club
+      description: |
+        Returns a paginated list of active players belonging to **any** active
+        team of the club. Useful when you want the entire roster of a club
+        without iterating each team. Public endpoint.
+
+        Sort order: by last name then first name (alphabetical).
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page of players.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/player'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /players/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Stable numeric identifier of the player.
+    get:
+      operationId: getPlayerById
+      tags:
+        - Players
+      summary: Get a player by id
+      description: Returns the player with the given id. Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: The player.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/player'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      operationId: updatePlayer
+      tags:
+        - Players
+      summary: Partially update a player
+      description: |
+        Updates fields of an existing player. Omitted fields are left unchanged.
+        Changing `shirtNumber` to one already in use within the same team is
+        rejected with 409. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/playerUpdateRequest'
+      responses:
+        '200':
+          description: Player updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/player'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deletePlayer
+      tags:
+        - Players
+      summary: Soft-delete a player
+      description: |
+        Marks the player as deleted (sets `deletedAt`). Existing match-sheet
+        references remain intact. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      responses:
+        '204':
+          description: Player deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches:
+    get:
+      operationId: listMatches
+      tags:
+        - Matches
+      summary: List matches
+      description: |
+        Returns a paginated list of matches. Soft-deleted matches are excluded.
+        Public endpoint.
+
+        Filters can be combined; results are ordered by `kickoffAt` ascending.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - in: query
+          name: from
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Lower bound (inclusive) on `kickoffAt`.
+          example: '2026-09-01T00:00:00Z'
+        - in: query
+          name: to
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Upper bound (exclusive) on `kickoffAt`.
+          example: '2026-10-01T00:00:00Z'
+        - in: query
+          name: clubId
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Match must involve a team belonging to this club (home or away).
+        - in: query
+          name: status
+          required: false
+          schema:
+            $ref: '#/components/schemas/matchStatus'
+      responses:
+        '200':
+          description: Page of matches.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/match'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createMatch
+      tags:
+        - Matches
+      summary: Create a new match
+      description: |
+        Creates a new match in SCHEDULED status. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/matchCreateRequest'
+            example:
+              homeTeamId: 1
+              awayTeamId: 2
+              venueId: 1
+              kickoffAt: '2026-09-15T20:30:00Z'
+              refereeName: Maria Santos
+      responses:
+        '201':
+          description: Match created.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/match'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Stable numeric identifier of the match.
+    get:
+      operationId: getMatchById
+      tags:
+        - Matches
+      summary: Get a match by id
+      description: |
+        Returns the match with the given id. Public endpoint.
+        The BFF aggregates the linked Event (if any) when serving this endpoint
+        to fans.
+      security: []
+      responses:
+        '200':
+          description: The match.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/match'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      operationId: updateMatch
+      tags:
+        - Matches
+      summary: Partially update a match
+      description: |
+        Updates fields of an existing match. Status transitions are validated
+        server-side; invalid transitions return 409.
+        Requires the `admin` role.
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/matchUpdateRequest'
+            example:
+              status: FINISHED
+              homeScore: 2
+              awayScore: 1
+      responses:
+        '200':
+          description: Match updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/match'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: deleteMatch
+      tags:
+        - Matches
+      summary: Soft-delete a match
+      description: |
+        Marks the match as deleted. Match-sheet and ticket references remain
+        intact. Requires the `admin` role.
+      x-required-roles:
+        - admin
+      responses:
+        '204':
+          description: Match deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}/sheet:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the match.
+    get:
+      operationId: getMatchSheet
+      tags:
+        - Match sheets
+      summary: Get the match sheet
+      description: |
+        Returns the match sheet (lineups + occurrences). If the sheet does not
+        exist yet, it is created lazily and returned empty. Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: The match sheet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/matchSheet'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}/sheet/lineup:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the match.
+    post:
+      operationId: addLineupEntry
+      tags:
+        - Match sheets
+      summary: Add a player to the lineup
+      description: |
+        Adds a player to the match-sheet lineup. The player's `teamId` is derived
+        from the player record and must equal the match's homeTeamId or awayTeamId.
+        Editing is rejected with 409 if the sheet is locked or the match is in a
+        terminal status. Requires `staff` or `admin`.
+      x-required-roles:
+        - staff
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/lineupCreateRequest'
+            example:
+              playerId: 1
+              role: STARTER
+              shirtNumber: 9
+      responses:
+        '201':
+          description: Player added to the lineup.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/lineupEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}/sheet/lineup/{playerId}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the match.
+      - in: path
+        name: playerId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the player whose lineup entry is being targeted.
+    patch:
+      operationId: updateLineupEntry
+      tags:
+        - Match sheets
+      summary: Update a lineup entry
+      description: |
+        Changes the role and/or shirt number of an existing lineup entry.
+        Requires `staff` or `admin`. Rejected with 409 if the sheet is locked
+        or the match is in a terminal status.
+      x-required-roles:
+        - staff
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/lineupUpdateRequest'
+      responses:
+        '200':
+          description: Updated lineup entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/lineupEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      operationId: removeLineupEntry
+      tags:
+        - Match sheets
+      summary: Remove a player from the lineup
+      description: |
+        Removes the player from the match-sheet lineup. Hard delete (the lineup
+        is rebuilt freely while unlocked). Requires `staff` or `admin`.
+        Rejected with 409 if the sheet is locked or the match is in a terminal
+        status.
+      x-required-roles:
+        - staff
+        - admin
+      responses:
+        '204':
+          description: Lineup entry removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /stats/match-sheets:
+    get:
+      operationId: listMatchSheetHistory
+      tags:
+        - Statistics
+      summary: List historical match-sheet snapshots
+      description: |
+        Returns matches whose match-sheet has been closed and snapshotted by the
+        statistics-service. Filters can be combined; results are ordered by
+        `kickoffAt` ascending (configurable via the `sort` parameter).
+
+        Public endpoint — fans can browse the historical archive.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Sort'
+        - in: query
+          name: clubId
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Only matches where the given club was home or away.
+        - in: query
+          name: playerId
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Only matches where the player appeared in the lineup.
+        - in: query
+          name: season
+          required: false
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+          description: Season label, e.g. `2026-27`.
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum:
+              - SCHEDULED
+              - LIVE
+              - FINISHED
+              - POSTPONED
+              - ABANDONED
+              - CANCELLED
+          description: Match status at the time the sheet was closed.
+      responses:
+        '200':
+          description: Page of match summaries.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/matchSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /stats/match-sheets/{matchId}:
+    parameters:
+      - in: path
+        name: matchId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    get:
+      operationId: getMatchSheetHistory
+      tags:
+        - Statistics
+      summary: Get a historical match-sheet snapshot
+      description: |
+        Returns the full snapshot for the given match: summary, lineup, and
+        occurrences as recorded by the statistics-service when the match-sheet
+        was closed. Public endpoint.
+      security: []
+      responses:
+        '200':
+          description: The snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/matchSheetHistory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /stats/sales/summary:
+    get:
+      operationId: getSalesSummary
+      tags:
+        - Statistics
+      summary: Total ticket sales summary
+      description: |
+        Aggregated counts and revenue across all matches. Requires the `admin`
+        role.
+      x-required-roles:
+        - admin
+      responses:
+        '200':
+          description: Aggregated sales.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/salesSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /stats/sales/by-match/{matchId}:
+    parameters:
+      - in: path
+        name: matchId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    get:
+      operationId: getSalesByMatch
+      tags:
+        - Statistics
+      summary: Ticket sales for a single match
+      x-required-roles:
+        - admin
+      responses:
+        '200':
+          description: Aggregated sales for the match.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/salesByMatch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /stats/sales/range:
+    get:
+      operationId: getSalesInRange
+      tags:
+        - Statistics
+      summary: Ticket sales aggregated over a time range
+      description: |
+        Aggregates `paidAt` between `from` (inclusive) and `to` (exclusive).
+        `validationRate` is always 0 in this view because validation lags
+        payment and would skew the rate.
+      x-required-roles:
+        - admin
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: to
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Aggregated sales in the range.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/salesSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}/sheet/occurrences:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the match.
+    post:
+      operationId: addOccurrence
+      tags:
+        - Match sheets
+      summary: Add an occurrence to the match sheet
+      description: |
+        Appends a new occurrence (goal, card, substitution) to the match sheet.
+        Validates that:
+          - sheet is not locked AND match status ∈ {SCHEDULED, LIVE}
+          - player is in the lineup
+          - SUBSTITUTION requires `replacedPlayerId` and both players in same team
+          - non-SUBSTITUTION must NOT include `replacedPlayerId`
+        Requires `staff` or `admin`.
+      x-required-roles:
+        - staff
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/occurrenceCreateRequest'
+            example:
+              minute: 34
+              type: GOAL
+              playerId: 2
+      responses:
+        '201':
+          description: Occurrence appended.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/occurrence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}/sheet/occurrences/{occId}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the match.
+      - in: path
+        name: occId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the occurrence to remove.
+    delete:
+      operationId: removeOccurrence
+      tags:
+        - Match sheets
+      summary: Remove an occurrence from the match sheet
+      description: |
+        Hard-deletes the occurrence. Allowed only while the sheet is unlocked and
+        the match status allows edits. Requires `staff` or `admin`.
+      x-required-roles:
+        - staff
+        - admin
+      responses:
+        '204':
+          description: Occurrence removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}/sheet/lock:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the match.
+    post:
+      operationId: lockMatchSheet
+      tags:
+        - Match sheets
+      summary: Lock the match sheet
+      description: |
+        Marks the match sheet as locked, preventing further edits to the lineup
+        or occurrences. Idempotent — locking an already-locked sheet is a no-op.
+        Requires `staff` or `admin`.
+      x-required-roles:
+        - staff
+        - admin
+      responses:
+        '200':
+          description: Sheet locked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/matchSheet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /matches/{id}/sheet/unlock:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+        description: Identifier of the match.
+    post:
+      operationId: unlockMatchSheet
+      tags:
+        - Match sheets
+      summary: Unlock the match sheet (admin override)
+      description: |
+        Re-opens a locked sheet for editing. Note: even if the sheet is unlocked,
+        edits are still blocked when the parent match status is terminal
+        (FINISHED / ABANDONED / POSTPONED) — the admin must first PATCH the match
+        status. Requires `admin`.
+      x-required-roles:
+        - admin
+      responses:
+        '200':
+          description: Sheet unlocked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/matchSheet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events:
+    get:
+      operationId: listEvents
+      tags:
+        - Events
+      summary: List sellable events
+      description: |
+        Public catalog of events for which tickets can be purchased.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: Paginated list of events.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/event'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createEvent
+      tags:
+        - Events
+      summary: Create a sellable event
+      x-required-roles:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/eventCreateRequest'
+      responses:
+        '201':
+          description: Event created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /events/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    get:
+      operationId: getEvent
+      tags:
+        - Events
+      summary: Get an event by id
+      security: []
+      responses:
+        '200':
+          description: Event.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tickets:
+    get:
+      operationId: listTicketsByEvent
+      tags:
+        - Tickets
+      summary: List tickets for an event
+      description: |
+        Staff/admin view. Use `?eventId=` to filter by the parent event; results
+        are paginated. To list the **caller's** own tickets, use `/tickets/mine`.
+      x-required-roles:
+        - staff
+        - admin
+      parameters:
+        - in: query
+          name: eventId
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: Paginated list of tickets.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ticket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      operationId: createTicket
+      tags:
+        - Tickets
+      summary: Create a digital ticket
+      description: |
+        Creates a ticket in `PENDING` status owned by the authenticated user.
+        The `code` field returned in the response is the UUID that the client
+        renders as a QR code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ticketCreateRequest'
+      responses:
+        '201':
+          description: Ticket created in PENDING status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ticket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tickets/mine:
+    get:
+      operationId: listMyTickets
+      tags:
+        - Tickets
+      summary: List tickets owned by the caller
+      description: |
+        Returns the tickets whose `ownerSub` matches the JWT subject UUID of
+        the caller. Used by the Android and SPA "My tickets" screens.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: Paginated list of tickets.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/pageEnvelope'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ticket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tickets/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    get:
+      operationId: getTicket
+      tags:
+        - Tickets
+      summary: Get a ticket by id
+      description: |
+        Visible to the ticket owner or to staff/admin. Other authenticated
+        callers receive 403.
+      responses:
+        '200':
+          description: Ticket.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ticket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tickets/{id}/pay:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    post:
+      operationId: payTicket
+      tags:
+        - Tickets
+      summary: Confirm payment of a ticket (PENDING → PAID)
+      description: |
+        Transitions the ticket to `PAID`, stamps `paymentDate`, persists the
+        chosen `paymentMethod` (and `mbwayReference` when applicable), and
+        publishes `ticket.ticket.paid` so the statistics-service can record
+        the sale.
+
+        Authorisation: the ticket owner, or staff/admin (over-the-counter
+        cash payment).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ticketPayRequest'
+      responses:
+        '200':
+          description: Ticket transitioned to PAID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ticket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Ticket is not in PENDING status.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/problem'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tickets/validate:
+    post:
+      operationId: validateTicket
+      tags:
+        - Tickets
+      summary: Validate a ticket at the gate (PAID → VALIDATED)
+      description: |
+        Looks up the ticket by its QR `code` (a UUID), transitions it to
+        `VALIDATED`, stamps `validationDate` and `validatorSub` (the JWT
+        subject of the staff member), and publishes
+        `ticket.ticket.validated`.
+      x-required-roles:
+        - staff
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ticketValidateRequest'
+      responses:
+        '200':
+          description: Ticket validated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ticket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Ticket is not in PAID status.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/problem'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
@@ -212,43 +2265,174 @@ components:
       $ref: '#/components/schemas/pageEnvelope'
     Me:
       $ref: '#/components/schemas/me'
+    ClubMembership:
+      $ref: '#/components/schemas/clubMembership'
+    UserSummary:
+      $ref: '#/components/schemas/userSummary'
+    CreateUserRequest:
+      $ref: '#/components/schemas/createUserRequest'
+    ClubMember:
+      $ref: '#/components/schemas/clubMember'
+    ClubMembers:
+      $ref: '#/components/schemas/clubMembers'
+    AddMemberRequest:
+      $ref: '#/components/schemas/addMemberRequest'
+    Club:
+      $ref: '#/components/schemas/club'
+    ClubCreateRequest:
+      $ref: '#/components/schemas/clubCreateRequest'
+    ClubUpdateRequest:
+      $ref: '#/components/schemas/clubUpdateRequest'
+    Venue:
+      $ref: '#/components/schemas/venue'
+    VenueCreateRequest:
+      $ref: '#/components/schemas/venueCreateRequest'
+    VenueUpdateRequest:
+      $ref: '#/components/schemas/venueUpdateRequest'
+    TeamCategory:
+      $ref: '#/components/schemas/teamCategory'
+    Team:
+      $ref: '#/components/schemas/team'
+    TeamCreateRequest:
+      $ref: '#/components/schemas/teamCreateRequest'
+    TeamUpdateRequest:
+      $ref: '#/components/schemas/teamUpdateRequest'
+    PlayerPosition:
+      $ref: '#/components/schemas/playerPosition'
+    DominantFoot:
+      $ref: '#/components/schemas/dominantFoot'
+    PlayerStatus:
+      $ref: '#/components/schemas/playerStatus'
+    Player:
+      $ref: '#/components/schemas/player'
+    PlayerCreateRequest:
+      $ref: '#/components/schemas/playerCreateRequest'
+    PlayerUpdateRequest:
+      $ref: '#/components/schemas/playerUpdateRequest'
+    MatchStatus:
+      $ref: '#/components/schemas/matchStatus'
+    Match:
+      $ref: '#/components/schemas/match'
+    MatchCreateRequest:
+      $ref: '#/components/schemas/matchCreateRequest'
+    MatchUpdateRequest:
+      $ref: '#/components/schemas/matchUpdateRequest'
+    MatchSheet:
+      $ref: '#/components/schemas/matchSheet'
+    LineupRole:
+      $ref: '#/components/schemas/lineupRole'
+    LineupEntry:
+      $ref: '#/components/schemas/lineupEntry'
+    LineupCreateRequest:
+      $ref: '#/components/schemas/lineupCreateRequest'
+    LineupUpdateRequest:
+      $ref: '#/components/schemas/lineupUpdateRequest'
+    OccurrenceType:
+      $ref: '#/components/schemas/occurrenceType'
+    Occurrence:
+      $ref: '#/components/schemas/occurrence'
+    OccurrenceCreateRequest:
+      $ref: '#/components/schemas/occurrenceCreateRequest'
+    MatchSummary:
+      $ref: '#/components/schemas/matchSummary'
+    MatchSheetHistory:
+      $ref: '#/components/schemas/matchSheetHistory'
+    SalesSummary:
+      $ref: '#/components/schemas/salesSummary'
+    SalesByMatch:
+      $ref: '#/components/schemas/salesByMatch'
+    Event:
+      $ref: '#/components/schemas/event'
+    EventCreateRequest:
+      $ref: '#/components/schemas/eventCreateRequest'
+    TicketStatus:
+      $ref: '#/components/schemas/ticketStatus'
+    Ticket:
+      $ref: '#/components/schemas/ticket'
+    TicketCreateRequest:
+      $ref: '#/components/schemas/ticketCreateRequest'
+    TicketPayRequest:
+      $ref: '#/components/schemas/ticketPayRequest'
+    TicketValidateRequest:
+      $ref: '#/components/schemas/ticketValidateRequest'
+    clubMembership:
+      type: object
+      description: |
+        Membership of a user in a specific club, derived from Keycloak group
+        paths. `clubId` references the `id` of an active club. `role` is
+        `MANAGER` (full CRUD on the club's data) or `STAFF` (operational tasks
+        only — ticket validation, match sheet entry).
+      required:
+        - clubId
+        - role
+      properties:
+        clubId:
+          type: integer
+          format: int64
+          examples:
+            - 1
+        role:
+          type: string
+          enum:
+            - MANAGER
+            - STAFF
+          examples:
+            - MANAGER
     me:
       type: object
       description: Profile information about the currently authenticated user, derived from the bearer token.
       required:
         - username
         - roles
+        - clubMemberships
       properties:
+        sub:
+          type: string
+          description: Stable Keycloak user id (`sub` claim).
+          examples:
+            - 5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e
         username:
           type: string
           description: Keycloak `preferred_username` claim.
           examples:
-            - adepto
+            - gestor
         email:
           type: string
           format: email
           description: Keycloak `email` claim. Absent when the token lacks the email scope.
           examples:
-            - adepto@tessera.pt
+            - gestor@tessera.pt
         firstName:
           type: string
           examples:
-            - Adepto
+            - Gestor
         lastName:
           type: string
           examples:
-            - Tessera
+            - Clube
         roles:
           type: array
-          description: Realm roles relevant to Tessera.
+          description: Realm roles relevant to Tessera. Filtered to known values.
           items:
             type: string
             enum:
-              - admin
+              - platform-admin
+              - club-manager
               - staff
               - fan
           examples:
-            - - fan
+            - - club-manager
+        clubMemberships:
+          type: array
+          description: |
+            Clubs this user is bound to, derived from the `groups` claim
+            (`/clubs/<id>/managers` and `/clubs/<id>/staff` paths). Empty for
+            platform admins, fans, and users without any club assignment.
+          items:
+            $ref: '#/components/schemas/clubMembership'
+          examples:
+            - - clubId: 1
+                role: MANAGER
     problem:
       type: object
       description: |
@@ -305,6 +2489,95 @@ components:
                 type: string
                 examples:
                   - must be in the future
+    userSummary:
+      type: object
+      description: |
+        Summary of a Keycloak user as exposed by the admin endpoints. The `id`
+        is the Keycloak UUID — used as the path parameter in user-scoped routes
+        and as the `userId` when adding/removing club memberships.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Keycloak user id.
+          examples:
+            - c03c87a1-eb23-4e5b-be4e-ed172797d08c
+        username:
+          type: string
+          examples:
+            - gestor
+        email:
+          type: string
+          format: email
+          examples:
+            - gestor@tessera.pt
+        firstName:
+          type: string
+          examples:
+            - Gestor
+        lastName:
+          type: string
+          examples:
+            - Clube
+        enabled:
+          type: boolean
+          description: Whether the user can log in. Disabled users keep their data but cannot authenticate.
+          examples:
+            - true
+    createUserRequest:
+      type: object
+      description: |
+        Payload for creating a new Keycloak user. The realm role is set at the
+        same time as the user — the API restricts it to `club-manager` or
+        `staff` (platform-admins are bootstrapped via realm-export and fans
+        inherit the realm's default role).
+      required:
+        - username
+        - firstName
+        - lastName
+        - password
+        - role
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 60
+          examples:
+            - gestor2
+        email:
+          type: string
+          format: email
+          examples:
+            - gestor2@tessera.pt
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - Gestor
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - Dois
+        password:
+          type: string
+          minLength: 6
+          maxLength: 200
+          description: Initial password. The user can change it later.
+          examples:
+            - gestor12345
+        role:
+          type: string
+          enum:
+            - club-manager
+            - staff
+          description: Realm role to assign. Restricted to operational roles.
+          examples:
+            - club-manager
     pageEnvelope:
       type: object
       description: |
@@ -345,3 +2618,1329 @@ components:
           description: Total number of pages.
           examples:
             - 7
+    club:
+      type: object
+      description: |
+        A football club. Owns one or more teams (senior, youth, female, etc.).
+        Identified by a stable numeric `id`; clubs are soft-deleted to preserve
+        historical match records.
+      required:
+        - id
+        - name
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          description: Stable numeric identifier assigned by the server.
+          examples:
+            - 1
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Official name of the club.
+          examples:
+            - SU 1.º Dezembro
+        foundedYear:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1850
+          maximum: 2100
+          description: Year the club was founded.
+          examples:
+            - 1953
+        crestUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          description: URL to the club crest / logo image.
+          examples:
+            - https://tessera.example/clubs/1/crest.png
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Server-assigned creation timestamp.
+          examples:
+            - '2026-04-28T10:00:00Z'
+    clubCreateRequest:
+      type: object
+      description: Payload to create a new club. `id` and `createdAt` are server-assigned.
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+          examples:
+            - SU 1.º Dezembro
+        foundedYear:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1850
+          maximum: 2100
+          examples:
+            - 1953
+        crestUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          examples:
+            - https://tessera.example/clubs/1/crest.png
+    clubUpdateRequest:
+      type: object
+      description: |
+        Partial update payload (PATCH). Omitted fields are left unchanged.
+        At least one field must be provided.
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        foundedYear:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1850
+          maximum: 2100
+        crestUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+    clubMember:
+      type: object
+      description: |
+        A user attached to a club via the `/clubs/<id>/managers` or
+        `/clubs/<id>/staff` Keycloak group, projected with the role they hold
+        within the club.
+      required:
+        - userId
+        - role
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Keycloak user id.
+          examples:
+            - c03c87a1-eb23-4e5b-be4e-ed172797d08c
+        username:
+          type: string
+          examples:
+            - gestor
+        email:
+          type: string
+          format: email
+          examples:
+            - gestor@tessera.pt
+        firstName:
+          type: string
+          examples:
+            - Gestor
+        lastName:
+          type: string
+          examples:
+            - Clube
+        role:
+          type: string
+          enum:
+            - MANAGER
+            - STAFF
+          description: Membership role within this club.
+          examples:
+            - MANAGER
+    clubMembers:
+      type: object
+      description: |
+        All members of a club, split by role. `managers` may edit the club's
+        teams and players; `staff` operate the match-day flows (ticket
+        validation, match sheet entry).
+      required:
+        - managers
+        - staff
+      properties:
+        managers:
+          type: array
+          items:
+            $ref: '#/components/schemas/clubMember'
+        staff:
+          type: array
+          items:
+            $ref: '#/components/schemas/clubMember'
+    addMemberRequest:
+      type: object
+      description: |
+        Payload to attach an existing user to a club as a manager or staff
+        member. The user must already exist in Keycloak — to create one in the
+        same flow, use `POST /users` first.
+      required:
+        - userId
+        - role
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: Keycloak user id of the user being added.
+          examples:
+            - c03c87a1-eb23-4e5b-be4e-ed172797d08c
+        role:
+          type: string
+          enum:
+            - MANAGER
+            - STAFF
+          description: Role to grant within this club.
+          examples:
+            - MANAGER
+    venue:
+      type: object
+      description: |
+        A stadium or ground where matches are played. Soft-deleted to preserve
+        historical match references.
+      required:
+        - id
+        - name
+        - capacity
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          examples:
+            - 1
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Name of the venue.
+          examples:
+            - Estádio do SU 1.º Dezembro
+        capacity:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200000
+          description: Total capacity (seated + standing).
+          examples:
+            - 1500
+        address:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+          description: Postal address of the venue.
+          examples:
+            - Rua do Estádio, 2670-001 Loures
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          examples:
+            - '2026-05-01T10:00:00Z'
+    venueCreateRequest:
+      type: object
+      description: Payload to create a new venue. `id` and `createdAt` are server-assigned.
+      required:
+        - name
+        - capacity
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+          examples:
+            - Estádio do SU 1.º Dezembro
+        capacity:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200000
+          examples:
+            - 1500
+        address:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+          examples:
+            - Rua do Estádio, 2670-001 Loures
+    venueUpdateRequest:
+      type: object
+      description: |
+        Partial update payload (PATCH). Omitted fields are left unchanged.
+        At least one field must be provided.
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        capacity:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200000
+        address:
+          type:
+            - string
+            - 'null'
+          maxLength: 500
+    teamCategory:
+      type: string
+      description: |
+        Team category — combines age group and gender. A club may have at most
+        one active team per category.
+      enum:
+        - SENIOR_M
+        - SENIOR_F
+        - SUB_23
+        - SUB_19
+        - SUB_17
+        - SUB_15
+        - SUB_13
+        - SUB_11
+        - SUB_9
+        - SUB_7
+        - VETERANS
+        - OTHER
+      examples:
+        - SENIOR_M
+    team:
+      type: object
+      description: |
+        A team within a club, identified by its `category` (age group + gender).
+        A club has at most one active team per category.
+      required:
+        - id
+        - clubId
+        - category
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          examples:
+            - 1
+        clubId:
+          type: integer
+          format: int64
+          description: Identifier of the parent club.
+          examples:
+            - 1
+        category:
+          $ref: '#/components/schemas/teamCategory'
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          examples:
+            - '2026-05-02T10:00:00Z'
+    teamCreateRequest:
+      type: object
+      description: |
+        Payload to create a team in a club. The `clubId` comes from the path;
+        only `category` is needed in the body.
+      required:
+        - category
+      properties:
+        category:
+          $ref: '#/components/schemas/teamCategory'
+    teamUpdateRequest:
+      type: object
+      description: |
+        Partial update payload (PATCH). Currently only `category` is updatable.
+        At least one field must be provided.
+      minProperties: 1
+      properties:
+        category:
+          $ref: '#/components/schemas/teamCategory'
+    playerPosition:
+      type: string
+      description: |
+        Player's primary position on the pitch. Coarse-grained enum aligned with
+        match-sheet conventions:
+          - GK: goalkeeper
+          - DF: defender
+          - MF: midfielder
+          - FW: forward
+      enum:
+        - GK
+        - DF
+        - MF
+        - FW
+      examples:
+        - FW
+    dominantFoot:
+      type: string
+      description: Player's dominant foot.
+      enum:
+        - LEFT
+        - RIGHT
+        - BOTH
+      examples:
+        - RIGHT
+    playerStatus:
+      type: string
+      description: |
+        Player's current availability status.
+          - ACTIVE: available for selection
+          - INJURED: out due to injury
+          - SUSPENDED: serving a suspension
+      enum:
+        - ACTIVE
+        - INJURED
+        - SUSPENDED
+      examples:
+        - ACTIVE
+    player:
+      type: object
+      description: |
+        A player belonging to a team. Soft-deleted to preserve historical
+        match-sheet references.
+      required:
+        - id
+        - teamId
+        - firstName
+        - lastName
+        - position
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          examples:
+            - 1
+        teamId:
+          type: integer
+          format: int64
+          description: Identifier of the team the player belongs to.
+          examples:
+            - 1
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - João
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - Silva
+        birthdate:
+          type:
+            - string
+            - 'null'
+          format: date
+          description: Date of birth (ISO 8601 date).
+          examples:
+            - '1998-03-12'
+        nationality:
+          type:
+            - string
+            - 'null'
+          description: ISO 3166-1 alpha-3 country code.
+          pattern: ^[A-Z]{3}$
+          examples:
+            - PRT
+        position:
+          $ref: '#/components/schemas/playerPosition'
+        shirtNumber:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1
+          maximum: 99
+          description: Shirt number. Unique among active players within the same team.
+          examples:
+            - 9
+        photoUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+          examples:
+            - https://tessera.example/players/1.jpg
+        dominantFoot:
+          oneOf:
+            - $ref: '#/components/schemas/dominantFoot'
+            - type: 'null'
+        height:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 100
+          maximum: 250
+          description: Height in centimeters.
+          examples:
+            - 178
+        weight:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 30
+          maximum: 200
+          description: Weight in kilograms.
+          examples:
+            - 72
+        status:
+          $ref: '#/components/schemas/playerStatus'
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    playerCreateRequest:
+      type: object
+      description: |
+        Payload to create a player in a team. The `teamId` comes from the path.
+        `status` defaults to ACTIVE if omitted.
+      required:
+        - firstName
+        - lastName
+        - position
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birthdate:
+          type:
+            - string
+            - 'null'
+          format: date
+        nationality:
+          type:
+            - string
+            - 'null'
+          pattern: ^[A-Z]{3}$
+        position:
+          $ref: '#/components/schemas/playerPosition'
+        shirtNumber:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1
+          maximum: 99
+        photoUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+        dominantFoot:
+          oneOf:
+            - $ref: '#/components/schemas/dominantFoot'
+            - type: 'null'
+        height:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 100
+          maximum: 250
+        weight:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 30
+          maximum: 200
+        status:
+          $ref: '#/components/schemas/playerStatus'
+    playerUpdateRequest:
+      type: object
+      description: |
+        Partial update payload (PATCH). Omitted fields are left unchanged.
+        At least one field must be provided.
+      minProperties: 1
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birthdate:
+          type:
+            - string
+            - 'null'
+          format: date
+        nationality:
+          type:
+            - string
+            - 'null'
+          pattern: ^[A-Z]{3}$
+        position:
+          $ref: '#/components/schemas/playerPosition'
+        shirtNumber:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1
+          maximum: 99
+        photoUrl:
+          type:
+            - string
+            - 'null'
+          format: uri
+        dominantFoot:
+          oneOf:
+            - $ref: '#/components/schemas/dominantFoot'
+            - type: 'null'
+        height:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 100
+          maximum: 250
+        weight:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 30
+          maximum: 200
+        status:
+          $ref: '#/components/schemas/playerStatus'
+    matchStatus:
+      type: string
+      description: |
+        Lifecycle of a match. Allowed transitions (server-enforced):
+          - SCHEDULED → LIVE | POSTPONED | ABANDONED | CANCELLED
+          - LIVE → FINISHED | ABANDONED
+          - POSTPONED → SCHEDULED  (rescheduled)
+          - FINISHED, ABANDONED, CANCELLED — terminal
+
+        Distinction between terminal states:
+          - FINISHED: completed normally, scores recorded.
+          - ABANDONED: started but had to be stopped (weather, safety).
+          - CANCELLED: called off before kickoff, no intent to reschedule.
+      enum:
+        - SCHEDULED
+        - LIVE
+        - FINISHED
+        - POSTPONED
+        - ABANDONED
+        - CANCELLED
+      examples:
+        - SCHEDULED
+    match:
+      type: object
+      description: |
+        A scheduled, live or finished football match between two teams. Soft-deleted
+        to preserve historical records (match sheets, ticket sales).
+      required:
+        - id
+        - homeTeamId
+        - awayTeamId
+        - kickoffAt
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          examples:
+            - 1
+        homeTeamId:
+          type: integer
+          format: int64
+          examples:
+            - 1
+        awayTeamId:
+          type: integer
+          format: int64
+          examples:
+            - 2
+        venueId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: |
+            Identifier of the venue. May be null while the match is being scheduled
+            and the venue is yet to be confirmed.
+          examples:
+            - 1
+        kickoffAt:
+          type: string
+          format: date-time
+          description: Scheduled (or actual) kickoff date-time, ISO 8601 with offset.
+          examples:
+            - '2026-09-15T20:30:00Z'
+        status:
+          $ref: '#/components/schemas/matchStatus'
+        homeScore:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 0
+          description: Home team's goals. Required once status reaches FINISHED.
+          examples:
+            - 2
+        awayScore:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 0
+          description: Away team's goals. Required once status reaches FINISHED.
+          examples:
+            - 1
+        refereeName:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+          description: Free-text referee name (no separate referee resource for v1).
+          examples:
+            - Maria Santos
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    matchCreateRequest:
+      type: object
+      description: |
+        Payload to create a match. The match always starts in SCHEDULED status.
+        Constraints validated by the server:
+          - `homeTeamId` ≠ `awayTeamId`
+          - both teams must exist and be active
+          - `venueId`, if provided, must exist and be active
+      required:
+        - homeTeamId
+        - awayTeamId
+        - kickoffAt
+      properties:
+        homeTeamId:
+          type: integer
+          format: int64
+        awayTeamId:
+          type: integer
+          format: int64
+        venueId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+        kickoffAt:
+          type: string
+          format: date-time
+        refereeName:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+    matchUpdateRequest:
+      type: object
+      description: |
+        Partial update payload (PATCH). Omitted fields are left unchanged.
+        At least one field must be provided. Status transitions are validated
+        server-side; invalid transitions are rejected with 409.
+      minProperties: 1
+      properties:
+        venueId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+        kickoffAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/matchStatus'
+        homeScore:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 0
+        awayScore:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 0
+        refereeName:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+    lineupRole:
+      type: string
+      description: |
+        Role of a player in the match-day lineup:
+          - STARTER: starts the match on the pitch
+          - SUBSTITUTE: on the bench, eligible to come on
+      enum:
+        - STARTER
+        - SUBSTITUTE
+      examples:
+        - STARTER
+    lineupEntry:
+      type: object
+      description: A single player listed on the match-day lineup of one team.
+      required:
+        - playerId
+        - teamId
+        - role
+      properties:
+        playerId:
+          type: integer
+          format: int64
+          examples:
+            - 1
+        teamId:
+          type: integer
+          format: int64
+          description: Must equal the match's homeTeamId or awayTeamId.
+          examples:
+            - 1
+        shirtNumber:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1
+          maximum: 99
+          description: |
+            Shirt worn for this match. Defaults to the player's current shirtNumber
+            but can be overridden per match (e.g. number changes, special editions).
+        role:
+          $ref: '#/components/schemas/lineupRole'
+    occurrenceType:
+      type: string
+      description: |
+        Type of in-game occurrence:
+          - GOAL: scored a goal for own team
+          - OWN_GOAL: scored an own goal (counts for the opposing team)
+          - YELLOW_CARD: yellow card shown
+          - RED_CARD: red card shown (direct, or second yellow)
+          - SUBSTITUTION: tactical substitution; replacedPlayerId is required
+          - FOUL: foul committed (single tactical event; does not imply a card)
+      enum:
+        - GOAL
+        - OWN_GOAL
+        - YELLOW_CARD
+        - RED_CARD
+        - SUBSTITUTION
+        - FOUL
+      examples:
+        - GOAL
+    occurrence:
+      type: object
+      description: |
+        A single in-game event recorded in the match sheet (goal, card, substitution).
+        Append-only while the match is live; can be deleted only while the sheet is
+        unlocked and the match status allows edits.
+      required:
+        - id
+        - minute
+        - type
+        - teamId
+        - playerId
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        minute:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200
+          description: |
+            Match minute (0–200 to cover regulation time, stoppage and extra time).
+          examples:
+            - 34
+        type:
+          $ref: '#/components/schemas/occurrenceType'
+        teamId:
+          type: integer
+          format: int64
+          description: Team to which the player belongs.
+        playerId:
+          type: integer
+          format: int64
+          description: Player who scored / received the card / went off (for substitution).
+        replacedPlayerId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: |
+            Required for SUBSTITUTION — id of the player coming on. Must be null
+            for any other occurrence type.
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    matchSheet:
+      type: object
+      description: |
+        The technical match record (lineups + occurrences). Created lazily on the
+        first GET. Edits require:
+          - `locked = false`, AND
+          - parent match's status ∈ {SCHEDULED, LIVE}.
+        When the match transitions to FINISHED/ABANDONED/POSTPONED, the sheet is
+        locked automatically. An admin can unlock it via `POST /unlock`.
+      required:
+        - matchId
+        - locked
+        - lineup
+        - occurrences
+      properties:
+        matchId:
+          type: integer
+          format: int64
+        locked:
+          type: boolean
+        lockedAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        lineup:
+          type: array
+          description: All lineup entries (both teams), ordered by team then shirt number.
+          items:
+            $ref: '#/components/schemas/lineupEntry'
+        occurrences:
+          type: array
+          description: Match events ordered by minute ascending, then by id.
+          items:
+            $ref: '#/components/schemas/occurrence'
+    lineupCreateRequest:
+      type: object
+      description: Add a player to the match-sheet lineup.
+      required:
+        - playerId
+        - role
+      properties:
+        playerId:
+          type: integer
+          format: int64
+        shirtNumber:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1
+          maximum: 99
+          description: Optional override; defaults to the player's current shirt.
+        role:
+          $ref: '#/components/schemas/lineupRole'
+    lineupUpdateRequest:
+      type: object
+      description: Partial update of an existing lineup entry. At least one field required.
+      minProperties: 1
+      properties:
+        shirtNumber:
+          type:
+            - integer
+            - 'null'
+          format: int32
+          minimum: 1
+          maximum: 99
+        role:
+          $ref: '#/components/schemas/lineupRole'
+    matchSummary:
+      type: object
+      description: |
+        Snapshot of a match captured by the statistics-service when the match-sheet
+        was closed. Read-only view, fed by the `match.sheet.closed` event.
+      required:
+        - matchId
+        - season
+        - matchStatus
+        - kickoffAt
+        - homeTeamId
+        - awayTeamId
+        - homeClubId
+        - awayClubId
+      properties:
+        matchId:
+          type: integer
+          format: int64
+        season:
+          type: string
+          description: Season label in `YYYY-YY` format.
+          pattern: ^[0-9]{4}-[0-9]{2}$
+          examples:
+            - 2026-27
+        matchStatus:
+          type: string
+          description: Match status at the time the sheet was closed.
+          enum:
+            - SCHEDULED
+            - LIVE
+            - FINISHED
+            - POSTPONED
+            - ABANDONED
+            - CANCELLED
+        kickoffAt:
+          type: string
+          format: date-time
+        homeTeamId:
+          type: integer
+          format: int64
+        awayTeamId:
+          type: integer
+          format: int64
+        homeClubId:
+          type: integer
+          format: int64
+        awayClubId:
+          type: integer
+          format: int64
+        venueId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+        homeScore:
+          type:
+            - integer
+            - 'null'
+          format: int32
+        awayScore:
+          type:
+            - integer
+            - 'null'
+          format: int32
+        refereeName:
+          type:
+            - string
+            - 'null'
+    matchSheetHistory:
+      type: object
+      description: |
+        Full snapshot of a match: summary + lineup + occurrences as recorded at
+        the moment the sheet was closed. Returned by
+        `GET /stats/match-sheets/{matchId}`.
+      required:
+        - matchId
+        - summary
+        - lineup
+        - occurrences
+      properties:
+        matchId:
+          type: integer
+          format: int64
+        summary:
+          $ref: '#/components/schemas/matchSummary'
+        lineup:
+          type: array
+          items:
+            $ref: '#/components/schemas/lineupEntry'
+        occurrences:
+          type: array
+          items:
+            $ref: '#/components/schemas/occurrence'
+    salesSummary:
+      type: object
+      description: Aggregated ticket sales for a period or for the whole system.
+      required:
+        - sold
+        - validated
+        - revenue
+        - validationRate
+      properties:
+        sold:
+          type: integer
+          format: int64
+          description: Number of tickets paid (PENDING → PAID).
+          examples:
+            - 1234
+        validated:
+          type: integer
+          format: int64
+          description: Number of those tickets that were validated at the gate.
+          examples:
+            - 1100
+        revenue:
+          type: string
+          description: Total revenue, as decimal string to preserve precision.
+          examples:
+            - '12345.50'
+        validationRate:
+          type: string
+          description: |
+            `validated / sold` (0.000 .. 1.000). Always 0 in the date-range
+            summary because validation happens later than payment and would
+            skew the metric.
+          examples:
+            - '0.892'
+    salesByMatch:
+      type: object
+      description: Ticket sales aggregated for a single match.
+      required:
+        - matchId
+        - sold
+        - validated
+        - revenue
+      properties:
+        matchId:
+          type: integer
+          format: int64
+        sold:
+          type: integer
+          format: int64
+        validated:
+          type: integer
+          format: int64
+        revenue:
+          type: string
+          description: Total revenue for this match, decimal string.
+    occurrenceCreateRequest:
+      type: object
+      description: Append a new occurrence to the match sheet.
+      required:
+        - minute
+        - type
+        - playerId
+      properties:
+        minute:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 200
+        type:
+          $ref: '#/components/schemas/occurrenceType'
+        playerId:
+          type: integer
+          format: int64
+        replacedPlayerId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: |
+            Required for SUBSTITUTION (player coming on). Must be null otherwise.
+    event:
+      type: object
+      description: |
+        A sellable event — typically attached to a match — bundling the normal
+        and supporter prices for that occasion.
+      required:
+        - id
+        - priceNormal
+        - priceSupporter
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type:
+            - string
+            - 'null'
+        matchId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: Optional link to a match in match-service.
+        priceNormal:
+          type: string
+          description: Decimal string.
+        priceSupporter:
+          type: string
+          description: Decimal string.
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - PUBLISHED
+            - SALES_CLOSED
+            - CANCELLED
+        createdAt:
+          type: string
+          format: date-time
+    eventCreateRequest:
+      type: object
+      required:
+        - name
+        - priceNormal
+        - priceSupporter
+      properties:
+        name:
+          type: string
+          minLength: 1
+        matchId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+        priceNormal:
+          type: string
+          description: Decimal string, e.g. "10.00".
+        priceSupporter:
+          type: string
+          description: Decimal string.
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - PUBLISHED
+            - SALES_CLOSED
+            - CANCELLED
+          default: PUBLISHED
+          description: |
+            Optional. Defaults to `PUBLISHED` so tickets are immediately
+            purchasable.
+    ticketStatus:
+      type: string
+      description: |
+        Lifecycle of a digital ticket.
+
+        * `PENDING`    — created but not yet paid
+        * `PAID`       — payment confirmed (`POST /tickets/{id}/pay`)
+        * `VALIDATED`  — scanned at the gate (`POST /tickets/validate`)
+      enum:
+        - PENDING
+        - PAID
+        - VALIDATED
+    ticket:
+      type: object
+      description: |
+        A digital ticket. `code` is the UUID the fan renders as a QR code in
+        the SPA / Android app; staff scan it at the gate to validate the ticket.
+      required:
+        - id
+        - code
+        - eventId
+        - price
+        - status
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          examples:
+            - 12345
+        code:
+          type: string
+          format: uuid
+          description: Unique UUID payload of the QR code. Generated server-side.
+        eventId:
+          type: integer
+          format: int64
+        matchId:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: |
+            Match the parent event is attached to, if any. Mirrored here so the
+            Android validator can show context without an extra call.
+        ownerSub:
+          type:
+            - string
+            - 'null'
+          description: Keycloak subject UUID of the buyer.
+        price:
+          type: string
+          description: Decimal string, e.g. "10.00".
+        status:
+          $ref: '#/components/schemas/ticketStatus'
+        paymentMethod:
+          type:
+            - string
+            - 'null'
+          enum:
+            - MBWAY
+            - CARD
+            - CASH
+            - null
+        createdAt:
+          type: string
+          format: date-time
+        paymentDate:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        validationDate:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        validatorSub:
+          type:
+            - string
+            - 'null'
+          description: Keycloak subject UUID of the staff member who scanned the ticket.
+    ticketCreateRequest:
+      type: object
+      required:
+        - eventId
+      properties:
+        eventId:
+          type: integer
+          format: int64
+          minimum: 1
+        supporter:
+          type: boolean
+          default: false
+          description: |
+            If `true`, applies the event's supporter price (typically discounted
+            for season-pass holders); otherwise the normal price is used.
+    ticketPayRequest:
+      type: object
+      required:
+        - paymentMethod
+      properties:
+        paymentMethod:
+          type: string
+          enum:
+            - MBWAY
+            - CARD
+            - CASH
+        mbwayReference:
+          type:
+            - string
+            - 'null'
+          description: |
+            Optional. Reference returned by the MB WAY provider (only meaningful
+            when `paymentMethod = MBWAY`).
+    ticketValidateRequest:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          format: uuid
+          description: |
+            The UUID payload extracted from the scanned QR code.
