@@ -54,7 +54,7 @@ class PlayerController(
     }
 
     @PostMapping("/teams/{teamId}/players")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("@clubAuthz.canManageTeam(authentication, #teamId)")
     fun create(
         @PathVariable teamId: Long,
         @Valid @RequestBody req: PlayerCreateRequest,
@@ -73,7 +73,7 @@ class PlayerController(
         service.get(id).toResponse()
 
     @PatchMapping("/players/{id}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("@clubAuthz.canManagePlayer(authentication, #id)")
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody req: PlayerUpdateRequest,
@@ -81,7 +81,7 @@ class PlayerController(
         service.update(id, req).toResponse()
 
     @DeleteMapping("/players/{id}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("@clubAuthz.canManagePlayer(authentication, #id)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) {
         service.delete(id)

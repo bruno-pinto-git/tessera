@@ -66,16 +66,16 @@ class SalesController(
     private val service: SalesService,
 ) {
     @GetMapping("/summary")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun summary(): SalesSummaryResponse = service.summary()
 
     @GetMapping("/by-match/{matchId}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun byMatch(@PathVariable matchId: Long): SalesByMatchResponse =
         service.byMatch(matchId)
 
     @GetMapping("/range")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun range(
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         from: OffsetDateTime,

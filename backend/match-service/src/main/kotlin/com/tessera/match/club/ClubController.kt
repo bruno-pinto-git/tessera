@@ -43,7 +43,7 @@ class ClubController(
         service.get(id).toResponse()
 
     @PostMapping
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun create(@Valid @RequestBody req: ClubCreateRequest): ResponseEntity<ClubResponse> {
         val club = service.create(req)
         val location = UriComponentsBuilder.fromPath("/api/v1/clubs/{id}")
@@ -53,7 +53,7 @@ class ClubController(
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody req: ClubUpdateRequest,
@@ -65,7 +65,7 @@ class ClubController(
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) {
         service.delete(id)

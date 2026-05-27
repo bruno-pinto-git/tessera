@@ -16,7 +16,7 @@ class MatchSheetController(
         toResponse(service.getOrCreate(matchId))
 
     @PostMapping("/lineup")
-    @PreAuthorize("hasAnyRole('admin','staff')")
+    @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")
     @ResponseStatus(HttpStatus.CREATED)
     fun addLineup(
         @PathVariable matchId: Long,
@@ -25,7 +25,7 @@ class MatchSheetController(
         service.addLineupEntry(matchId, req).toResponse()
 
     @PatchMapping("/lineup/{playerId}")
-    @PreAuthorize("hasAnyRole('admin','staff')")
+    @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")
     fun updateLineup(
         @PathVariable matchId: Long,
         @PathVariable playerId: Long,
@@ -38,7 +38,7 @@ class MatchSheetController(
     }
 
     @DeleteMapping("/lineup/{playerId}")
-    @PreAuthorize("hasAnyRole('admin','staff')")
+    @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun removeLineup(
         @PathVariable matchId: Long,
@@ -50,7 +50,7 @@ class MatchSheetController(
     // ----- Occurrences -----
 
     @PostMapping("/occurrences")
-    @PreAuthorize("hasAnyRole('admin','staff')")
+    @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")
     @ResponseStatus(HttpStatus.CREATED)
     fun addOccurrence(
         @PathVariable matchId: Long,
@@ -59,7 +59,7 @@ class MatchSheetController(
         service.addOccurrence(matchId, req).toResponse()
 
     @DeleteMapping("/occurrences/{occId}")
-    @PreAuthorize("hasAnyRole('admin','staff')")
+    @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun removeOccurrence(
         @PathVariable matchId: Long,
@@ -71,12 +71,12 @@ class MatchSheetController(
     // ----- Lock / Unlock -----
 
     @PostMapping("/lock")
-    @PreAuthorize("hasAnyRole('admin','staff')")
+    @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")
     fun lock(@PathVariable matchId: Long): MatchSheetResponse =
         toResponse(service.lock(matchId))
 
     @PostMapping("/unlock")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun unlock(@PathVariable matchId: Long): MatchSheetResponse =
         toResponse(service.unlock(matchId))
 

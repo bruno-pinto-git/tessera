@@ -132,6 +132,6 @@ class SecurityConfig(
         }
 
     companion object {
-        private val TESSERA_ROLES = setOf("admin", "staff", "fan")
+        private val TESSERA_ROLES = setOf("platform-admin", "club-manager", "staff", "fan")
     }
 }

@@ -1,5 +1,7 @@
 package com.tessera.match.club
 
+import com.tessera.match.iam.KeycloakGroupService
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -9,7 +11,10 @@ import java.time.OffsetDateTime
 @Service
 class ClubService(
     private val repo: ClubRepository,
+    private val keycloakGroups: KeycloakGroupService,
 ) {
+
+    private val log = LoggerFactory.getLogger(ClubService::class.java)
 
     @Transactional(readOnly = true)
     fun list(name: String?, pageable: Pageable): Page<Club> =
@@ -30,7 +35,18 @@ class ClubService(
             foundedYear = req.foundedYear,
             crestUrl = req.crestUrl,
         )
-        return repo.save(club)
+        // Save first to obtain the DB-assigned id, then provision the
+        // Keycloak groups. If Keycloak fails, the @Transactional rollback
+        // un-persists the club and the caller gets a 5xx — keeps the two
+        // sides in sync without a transactional outbox.
+        val saved = repo.save(club)
+        try {
+            keycloakGroups.ensureClubGroups(saved.id)
+        } catch (e: Exception) {
+            log.error("Keycloak group provisioning failed for club ${saved.id}; rolling back.", e)
+            throw ClubProvisioningException("Failed to provision Keycloak groups for club ${saved.id}", e)
+        }
+        return saved
     }
 
     @Transactional
@@ -55,6 +71,10 @@ class ClubService(
     @Transactional
     fun delete(id: Long) {
         val club = repo.findActiveById(id) ?: throw ClubNotFoundException(id)
+        // Soft delete only — the Keycloak groups are intentionally left in
+        // place so memberships are preserved if the club is later restored.
+        // On a hard delete the caller should also call
+        // `keycloakGroups.deleteClubGroups(id)` to clean up.
         club.deletedAt = OffsetDateTime.now()
     }
 }
@@ -64,3 +84,6 @@ class ClubNotFoundException(val clubId: Long)
 
 class ClubNameConflictException(val name: String)
     : RuntimeException("A club with name '$name' already exists.")
+
+class ClubProvisioningException(message: String, cause: Throwable)
+    : RuntimeException(message, cause)

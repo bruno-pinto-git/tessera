@@ -43,7 +43,7 @@ class MatchController(
         service.get(id).toResponse()
 
     @PostMapping
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun create(@Valid @RequestBody req: MatchCreateRequest): ResponseEntity<MatchResponse> {
         val match = service.create(req)
         val location = UriComponentsBuilder.fromPath("/api/v1/matches/{id}")
@@ -53,14 +53,14 @@ class MatchController(
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyRole('admin','staff')")
+    @PreAuthorize("hasAnyRole('platform-admin','club-manager','staff')")
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody req: MatchUpdateRequest,
     ): MatchResponse = service.update(id, req).toResponse()
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) {
         service.delete(id)

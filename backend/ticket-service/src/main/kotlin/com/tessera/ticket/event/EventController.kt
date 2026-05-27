@@ -84,7 +84,7 @@ class EventController(
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun create(@RequestBody request: CreateEventRequest): EventResponse =
         toResponse(service.create(request))
 

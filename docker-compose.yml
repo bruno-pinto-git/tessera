@@ -84,11 +84,17 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: tessera
       SPRING_RABBITMQ_PASSWORD: tessera
+      TESSERA_KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8180
+      TESSERA_KEYCLOAK_ADMIN_REALM: tessera
+      TESSERA_KEYCLOAK_ADMIN_CLIENT_ID: tessera-bff
+      TESSERA_KEYCLOAK_ADMIN_CLIENT_SECRET: change-me-in-production
     depends_on:
       db-matches:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      keycloak:
+        condition: service_started
     networks:
       - tessera-net
 

@@ -19,16 +19,20 @@
   "roles": {
     "realm": [
       {
-        "name": "admin",
-        "description": "Administrador do clube - acesso total à gestão do clube, jogadores, jogos e bilheteira"
+        "name": "platform-admin",
+        "description": "System / platform administrator - sees all clubs, manages the catalogue, assigns club managers"
+      },
+      {
+        "name": "club-manager",
+        "description": "Manager scoped to one or more clubs (via /clubs/<id>/managers group membership). Edits teams, players and match data of that club."
       },
       {
         "name": "staff",
-        "description": "Staff do clube - validação de bilhetes e gestão da ficha técnica dos jogos"
+        "description": "Club staff scoped to one or more clubs (via /clubs/<id>/staff group). Validates tickets and fills in the match sheet."
       },
       {
         "name": "fan",
-        "description": "Adepto - compra de bilhetes e consulta de jogos e estatísticas"
+        "description": "Adepto - browses public catalogues and buys tickets."
       }
     ],
     "client": {
@@ -40,15 +44,15 @@
   "scopeMappings": [
     {
       "client": "tessera-web",
-      "roles": ["admin", "staff", "fan"]
+      "roles": ["platform-admin", "club-manager", "staff", "fan"]
     },
     {
       "client": "tessera-android",
-      "roles": ["admin", "staff", "fan"]
+      "roles": ["platform-admin", "club-manager", "staff", "fan"]
     },
     {
       "client": "tessera-bff",
-      "roles": ["admin", "staff", "fan"]
+      "roles": ["platform-admin", "club-manager", "staff", "fan"]
     }
   ],
   "clients": [
@@ -111,6 +115,19 @@
             "claim.name": "sub",
             "jsonType.label": "String"
           }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
         }
       ]
     },
@@ -168,6 +185,19 @@
             "claim.name": "sub",
             "jsonType.label": "String"
           }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups"
+          }
         }
       ]
     },
@@ -194,8 +224,8 @@
     {
       "username": "admin",
       "email": "admin@tessera.pt",
-      "firstName": "Admin",
-      "lastName": "Tessera",
+      "firstName": "Platform",
+      "lastName": "Admin",
       "enabled": true,
       "emailVerified": true,
       "credentials": [
@@ -205,7 +235,39 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["admin"]
+      "realmRoles": ["platform-admin"]
+    },
+    {
+      "username": "gestor",
+      "email": "gestor@tessera.pt",
+      "firstName": "Gestor",
+      "lastName": "Clube",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "gestor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["club-manager"]
+    },
+    {
+      "username": "service-account-tessera-bff",
+      "enabled": true,
+      "serviceAccountClientId": "tessera-bff",
+      "clientRoles": {
+        "realm-management": [
+          "manage-groups",
+          "view-groups",
+          "query-groups",
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
     },
     {
       "username": "staff",

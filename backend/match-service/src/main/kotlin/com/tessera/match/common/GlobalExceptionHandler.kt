@@ -2,6 +2,8 @@ package com.tessera.match.common
 
 import com.tessera.match.club.ClubNameConflictException
 import com.tessera.match.club.ClubNotFoundException
+import com.tessera.match.club.ClubProvisioningException
+import com.tessera.match.iam.UserNotFoundException
 import com.tessera.match.match.InvalidMatchTransitionException
 import com.tessera.match.match.MatchNotFoundException
 import com.tessera.match.player.PlayerNotFoundException
@@ -45,6 +47,7 @@ class GlobalExceptionHandler {
         MatchNotFoundException::class,
         LineupEntryNotFoundException::class,
         OccurrenceNotFoundException::class,
+        UserNotFoundException::class,
     ])
     fun handleNotFound(ex: RuntimeException, req: WebRequest): ResponseEntity<Problem> =
         problem(
@@ -139,6 +142,17 @@ class GlobalExceptionHandler {
             "https://tessera/api/errors/forbidden",
             "Forbidden",
             ex.message ?: "Insufficient permissions.",
+            req,
+        )
+
+    @ExceptionHandler(ClubProvisioningException::class)
+    fun handleClubProvisioning(ex: ClubProvisioningException, req: WebRequest): ResponseEntity<Problem> =
+        problem(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "https://tessera/api/errors/provisioning",
+            "Club provisioning failed",
+            "Could not create the Keycloak groups for this club; please retry. " +
+                "If the problem persists, check the match-service logs and Keycloak availability.",
             req,
         )
 

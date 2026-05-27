@@ -46,6 +46,11 @@ class SecurityConfig(
                 auth.requestMatchers("/api/docs", "/api/docs/**",
                                      "/swagger-ui/**", "/v3/api-docs/**",
                                      "/api/openapi.yaml").permitAll()
+                // /members and /users require an authenticated platform-admin —
+                // match BEFORE the public /api/v1/clubs/** below so they don't
+                // fall under permitAll.
+                auth.requestMatchers("/api/v1/clubs/*/members/**").authenticated()
+                auth.requestMatchers("/api/v1/users/**").authenticated()
                 // Public reads (catalog browsing)
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/clubs/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
@@ -120,6 +125,6 @@ class SecurityConfig(
     }
 
     companion object {
-        private val TESSERA_ROLES = setOf("admin", "staff", "fan")
+        private val TESSERA_ROLES = setOf("platform-admin", "club-manager", "staff", "fan")
     }
 }

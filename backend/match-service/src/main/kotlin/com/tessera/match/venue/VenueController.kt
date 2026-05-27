@@ -36,7 +36,7 @@ class VenueController(
         service.get(id).toResponse()
 
     @PostMapping
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun create(@Valid @RequestBody req: VenueCreateRequest): ResponseEntity<VenueResponse> {
         val venue = service.create(req)
         val location = UriComponentsBuilder.fromPath("/api/v1/venues/{id}")
@@ -46,7 +46,7 @@ class VenueController(
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody req: VenueUpdateRequest,
@@ -58,7 +58,7 @@ class VenueController(
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('platform-admin')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) {
         service.delete(id)

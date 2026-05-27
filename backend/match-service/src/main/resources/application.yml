@@ -31,7 +31,29 @@ spring:
     username: ${SPRING_RABBITMQ_USERNAME:tessera}
     password: ${SPRING_RABBITMQ_PASSWORD:tessera}
 
-# Tessera-specific event bus config.
+# Tessera-specific config.
 tessera:
   events:
     exchange: tessera.events
+  seed:
+    clubs:
+      # DISABLED by default. Clubs on this platform are tenants (each is
+      # explicitly onboarded by a platform admin and bound to a manager via
+      # a Keycloak group), not a global catalogue — we don't want arbitrary
+      # Wikidata entries occupying that table.
+      #
+      # The seeder code lives in `com.tessera.match.seed.ClubsSeeder` and
+      # can be re-enabled for development by setting this to true. It still
+      # skips automatically when the club table is non-empty. The PowerShell
+      # equivalent for ad-hoc seeding is `scripts/seed/seed-clubs.ps1`.
+      enabled: ${TESSERA_SEED_CLUBS_ENABLED:false}
+      competitions: ${TESSERA_SEED_CLUBS_COMPETITIONS:Q182994,Q754488,Q13668768}
+  keycloak:
+    admin:
+      # Used by the match-service to manage Keycloak groups/users in the
+      # Tessera realm via the Admin REST API. Authenticates as the
+      # `tessera-bff` service account (client_credentials grant).
+      base-url: ${TESSERA_KEYCLOAK_ADMIN_BASE_URL:http://keycloak:8180}
+      realm: ${TESSERA_KEYCLOAK_ADMIN_REALM:tessera}
+      client-id: ${TESSERA_KEYCLOAK_ADMIN_CLIENT_ID:tessera-bff}
+      client-secret: ${TESSERA_KEYCLOAK_ADMIN_CLIENT_SECRET:change-me-in-production}
