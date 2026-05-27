@@ -2,19 +2,14 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
-import type { MatchDetail, PriceTier } from "../mockMatches";
 import { cn } from "@/lib/utils";
 import { createTicket, getTicket, payTicket, type Ticket } from "@/api/ticketApi";
 import { ApiError } from "@/api/client";
+import type { CatalogEntry } from "../lib/catalog";
 
 type Step = 1 | 2 | 3;
 type PaymentMethod = "MBWAY" | "CARD" | "CASH";
@@ -22,21 +17,20 @@ type PaymentMethod = "MBWAY" | "CARD" | "CASH";
 interface PurchaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  match: MatchDetail;
+  entry: CatalogEntry;
 }
 
 /**
- * 3-step purchase flow wired to the real ticket-service:
+ * 3-step purchase flow wired to the real ticket-service.
  *
- *   1. choose a price tier (+ "sou sócio" toggle)
- *   2. pick payment method, type phone number (MBWAY), confirm
+ *   1. choose "Normal" vs "Sócio" tier (the only two prices we model)
+ *   2. pick payment method, type phone (MBWAY), confirm
  *      → POST /tickets → POST /tickets/{id}/pay
- *      → for MBWAY: poll GET /tickets/{id} until status === PAID
- *   3. show the real QR + ticket id, plus shortcut links
+ *      → MBWAY: poll GET /tickets/{id} until PAID/expired
+ *   3. show the real QR + ticket id
  */
-export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps) {
+export function PurchaseModal({ open, onOpenChange, entry }: PurchaseModalProps) {
   const [step, setStep] = useState<Step>(1);
-  const [tier, setTier] = useState<PriceTier>(match.tiers[0]);
   const [supporter, setSupporter] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("MBWAY");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -45,11 +39,10 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
   const [error, setError] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Ticket | null>(null);
 
-  const total = supporter ? tier.socio : tier.normal;
+  const total = supporter ? entry.priceSupporter : entry.priceNormal;
 
   const reset = () => {
     setStep(1);
-    setTier(match.tiers[0]);
     setSupporter(false);
     setPaymentMethod("MBWAY");
     setPhoneNumber("");
@@ -69,7 +62,7 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
 
     setSubmitting(true);
     try {
-      const created = await createTicket({ eventId: match.eventId, supporter });
+      const created = await createTicket({ eventId: entry.eventId, supporter });
       const paid = await payTicket(created.id, {
         paymentMethod,
         phoneNumber: paymentMethod === "MBWAY" ? normalisePhone(phoneNumber) : undefined,
@@ -79,8 +72,6 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
         setTicket(paid);
         setStep(3);
       } else {
-        // MBWAY: ticket is PENDING until the gateway pushes the customer's
-        // phone and they accept. We poll the ticket every 2s.
         setAwaitingMbway(true);
         const finalTicket = await pollUntilResolved(paid.id);
         if (finalTicket.status === "PAID") {
@@ -112,8 +103,7 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
             Fluxo de compra
           </div>
           <DialogTitle className="mt-1">
-            {match.homeClubId === "ALJ" ? "Aljustrel" : match.homeClubId} vs{" "}
-            {match.awayClubId === "PRA" ? "Praiense" : match.awayClubId} · {match.date}
+            {entry.homeShort} vs {entry.awayShort}
           </DialogTitle>
           <DialogDescription className="sr-only">
             Fluxo de compra de bilhete em 3 passos.
@@ -124,9 +114,7 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
 
         {step === 1 && (
           <StepChooseTier
-            tiers={match.tiers}
-            tier={tier}
-            onTier={setTier}
+            entry={entry}
             supporter={supporter}
             onSupporter={setSupporter}
             onNext={() => setStep(2)}
@@ -135,7 +123,7 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
 
         {step === 2 && (
           <StepPayment
-            tier={tier}
+            tierLabel={supporter ? "Sócio" : "Normal"}
             total={total}
             paymentMethod={paymentMethod}
             onPaymentMethod={setPaymentMethod}
@@ -151,7 +139,7 @@ export function PurchaseModal({ open, onOpenChange, match }: PurchaseModalProps)
 
         {step === 3 && ticket && (
           <StepConfirmation
-            tier={tier}
+            tierLabel={supporter ? "Sócio" : "Normal"}
             ticket={ticket}
             onClose={() => onOpenChange(false)}
           />
@@ -192,28 +180,33 @@ function Stepper({ step }: { step: Step }) {
 }
 
 function StepChooseTier({
-  tiers,
-  tier,
-  onTier,
+  entry,
   supporter,
   onSupporter,
   onNext,
 }: {
-  tiers: PriceTier[];
-  tier: PriceTier;
-  onTier: (t: PriceTier) => void;
+  entry: CatalogEntry;
   supporter: boolean;
   onSupporter: (b: boolean) => void;
   onNext: () => void;
 }) {
+  const options = [
+    { key: false, name: "Normal", description: "Bilhete adulto", price: entry.priceNormal },
+    {
+      key: true,
+      name: "Sócio",
+      description: "Com cartão de sócio válido",
+      price: entry.priceSupporter,
+    },
+  ];
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        {tiers.map((t) => {
-          const on = t.name === tier.name;
+        {options.map((o) => {
+          const on = o.key === supporter;
           return (
             <label
-              key={t.name}
+              key={String(o.key)}
               className={cn(
                 "flex items-center gap-3 rounded-md border px-3 py-2.5 cursor-pointer",
                 on && "border-primary bg-primary/5",
@@ -224,7 +217,7 @@ function StepChooseTier({
                 name="tier"
                 className="sr-only"
                 checked={on}
-                onChange={() => onTier(t)}
+                onChange={() => onSupporter(o.key)}
               />
               <span
                 className={cn(
@@ -235,29 +228,14 @@ function StepChooseTier({
                 {on && <span className="size-2 rounded-full bg-primary" />}
               </span>
               <div className="flex-1">
-                <div className="text-sm font-medium">{t.name}</div>
-                {t.scarce ? (
-                  <div className="text-[11px] text-status-pending">Últimos {t.left}</div>
-                ) : (
-                  <div className="text-[11px] text-muted-foreground">{t.description}</div>
-                )}
+                <div className="text-sm font-medium">{o.name}</div>
+                <div className="text-[11px] text-muted-foreground">{o.description}</div>
               </div>
-              <span className="font-mono text-sm">
-                {supporter ? t.socio : t.normal},00 €
-              </span>
+              <span className="font-mono text-sm">{o.price.toFixed(2)} €</span>
             </label>
           );
         })}
       </div>
-      <label className="flex items-center gap-2 text-xs text-muted-foreground">
-        <input
-          type="checkbox"
-          className="size-3.5 rounded border-input"
-          checked={supporter}
-          onChange={(e) => onSupporter(e.target.checked)}
-        />
-        Sou sócio (–50%)
-      </label>
       <div className="flex justify-end gap-2 pt-2">
         <Button onClick={onNext}>Continuar →</Button>
       </div>
@@ -266,7 +244,7 @@ function StepChooseTier({
 }
 
 function StepPayment({
-  tier,
+  tierLabel,
   total,
   paymentMethod,
   onPaymentMethod,
@@ -278,7 +256,7 @@ function StepPayment({
   onBack,
   onConfirm,
 }: {
-  tier: PriceTier;
+  tierLabel: string;
   total: number;
   paymentMethod: PaymentMethod;
   onPaymentMethod: (p: PaymentMethod) => void;
@@ -349,8 +327,7 @@ function StepPayment({
             disabled={submitting}
           />
           <p className="text-[11px] text-muted-foreground">
-            Formato internacional sem espaços. A notificação chega ao telemóvel
-            registado no MB WAY.
+            Formato internacional sem espaços. A notificação chega ao telemóvel registado no MB WAY.
           </p>
         </div>
       )}
@@ -358,11 +335,11 @@ function StepPayment({
       <div className="rounded-md border bg-muted/50 px-3 py-2.5 text-xs space-y-1">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Lugar</span>
-          <span>{tier.name}</span>
+          <span>{tierLabel}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">A pagar</span>
-          <span className="font-semibold">{total},00 €</span>
+          <span className="font-semibold">{total.toFixed(2)} €</span>
         </div>
       </div>
 
@@ -392,11 +369,11 @@ function StepPayment({
 }
 
 function StepConfirmation({
-  tier,
+  tierLabel,
   ticket,
   onClose,
 }: {
-  tier: PriceTier;
+  tierLabel: string;
   ticket: Ticket;
   onClose: () => void;
 }) {
@@ -410,7 +387,7 @@ function StepConfirmation({
         <div className="font-mono text-[11px] text-muted-foreground mt-2">
           {ticket.code.slice(0, 8)}…{ticket.code.slice(-4)}
         </div>
-        <div className="text-sm">{tier.name}</div>
+        <div className="text-sm">{tierLabel}</div>
       </div>
       <div className="flex flex-col gap-2">
         <Button asChild>

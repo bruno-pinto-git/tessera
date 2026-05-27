@@ -2,61 +2,60 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MatchCard } from "../components/MatchCard";
-import { MOCK_MATCHES, type MatchListItem } from "../mockMatches";
-import { clubBy } from "@/features/clubs/clubs";
+import { useEventsCatalog } from "../hooks/useEventsCatalog";
+import type { CatalogEntry } from "../lib/catalog";
 import { cn } from "@/lib/utils";
-
-const SEASONS = ["2025/26", "2024/25"];
 
 interface Filter {
   key: string;
   label: string;
-  match: (m: MatchListItem) => boolean;
+  match: (e: CatalogEntry) => boolean;
 }
 
 const FILTERS: Filter[] = [
   { key: "all", label: "Todos", match: () => true },
-  // "Em casa" / "Fora" are placeholders until we know the user's favourite
-  // club — for now they're hard-coded against the demo club (ALJ).
-  { key: "home", label: "Em casa", match: (m) => m.homeClubId === "ALJ" },
-  { key: "away", label: "Fora", match: (m) => m.awayClubId === "ALJ" },
   {
     key: "this-week",
     label: "Esta semana",
-    match: (m) => {
-      const k = new Date(m.kickoffAt);
+    match: (e) => {
+      if (!e.kickoffAt) return false;
+      const t = new Date(e.kickoffAt).getTime();
       const now = Date.now();
-      return k.getTime() - now < 7 * 24 * 3600 * 1000;
+      return t - now < 7 * 24 * 3600 * 1000 && t > now;
     },
+  },
+  {
+    key: "upcoming",
+    label: "Por jogar",
+    match: (e) =>
+      e.matchStatus === "SCHEDULED" ||
+      e.matchStatus === "LIVE" ||
+      e.matchStatus === "POSTPONED" ||
+      e.matchStatus == null,
   },
 ];
 
 export function EventsPage() {
   const [filter, setFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
-  const [season, setSeason] = useState(SEASONS[0]);
+  const { entries, loading, error } = useEventsCatalog();
 
   const visible = useMemo(() => {
     const f = FILTERS.find((x) => x.key === filter) ?? FILTERS[0];
     const q = query.trim().toLowerCase();
-    return MOCK_MATCHES.filter(f.match).filter((m) => {
+    return entries.filter(f.match).filter((e) => {
       if (!q) return true;
-      const home = clubBy(m.homeClubId);
-      const away = clubBy(m.awayClubId);
       return (
-        home.name.toLowerCase().includes(q) ||
-        away.name.toLowerCase().includes(q) ||
-        m.venue.toLowerCase().includes(q)
+        e.homeClubName.toLowerCase().includes(q) ||
+        e.awayClubName.toLowerCase().includes(q) ||
+        (e.venueName?.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [filter, query]);
+  }, [entries, filter, query]);
 
-  // Counts under each filter pill — recomputed when the underlying mock
-  // changes (today it's a constant, but the call-site reads cleaner this
-  // way once a real query lands).
   const counts = useMemo(
-    () => Object.fromEntries(FILTERS.map((f) => [f.key, MOCK_MATCHES.filter(f.match).length])),
-    [],
+    () => Object.fromEntries(FILTERS.map((f) => [f.key, entries.filter(f.match).length])),
+    [entries],
   );
 
   return (
@@ -65,8 +64,8 @@ export function EventsPage() {
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">Próximos jogos</h1>
           <p className="text-sm text-muted-foreground max-w-xl">
-            Calendário dos próximos jogos com bilheteira aberta. Reserva o teu lugar e apresenta
-            o QR à entrada do estádio.
+            Calendário dos próximos jogos com bilheteira aberta. Reserva o teu lugar e apresenta o
+            QR à entrada do estádio.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -79,15 +78,6 @@ export function EventsPage() {
               className="h-9 w-64 pl-9"
             />
           </div>
-          <select
-            value={season}
-            onChange={(e) => setSeason(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            {SEASONS.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
         </div>
       </header>
 
@@ -106,20 +96,31 @@ export function EventsPage() {
               )}
             >
               {f.label}
-              <span className="ml-1.5 text-xs text-muted-foreground">{counts[f.key]}</span>
+              <span className="ml-1.5 text-xs text-muted-foreground">{counts[f.key] ?? 0}</span>
             </button>
           );
         })}
       </div>
 
-      {visible.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-12 text-center">
-          Não encontramos jogos com esses critérios.
+      {loading && (
+        <p className="text-sm text-muted-foreground py-12 text-center">A carregar jogos…</p>
+      )}
+      {error && (
+        <p className="text-sm text-destructive py-12 text-center">
+          Falha a carregar jogos: {error}
         </p>
-      ) : (
+      )}
+      {!loading && !error && visible.length === 0 && (
+        <p className="text-sm text-muted-foreground py-12 text-center">
+          {entries.length === 0
+            ? "Ainda não há jogos com bilheteira aberta. Volta em breve."
+            : "Não encontramos jogos com esses critérios."}
+        </p>
+      )}
+      {!loading && !error && visible.length > 0 && (
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {visible.map((m) => (
-            <MatchCard key={m.id} match={m} />
+          {visible.map((e) => (
+            <MatchCard key={e.eventId} entry={e} />
           ))}
         </section>
       )}

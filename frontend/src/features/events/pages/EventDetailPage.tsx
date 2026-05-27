@@ -5,26 +5,30 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Crest } from "@/components/Crest";
-import { useAuth } from "@/auth/useAuth";
-import { clubBy } from "@/features/clubs/clubs";
-import { MOCK_MATCH_DETAIL, type MatchDetail, type PriceTier } from "../mockMatches";
+import { useEventCatalog } from "../hooks/useEventsCatalog";
 import { PurchaseModal } from "../components/PurchaseModal";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import type { CatalogEntry } from "../lib/catalog";
 
 export function EventDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
-  const match = MOCK_MATCH_DETAIL[id];
+  const { entry, loading, error, notFound } = useEventCatalog(id);
   const [open, setOpen] = useState(false);
 
-  if (!match) return <NotFoundPage />;
+  if (notFound) return <NotFoundPage />;
+  if (loading) {
+    return <p className="text-sm text-muted-foreground py-12 text-center">A carregar jogo…</p>;
+  }
+  if (error || !entry) {
+    return (
+      <p className="text-sm text-destructive py-12 text-center">
+        Falha a carregar: {error ?? "evento indisponível"}
+      </p>
+    );
+  }
 
-  const home = clubBy(match.homeClubId);
-  const away = clubBy(match.awayClubId);
-  const cheapest = match.tiers.reduce(
-    (acc, t) => (t.normal < acc ? t.normal : acc),
-    Number.POSITIVE_INFINITY,
-  );
+  const { day, date, time } = formatKickoff(entry.kickoffAt);
 
   return (
     <>
@@ -32,8 +36,7 @@ export function EventDetailPage() {
         <Breadcrumb
           parts={[
             { label: "Jogos", to: "/events" },
-            { label: match.competition.split("·")[0].trim(), to: "/events" },
-            { label: `${home.short} vs ${away.short}` },
+            { label: `${entry.homeShort} vs ${entry.awayShort}` },
           ]}
         />
 
@@ -46,47 +49,63 @@ export function EventDetailPage() {
             }}
           >
             <div className="flex items-center justify-between gap-6 flex-wrap">
-              <ClubBlock initials={home.initials} tone={home.tone} name={home.name} side="Casa" />
+              <ClubBlock
+                initials={entry.homeInitials}
+                tone={entry.homeTone}
+                name={entry.homeClubName}
+                side="Casa"
+              />
               <div className="text-center">
                 <div className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">
-                  {match.matchday}
+                  {entry.homeCategory ?? "Jogo"}
                 </div>
                 <div className="text-5xl font-bold tracking-tight tabular-nums text-muted-foreground">
-                  vs
+                  {entry.homeScore != null && entry.awayScore != null
+                    ? `${entry.homeScore} – ${entry.awayScore}`
+                    : "vs"}
                 </div>
-                <div className="mt-3">
-                  <StatusBadge status={match.status} />
-                </div>
+                {entry.matchStatus && (
+                  <div className="mt-3">
+                    <StatusBadge status={entry.matchStatus} />
+                  </div>
+                )}
               </div>
-              <ClubBlock initials={away.initials} tone={away.tone} name={away.name} side="Fora" />
+              <ClubBlock
+                initials={entry.awayInitials}
+                tone={entry.awayTone}
+                name={entry.awayClubName}
+                side="Fora"
+              />
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 border-t divide-x text-sm">
-            <Meta label="Data" value={`${match.day}, ${match.date}`} sub={match.time} />
-            <Meta label="Estádio" value={match.venue} sub={home.short} />
-            <Meta label="Competição" value="Campeonato de Portugal" sub="Série D · J28" />
+          <div className="grid grid-cols-2 md:grid-cols-3 border-t divide-x text-sm">
+            <Meta label="Data" value={date ? `${day}, ${date}` : "Por confirmar"} sub={time} />
             <Meta
-              label="Lotação"
-              value={`${match.sold.toLocaleString("pt-PT")} / ${match.capacity.toLocaleString("pt-PT")}`}
-              sub={`${Math.round((match.sold / match.capacity) * 100)}% ocupado`}
+              label="Estádio"
+              value={entry.venueName ?? "Por definir"}
+              sub={entry.venueCapacity ? `${entry.venueCapacity.toLocaleString("pt-PT")} lugares` : undefined}
+            />
+            <Meta
+              label="Bilheteira"
+              value={entry.eventStatus === "PUBLISHED" ? "Aberta" : labelForStatus(entry.eventStatus)}
+              sub={`Normal ${entry.priceNormal.toFixed(2)} € · Sócio ${entry.priceSupporter.toFixed(2)} €`}
             />
           </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <section className="lg:col-span-2 space-y-6">
-            <PriceTable tiers={match.tiers} />
-            <Indications match={match} />
+            <PriceTable entry={entry} />
+            <Indications time={time} />
           </section>
 
-          <aside className="space-y-4">
-            <PurchaseSticky cheapest={cheapest} onBuy={() => setOpen(true)} />
-            <AdminSalesCard match={match} />
+          <aside>
+            <PurchaseSticky entry={entry} onBuy={() => setOpen(true)} />
           </aside>
         </div>
       </div>
 
-      <PurchaseModal open={open} onOpenChange={setOpen} match={match} />
+      <PurchaseModal open={open} onOpenChange={setOpen} entry={entry} />
     </>
   );
 }
@@ -117,7 +136,7 @@ function ClubBlock({
   side,
 }: {
   initials: string;
-  tone: ReturnType<typeof clubBy>["tone"];
+  tone: CatalogEntry["homeTone"];
   name: string;
   side: string;
 }) {
@@ -136,68 +155,63 @@ function Meta({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div className="px-6 py-4">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="font-medium text-sm mt-0.5">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+      <div className="font-medium text-sm mt-0.5 truncate">{value}</div>
+      {sub && <div className="text-xs text-muted-foreground truncate">{sub}</div>}
     </div>
   );
 }
 
-function PriceTable({ tiers }: { tiers: PriceTier[] }) {
+function PriceTable({ entry }: { entry: CatalogEntry }) {
   return (
     <Card>
       <div className="px-6 py-5 border-b">
         <h2 className="font-semibold">Tabela de preços</h2>
         <p className="text-sm text-muted-foreground">
-          Escolhe o tipo de bilhete. Sócios pagam abaixo.
+          Sócios pagam o preço de sócio. Mostra o cartão no portão.
         </p>
       </div>
       <div className="divide-y">
-        {tiers.map((t) => (
-          <div key={t.name} className="px-6 py-4 flex items-center gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{t.name}</span>
-                {t.scarce && (
-                  <span className="text-[11px] text-status-pending font-medium">
-                    Últimos {t.left}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{t.description}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-6 text-right">
-              <div>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Normal
-                </div>
-                <div className="font-mono font-semibold">{t.normal},00 €</div>
-              </div>
-              <div>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Sócio
-                </div>
-                <div className="font-mono font-semibold text-primary">{t.socio},00 €</div>
-              </div>
-            </div>
-          </div>
-        ))}
+        <PriceRow label="Bilhete normal" subtitle="Adulto" price={entry.priceNormal} />
+        <PriceRow label="Sócio do clube" subtitle="Com cartão válido" price={entry.priceSupporter} accent />
       </div>
     </Card>
   );
 }
 
-function Indications({ match }: { match: MatchDetail }) {
+function PriceRow({
+  label,
+  subtitle,
+  price,
+  accent,
+}: {
+  label: string;
+  subtitle: string;
+  price: number;
+  accent?: boolean;
+}) {
+  return (
+    <div className="px-6 py-4 flex items-center gap-4">
+      <div className="flex-1">
+        <div className="font-medium">{label}</div>
+        <p className="text-xs text-muted-foreground">{subtitle}</p>
+      </div>
+      <div className={`font-mono font-semibold ${accent ? "text-primary" : ""}`}>
+        {price.toFixed(2)} €
+      </div>
+    </div>
+  );
+}
+
+function Indications({ time }: { time: string }) {
   return (
     <Card>
       <div className="px-6 py-5 border-b">
         <h2 className="font-semibold">Indicações</h2>
       </div>
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm">
-        <Row k="Portões abrem">{match.gatesOpen}</Row>
-        <Row k="Apito inicial">{match.time}</Row>
-        <Row k="Estacionamento">{match.parking}</Row>
-        <Row k="Acessibilidade">{match.accessibility}</Row>
-        <Row k="Pagamento à porta">MBWAY, dinheiro</Row>
+        <Row k="Apito inicial">{time || "—"}</Row>
+        <Row k="Pagamento à porta">MB WAY, dinheiro</Row>
+        <Row k="QR no telemóvel">Sem papel; mostra o ecrã ao portão</Row>
         <Row k="Política">Sem reembolso após apito</Row>
       </div>
     </Card>
@@ -213,85 +227,56 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
   );
 }
 
-function PurchaseSticky({ cheapest, onBuy }: { cheapest: number; onBuy: () => void }) {
+function PurchaseSticky({ entry, onBuy }: { entry: CatalogEntry; onBuy: () => void }) {
+  const disabled = entry.eventStatus !== "PUBLISHED";
   return (
     <Card className="lg:sticky lg:top-6">
       <div className="px-6 pt-6 pb-4 border-b">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Comprar</div>
         <div className="mt-2 flex items-baseline gap-1">
-          <span className="text-3xl font-bold tracking-tight">{cheapest},00</span>
+          <span className="text-3xl font-bold tracking-tight">{entry.priceFrom.toFixed(2)}</span>
           <span className="text-sm text-muted-foreground">€ a partir de</span>
         </div>
         <p className="text-xs text-muted-foreground mt-1">QR no momento. Sem filas, sem papel.</p>
       </div>
       <div className="px-6 py-5 space-y-3">
-        <Button size="lg" className="w-full" onClick={onBuy}>
-          Comprar bilhete
-        </Button>
-        <Button size="lg" variant="outline" className="w-full">
-          Sou sócio
+        <Button size="lg" className="w-full" onClick={onBuy} disabled={disabled}>
+          {disabled ? labelForStatus(entry.eventStatus) : "Comprar bilhete"}
         </Button>
       </div>
       <div className="border-t px-6 py-4 text-xs text-muted-foreground space-y-1">
         <div className="flex items-center justify-between">
           <span>Pagamento</span>
-          <span className="text-foreground">MBWAY · Cartão</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Reembolso</span>
-          <span className="text-foreground">Até 24h antes</span>
+          <span className="text-foreground">MB WAY · Cartão</span>
         </div>
       </div>
     </Card>
   );
 }
 
-function AdminSalesCard({ match }: { match: MatchDetail }) {
-  const { hasRole } = useAuth();
-  if (!hasRole("admin")) return null;
-  const revenue = match.sold * 8; // rough proxy until the real query lands
-  return (
-    <Card>
-      <div className="px-6 py-4 flex items-center justify-between border-b">
-        <div>
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-            Apenas admin
-          </div>
-          <div className="font-semibold text-sm">Vendas</div>
-        </div>
-        <Crest initials="A" tone="forest" size={28} square />
-      </div>
-      <div className="px-6 py-4 grid grid-cols-2 gap-3 text-sm">
-        <Stat label="Pagos" value={match.sold.toLocaleString("pt-PT")} tone="paid" />
-        <Stat label="Pendentes" value={match.pending.toLocaleString("pt-PT")} tone="pending" />
-        <Stat label="Validados" value={match.validated.toLocaleString("pt-PT")} tone="validated" />
-        <Stat label="Receita" value={`${revenue.toLocaleString("pt-PT")} €`} />
-      </div>
-    </Card>
-  );
+function labelForStatus(s: CatalogEntry["eventStatus"]): string {
+  switch (s) {
+    case "PUBLISHED":
+      return "Aberta";
+    case "DRAFT":
+      return "Bilheteira em preparação";
+    case "SALES_CLOSED":
+      return "Bilheteira fechada";
+    case "CANCELLED":
+      return "Cancelado";
+  }
 }
 
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "paid" | "pending" | "validated";
-}) {
-  const toneCls =
-    tone === "paid"
-      ? "text-status-paid"
-      : tone === "pending"
-        ? "text-status-pending"
-        : tone === "validated"
-          ? "text-status-validated"
-          : "text-foreground";
-  return (
-    <div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`font-mono font-semibold ${toneCls}`}>{value}</div>
-    </div>
-  );
+function formatKickoff(iso: string | null): { day: string; date: string; time: string } {
+  if (!iso) return { day: "—", date: "", time: "" };
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return { day: "—", date: iso, time: "" };
+  const day = d.toLocaleDateString("pt-PT", { weekday: "short" }).replace(".", "");
+  const date = d.toLocaleDateString("pt-PT", { day: "2-digit", month: "short" }).replace(".", "");
+  const time = d.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" });
+  return {
+    day: day.charAt(0).toUpperCase() + day.slice(1),
+    date: date.charAt(0).toUpperCase() + date.slice(1),
+    time,
+  };
 }
