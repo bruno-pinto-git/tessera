@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { keycloak, type Role } from "./keycloak";
 import { AuthContext, type AuthContextValue } from "./AuthContext";
 
-const ROLE_VALUES: Role[] = ["admin", "staff", "fan"];
+const ROLE_VALUES: Role[] = ["platform-admin", "club-manager", "staff", "fan"];
 
 interface AuthProviderProps {
   children: ReactNode;

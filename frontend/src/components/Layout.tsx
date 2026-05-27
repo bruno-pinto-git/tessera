@@ -38,12 +38,17 @@ export function Layout() {
                   <NavItem to="/tickets/mine">Os meus bilhetes</NavItem>
                 </li>
               )}
-              {(hasRole("staff") || hasRole("admin")) && (
+              {(hasRole("staff") || hasRole("platform-admin")) && (
                 <li>
                   <NavItem to="/validate">Validar</NavItem>
                 </li>
               )}
-              {hasRole("admin") && (
+              {hasRole("club-manager") && (
+                <li>
+                  <NavItem to="/club">O meu clube</NavItem>
+                </li>
+              )}
+              {hasRole("platform-admin") && (
                 <li>
                   <NavItem to="/admin">Admin</NavItem>
                 </li>

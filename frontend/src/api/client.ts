@@ -73,6 +73,14 @@ export async function apiPut<TReq, TRes>(path: string, body: TReq): Promise<TRes
   return unwrap<TRes>(res);
 }
 
+export async function apiPatch<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
+  const res = await apiFetch(`${API_PREFIX}${path}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+  return unwrap<TRes>(res);
+}
+
 export async function apiDelete(path: string): Promise<void> {
   const res = await apiFetch(`${API_PREFIX}${path}`, { method: "DELETE" });
   await unwrap<void>(res);

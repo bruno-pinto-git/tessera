@@ -7,4 +7,4 @@ export const keycloak = new Keycloak({
   clientId: env.keycloak.clientId,
 });
 
-export type Role = "admin" | "staff" | "fan";
+export type Role = "platform-admin" | "club-manager" | "staff" | "fan";

@@ -35,7 +35,13 @@ export function UserMenu() {
     .join("");
   const primaryRole = roles[0] ?? "fan";
   const roleLabel =
-    primaryRole === "admin" ? "Admin" : primaryRole === "staff" ? "Staff" : "Adepto";
+    primaryRole === "platform-admin"
+      ? "Admin"
+      : primaryRole === "club-manager"
+        ? "Gestor de clube"
+        : primaryRole === "staff"
+          ? "Staff"
+          : "Adepto";
 
   return (
     <DropdownMenu>
