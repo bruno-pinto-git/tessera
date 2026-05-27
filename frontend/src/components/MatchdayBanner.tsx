@@ -46,8 +46,7 @@ export function MatchdayBanner({ home, away, kickoff, href }: MatchdayBannerProp
             <strong className="font-medium">{away}</strong>
           </span>
           <span className="text-muted-foreground hidden sm:inline">
-            · começa em{" "}
-            <span className="tabular-nums font-medium text-foreground">{kickoff}</span>
+            · começa em <span className="tabular-nums font-medium text-foreground">{kickoff}</span>
           </span>
         </div>
         <span

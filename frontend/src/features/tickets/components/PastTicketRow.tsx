@@ -21,9 +21,7 @@ export function PastTicketRow({ ticket }: { ticket: PastTicketView }) {
         </div>
       </div>
       {ticket.cancelled ? null : (
-        <span className="text-xs text-muted-foreground hidden md:inline">
-          {ticket.validatedAt}
-        </span>
+        <span className="text-xs text-muted-foreground hidden md:inline">{ticket.validatedAt}</span>
       )}
       <StatusBadge status={ticket.cancelled ? "CANCELLED" : "VALIDATED"} />
     </li>

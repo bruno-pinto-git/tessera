@@ -26,8 +26,8 @@ export function MyTicketsPage() {
         <h1 className="text-4xl font-bold tracking-tight">Os meus bilhetes</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
           Apresenta o QR à entrada do estádio. Faz uma{" "}
-          <span className="text-foreground">captura de ecrã</span> se vais para uma zona sem rede
-          — o QR funciona offline.
+          <span className="text-foreground">captura de ecrã</span> se vais para uma zona sem rede —
+          o QR funciona offline.
         </p>
       </header>
 
@@ -88,10 +88,7 @@ function Group({
     <section className="space-y-4">
       <div>
         <h2
-          className={cn(
-            "text-lg font-semibold tracking-tight",
-            muted && "text-muted-foreground",
-          )}
+          className={cn("text-lg font-semibold tracking-tight", muted && "text-muted-foreground")}
         >
           {title}
         </h2>

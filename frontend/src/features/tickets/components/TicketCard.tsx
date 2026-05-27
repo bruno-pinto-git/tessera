@@ -29,9 +29,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
           <Row label="Pago em">{new Date(ticket.paymentDate).toLocaleString("pt-PT")}</Row>
         )}
         {ticket.validationDate && (
-          <Row label="Validado em">
-            {new Date(ticket.validationDate).toLocaleString("pt-PT")}
-          </Row>
+          <Row label="Validado em">{new Date(ticket.validationDate).toLocaleString("pt-PT")}</Row>
         )}
       </CardContent>
     </Card>

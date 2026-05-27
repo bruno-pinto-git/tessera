@@ -149,8 +149,7 @@ function IdleView({
       <div
         className="relative flex-1 overflow-hidden"
         style={{
-          background:
-            "radial-gradient(60% 50% at 50% 45%, oklch(0.25 0.01 240), oklch(0.12 0 0))",
+          background: "radial-gradient(60% 50% at 50% 45%, oklch(0.25 0.01 240), oklch(0.12 0 0))",
         }}
       >
         <div

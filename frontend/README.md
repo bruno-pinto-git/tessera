@@ -27,15 +27,15 @@ if you need to point elsewhere.
 
 ## Scripts
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | TS check + production bundle into `dist/` |
-| `npm run preview` | Serve the built bundle for sanity checks |
-| `npm run lint` | ESLint |
-| `npm run format` | Prettier write |
-| `npm run format:check` | Prettier check (CI-friendly) |
-| `npm run codegen:api` | Regenerate `src/api/schema.gen.ts` from `../docs/api/openapi.yaml` |
+| Command                | What it does                                                       |
+| ---------------------- | ------------------------------------------------------------------ |
+| `npm run dev`          | Vite dev server with HMR                                           |
+| `npm run build`        | TS check + production bundle into `dist/`                          |
+| `npm run preview`      | Serve the built bundle for sanity checks                           |
+| `npm run lint`         | ESLint                                                             |
+| `npm run format`       | Prettier write                                                     |
+| `npm run format:check` | Prettier check (CI-friendly)                                       |
+| `npm run codegen:api`  | Regenerate `src/api/schema.gen.ts` from `../docs/api/openapi.yaml` |
 
 ## Project layout
 
@@ -101,11 +101,11 @@ Components land in `src/components/ui/` and pick up our tokens from
 
 ## Env vars
 
-| Var | Example | Used by |
-|---|---|---|
-| `VITE_KEYCLOAK_URL` | `http://localhost:8000` (via NGINX) or `http://localhost:8180` (direct) | `auth/keycloak.ts` |
-| `VITE_KEYCLOAK_REALM` | `tessera` | `auth/keycloak.ts` |
-| `VITE_KEYCLOAK_CLIENT_ID` | `tessera-web` | `auth/keycloak.ts` |
-| `VITE_API_PROXY_TARGET` | `http://localhost:8080` | `vite.config.ts` (dev only) |
+| Var                       | Example                                                                 | Used by                     |
+| ------------------------- | ----------------------------------------------------------------------- | --------------------------- |
+| `VITE_KEYCLOAK_URL`       | `http://localhost:8000` (via NGINX) or `http://localhost:8180` (direct) | `auth/keycloak.ts`          |
+| `VITE_KEYCLOAK_REALM`     | `tessera`                                                               | `auth/keycloak.ts`          |
+| `VITE_KEYCLOAK_CLIENT_ID` | `tessera-web`                                                           | `auth/keycloak.ts`          |
+| `VITE_API_PROXY_TARGET`   | `http://localhost:8080`                                                 | `vite.config.ts` (dev only) |
 
 See `.env.example` for the full list.

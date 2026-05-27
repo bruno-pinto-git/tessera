@@ -38,30 +38,30 @@ components** — always use Tailwind classes that resolve to these tokens
 
 ### Colour roles (light theme)
 
-| Token | OKLCH | Use |
-|---|---|---|
-| `--background` / `bg-background` | `oklch(1 0 0)` (white) | App canvas |
-| `--foreground` / `text-foreground` | `oklch(0.145 0 0)` (near-black) | Default text |
-| `--primary` / `bg-primary` | `oklch(0.45 0.13 152)` (forest green) | Brand actions, CTAs |
-| `--primary-foreground` | `oklch(0.985 0 0)` | Text on `--primary` |
-| `--secondary` | `oklch(0.97 0 0)` | Subtle backgrounds |
-| `--muted-foreground` | `oklch(0.556 0 0)` | Secondary text, hints |
-| `--accent` | `oklch(0.97 0 0)` | Hover states |
-| `--destructive` | `oklch(0.577 0.245 27.325)` (red) | Errors, dangerous actions |
-| `--border` / `border` | `oklch(0.922 0 0)` | All borders, dividers |
-| `--ring` | green @ 40% alpha | Focus rings |
+| Token                              | OKLCH                                 | Use                       |
+| ---------------------------------- | ------------------------------------- | ------------------------- |
+| `--background` / `bg-background`   | `oklch(1 0 0)` (white)                | App canvas                |
+| `--foreground` / `text-foreground` | `oklch(0.145 0 0)` (near-black)       | Default text              |
+| `--primary` / `bg-primary`         | `oklch(0.45 0.13 152)` (forest green) | Brand actions, CTAs       |
+| `--primary-foreground`             | `oklch(0.985 0 0)`                    | Text on `--primary`       |
+| `--secondary`                      | `oklch(0.97 0 0)`                     | Subtle backgrounds        |
+| `--muted-foreground`               | `oklch(0.556 0 0)`                    | Secondary text, hints     |
+| `--accent`                         | `oklch(0.97 0 0)`                     | Hover states              |
+| `--destructive`                    | `oklch(0.577 0.245 27.325)` (red)     | Errors, dangerous actions |
+| `--border` / `border`              | `oklch(0.922 0 0)`                    | All borders, dividers     |
+| `--ring`                           | green @ 40% alpha                     | Focus rings               |
 
 ### Semantic status colours (domain-specific)
 
 Used by `<StatusBadge>` to render ticket / match status. Don't invent
 new colours for status — use these.
 
-| Token | Tailwind class | Meaning |
-|---|---|---|
-| `--status-pending` | `text-status-pending` | Ticket created, not paid (amber) |
-| `--status-paid` | `text-status-paid` | Ticket paid, ready to use (blue) |
-| `--status-validated` | `text-status-validated` | Ticket scanned at gate (green) |
-| `--status-cancelled` | `text-status-cancelled` | Cancelled / refunded (red) |
+| Token                | Tailwind class          | Meaning                          |
+| -------------------- | ----------------------- | -------------------------------- |
+| `--status-pending`   | `text-status-pending`   | Ticket created, not paid (amber) |
+| `--status-paid`      | `text-status-paid`      | Ticket paid, ready to use (blue) |
+| `--status-validated` | `text-status-validated` | Ticket scanned at gate (green)   |
+| `--status-cancelled` | `text-status-cancelled` | Cancelled / refunded (red)       |
 
 ### Typography
 
@@ -86,15 +86,15 @@ in components — the tokens handle it. (Dark mode toggle UI is TODO.)
 We ship `shadcn/ui new-york` style. All UI primitives live in
 `src/components/ui/`. Already in the repo:
 
-| Component | Path | Variants |
-|---|---|---|
-| `<Button>` | `ui/button.tsx` | default, destructive, outline, secondary, ghost, link; sizes default/sm/lg/icon |
-| `<Card>` (+ Header / Title / Description / Content / Footer) | `ui/card.tsx` | one variant |
-| `<Input>` | `ui/input.tsx` | one variant |
-| `<Label>` | `ui/label.tsx` | one variant |
-| `<Badge>` | `ui/badge.tsx` | default, secondary, destructive, outline, **pending/paid/validated/cancelled** |
-| `<StatusBadge>` | `ui/status-badge.tsx` | maps domain status strings to the right Badge variant |
-| `<Separator>` | `ui/separator.tsx` | horizontal / vertical |
+| Component                                                    | Path                  | Variants                                                                        |
+| ------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------- |
+| `<Button>`                                                   | `ui/button.tsx`       | default, destructive, outline, secondary, ghost, link; sizes default/sm/lg/icon |
+| `<Card>` (+ Header / Title / Description / Content / Footer) | `ui/card.tsx`         | one variant                                                                     |
+| `<Input>`                                                    | `ui/input.tsx`        | one variant                                                                     |
+| `<Label>`                                                    | `ui/label.tsx`        | one variant                                                                     |
+| `<Badge>`                                                    | `ui/badge.tsx`        | default, secondary, destructive, outline, **pending/paid/validated/cancelled**  |
+| `<StatusBadge>`                                              | `ui/status-badge.tsx` | maps domain status strings to the right Badge variant                           |
+| `<Separator>`                                                | `ui/separator.tsx`    | horizontal / vertical                                                           |
 
 If you need more (Dialog, Form, Select, Tabs, Toast, Table, Sheet, etc.),
 add them via the shadcn CLI from inside `frontend/`:
@@ -119,17 +119,17 @@ from `index.css`.
 
 ## Routes (current + planned)
 
-| Path | Role | Status | Component |
-|---|---|---|---|
-| `/` | public | ✅ done | `HomePage` |
-| `/events` | public | 🚧 stub | `features/events/pages/EventsPage` |
-| `/events/:id` | public | ⏳ TODO | not created yet |
-| `/tickets/mine` | authenticated | 🚧 stub | `features/tickets/pages/MyTicketsPage` |
-| `/tickets/sandbox` | authenticated | ✅ dev sandbox | `features/tickets/pages/TicketsPage` |
-| `/validate` | staff, admin | 🚧 stub | `features/validation/pages/ValidatePage` |
-| `/admin` | admin | 🚧 inline | inline in `AppRoutes` |
-| `/unauthorized` | — | ✅ done | `UnauthorizedPage` |
-| `*` | — | ✅ done | `NotFoundPage` |
+| Path               | Role          | Status         | Component                                |
+| ------------------ | ------------- | -------------- | ---------------------------------------- |
+| `/`                | public        | ✅ done        | `HomePage`                               |
+| `/events`          | public        | 🚧 stub        | `features/events/pages/EventsPage`       |
+| `/events/:id`      | public        | ⏳ TODO        | not created yet                          |
+| `/tickets/mine`    | authenticated | 🚧 stub        | `features/tickets/pages/MyTicketsPage`   |
+| `/tickets/sandbox` | authenticated | ✅ dev sandbox | `features/tickets/pages/TicketsPage`     |
+| `/validate`        | staff, admin  | 🚧 stub        | `features/validation/pages/ValidatePage` |
+| `/admin`           | admin         | 🚧 inline      | inline in `AppRoutes`                    |
+| `/unauthorized`    | —             | ✅ done        | `UnauthorizedPage`                       |
+| `*`                | —             | ✅ done        | `NotFoundPage`                           |
 
 ## Pages We Need You (Claude Design) to Design
 
@@ -169,7 +169,7 @@ In priority order:
 ## What's Already Wired
 
 - **Auth**: `useAuth()` hook exposes `{ authenticated, username, roles,
-  hasRole, login, logout }`. Use this for conditional UI.
+hasRole, login, logout }`. Use this for conditional UI.
 - **Protected routes**: wrap pages in `<ProtectedRoute roles={[...]}>`.
 - **API client**: `src/api/client.ts` provides typed `apiGet`, `apiPost`,
   etc. They auto-attach the Keycloak JWT. Base path is `/api/v1`.
