@@ -94,12 +94,7 @@ export function ClubsAdminPage() {
                     {club.crestUrl ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                      aria-label={`Abrir ${club.name}`}
-                    >
+                    <Button variant="ghost" size="icon" asChild aria-label={`Abrir ${club.name}`}>
                       <Link to={`/admin/clubs/${club.id}`}>
                         <ExternalLink className="size-4" />
                       </Link>

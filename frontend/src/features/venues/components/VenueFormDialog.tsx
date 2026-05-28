@@ -86,7 +86,12 @@ export function VenueFormDialog({ open, onOpenChange, venue, onSaved }: VenueFor
       if (err instanceof ApiError) {
         if (err.status === 409) setError("Já existe um estádio com este nome.");
         else if (err.status === 403) setError("Não tens permissões para esta operação.");
-        else if (err.status === 400 && err.body && typeof err.body === "object" && "detail" in err.body) {
+        else if (
+          err.status === 400 &&
+          err.body &&
+          typeof err.body === "object" &&
+          "detail" in err.body
+        ) {
           setError(String((err.body as { detail: unknown }).detail));
         } else {
           setError(err.message);

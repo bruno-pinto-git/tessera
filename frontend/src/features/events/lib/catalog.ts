@@ -63,10 +63,7 @@ export function toneFromId(id: number | null): CrestTone {
  * it's a proper noun chain we take initials of the first two words.
  */
 export function initialsFromName(name: string): string {
-  const cleaned = name
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toUpperCase();
+  const cleaned = name.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
   const words = cleaned
     .split(/[\s.·-]+/)
     .filter((w) => w.length > 0)

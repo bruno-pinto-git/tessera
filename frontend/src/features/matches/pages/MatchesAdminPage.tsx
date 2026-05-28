@@ -16,12 +16,7 @@ import { MatchStatusBadge } from "../components/MatchStatusBadge";
 import { MatchFormDialog } from "../components/MatchFormDialog";
 import { DeleteMatchDialog } from "../components/DeleteMatchDialog";
 import { OpenBoxOfficeDialog } from "../components/OpenBoxOfficeDialog";
-import {
-  MATCH_STATUSES,
-  matchStatusLabel,
-  type Match,
-  type MatchStatus,
-} from "../api/matchesApi";
+import { MATCH_STATUSES, matchStatusLabel, type Match, type MatchStatus } from "../api/matchesApi";
 import { teamCategoryLabel } from "@/features/teams/api/teamsApi";
 
 const PAGE_SIZE = 20;
@@ -232,8 +227,8 @@ export function MatchesAdminPage() {
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between text-sm">
           <p className="text-muted-foreground">
-            {data.totalElements} jogo{data.totalElements === 1 ? "" : "s"} · página{" "}
-            {data.page + 1} de {data.totalPages}
+            {data.totalElements} jogo{data.totalElements === 1 ? "" : "s"} · página {data.page + 1}{" "}
+            de {data.totalPages}
           </p>
           <div className="flex items-center gap-2">
             <Button

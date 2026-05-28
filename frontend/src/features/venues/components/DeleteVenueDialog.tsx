@@ -18,7 +18,12 @@ interface DeleteVenueDialogProps {
   onDeleted: () => void;
 }
 
-export function DeleteVenueDialog({ open, onOpenChange, venue, onDeleted }: DeleteVenueDialogProps) {
+export function DeleteVenueDialog({
+  open,
+  onOpenChange,
+  venue,
+  onDeleted,
+}: DeleteVenueDialogProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -18,7 +18,12 @@ interface DeletePlayerDialogProps {
   onDeleted: () => void;
 }
 
-export function DeletePlayerDialog({ open, onOpenChange, player, onDeleted }: DeletePlayerDialogProps) {
+export function DeletePlayerDialog({
+  open,
+  onOpenChange,
+  player,
+  onDeleted,
+}: DeletePlayerDialogProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

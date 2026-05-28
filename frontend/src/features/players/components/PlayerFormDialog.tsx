@@ -152,7 +152,12 @@ export function PlayerFormDialog({
       if (err instanceof ApiError) {
         if (err.status === 409) setError("Já existe um jogador com este número de camisola.");
         else if (err.status === 403) setError("Não tens permissões para gerir esta equipa.");
-        else if (err.status === 400 && err.body && typeof err.body === "object" && "detail" in err.body) {
+        else if (
+          err.status === 400 &&
+          err.body &&
+          typeof err.body === "object" &&
+          "detail" in err.body
+        ) {
           setError(String((err.body as { detail: unknown }).detail));
         } else {
           setError(err.message);
@@ -174,9 +179,7 @@ export function PlayerFormDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Editar jogador" : "Novo jogador"}</DialogTitle>
-            <DialogDescription>
-              Os campos opcionais podem ser deixados em branco.
-            </DialogDescription>
+            <DialogDescription>Os campos opcionais podem ser deixados em branco.</DialogDescription>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-3">
@@ -241,9 +244,7 @@ export function PlayerFormDialog({
                 id="nationality"
                 value={form.nationality}
                 maxLength={3}
-                onChange={(e) =>
-                  setForm({ ...form, nationality: e.target.value.toUpperCase() })
-                }
+                onChange={(e) => setForm({ ...form, nationality: e.target.value.toUpperCase() })}
                 placeholder="PRT"
               />
             </div>

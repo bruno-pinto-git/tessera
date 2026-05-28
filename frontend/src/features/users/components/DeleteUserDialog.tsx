@@ -53,9 +53,8 @@ export function DeleteUserDialog({ open, onOpenChange, user, onDeleted }: Delete
           <DialogTitle>Eliminar utilizador</DialogTitle>
           <DialogDescription>
             Tens a certeza que queres eliminar{" "}
-            <span className="font-medium text-foreground">{display}</span>? A operação é
-            permanente em Keycloak. Quaisquer atribuições a clubes deste utilizador também
-            desaparecem.
+            <span className="font-medium text-foreground">{display}</span>? A operação é permanente
+            em Keycloak. Quaisquer atribuições a clubes deste utilizador também desaparecem.
           </DialogDescription>
         </DialogHeader>
 
@@ -70,12 +69,7 @@ export function DeleteUserDialog({ open, onOpenChange, user, onDeleted }: Delete
           >
             Cancelar
           </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={handleConfirm}
-            disabled={submitting}
-          >
+          <Button type="button" variant="destructive" onClick={handleConfirm} disabled={submitting}>
             {submitting ? "A eliminar…" : "Eliminar"}
           </Button>
         </DialogFooter>

@@ -144,9 +144,7 @@ function MemberList({
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       <div className="rounded-md border divide-y">
-        {members.length === 0 && (
-          <p className="text-sm text-muted-foreground p-3">Sem membros.</p>
-        )}
+        {members.length === 0 && <p className="text-sm text-muted-foreground p-3">Sem membros.</p>}
         {members.map((m) => {
           const fullName = [m.firstName, m.lastName].filter(Boolean).join(" ");
           return (

@@ -35,8 +35,8 @@ export function UsersAdminPage() {
           </Link>
           <h1 className="text-2xl font-bold tracking-tight">Utilizadores</h1>
           <p className="text-sm text-muted-foreground">
-            Gere os utilizadores da plataforma. Para atribuir um utilizador a um clube, abre
-            a página do clube e vai a Membros.
+            Gere os utilizadores da plataforma. Para atribuir um utilizador a um clube, abre a
+            página do clube e vai a Membros.
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)}>

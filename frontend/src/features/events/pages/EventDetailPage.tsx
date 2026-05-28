@@ -83,11 +83,17 @@ export function EventDetailPage() {
             <Meta
               label="Estádio"
               value={entry.venueName ?? "Por definir"}
-              sub={entry.venueCapacity ? `${entry.venueCapacity.toLocaleString("pt-PT")} lugares` : undefined}
+              sub={
+                entry.venueCapacity
+                  ? `${entry.venueCapacity.toLocaleString("pt-PT")} lugares`
+                  : undefined
+              }
             />
             <Meta
               label="Bilheteira"
-              value={entry.eventStatus === "PUBLISHED" ? "Aberta" : labelForStatus(entry.eventStatus)}
+              value={
+                entry.eventStatus === "PUBLISHED" ? "Aberta" : labelForStatus(entry.eventStatus)
+              }
               sub={`Normal ${entry.priceNormal.toFixed(2)} € · Sócio ${entry.priceSupporter.toFixed(2)} €`}
             />
           </div>
@@ -172,7 +178,12 @@ function PriceTable({ entry }: { entry: CatalogEntry }) {
       </div>
       <div className="divide-y">
         <PriceRow label="Bilhete normal" subtitle="Adulto" price={entry.priceNormal} />
-        <PriceRow label="Sócio do clube" subtitle="Com cartão válido" price={entry.priceSupporter} accent />
+        <PriceRow
+          label="Sócio do clube"
+          subtitle="Com cartão válido"
+          price={entry.priceSupporter}
+          accent
+        />
       </div>
     </Card>
   );

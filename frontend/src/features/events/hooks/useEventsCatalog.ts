@@ -74,14 +74,13 @@ export function useEventsCatalog(): UseCatalogResult {
         // 5. Stitch.
         const built: CatalogEntry[] = published.map((event, i) => {
           const matchRes = matchResults[i];
-          const match: Match | null =
-            matchRes.status === "fulfilled" ? matchRes.value : null;
-          const homeTeam = match ? teamMap.get(match.homeTeamId) ?? null : null;
-          const awayTeam = match ? teamMap.get(match.awayTeamId) ?? null : null;
-          const homeClub = homeTeam ? clubMap.get(homeTeam.clubId) ?? null : null;
-          const awayClub = awayTeam ? clubMap.get(awayTeam.clubId) ?? null : null;
+          const match: Match | null = matchRes.status === "fulfilled" ? matchRes.value : null;
+          const homeTeam = match ? (teamMap.get(match.homeTeamId) ?? null) : null;
+          const awayTeam = match ? (teamMap.get(match.awayTeamId) ?? null) : null;
+          const homeClub = homeTeam ? (clubMap.get(homeTeam.clubId) ?? null) : null;
+          const awayClub = awayTeam ? (clubMap.get(awayTeam.clubId) ?? null) : null;
           const venue =
-            match && match.venueId != null ? venueMap.get(match.venueId) ?? null : null;
+            match && match.venueId != null ? (venueMap.get(match.venueId) ?? null) : null;
 
           return buildEntry({
             event,
@@ -164,10 +163,20 @@ export function useEventCatalog(eventId: number) {
           : [null, null];
 
         const [homeClub, awayClub, venue] = await Promise.all([
-          homeTeam ? listClubs({ size: 200 }).then((p) => p.content.find((c) => c.id === homeTeam.clubId) ?? null) : null,
-          awayTeam ? listClubs({ size: 200 }).then((p) => p.content.find((c) => c.id === awayTeam.clubId) ?? null) : null,
+          homeTeam
+            ? listClubs({ size: 200 }).then(
+                (p) => p.content.find((c) => c.id === homeTeam.clubId) ?? null,
+              )
+            : null,
+          awayTeam
+            ? listClubs({ size: 200 }).then(
+                (p) => p.content.find((c) => c.id === awayTeam.clubId) ?? null,
+              )
+            : null,
           match && match.venueId != null
-            ? listVenues({ size: 100 }).then((p) => p.content.find((v) => v.id === match.venueId) ?? null)
+            ? listVenues({ size: 100 }).then(
+                (p) => p.content.find((v) => v.id === match.venueId) ?? null,
+              )
             : null,
         ]);
 

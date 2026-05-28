@@ -163,7 +163,12 @@ export function MatchFormDialog({
       onOpenChange(false);
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 400 && err.body && typeof err.body === "object" && "detail" in err.body) {
+        if (
+          err.status === 400 &&
+          err.body &&
+          typeof err.body === "object" &&
+          "detail" in err.body
+        ) {
           setError(String((err.body as { detail: unknown }).detail));
         } else if (err.status === 409) {
           setError("Conflito — verifica as datas e equipas.");

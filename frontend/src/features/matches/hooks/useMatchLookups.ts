@@ -26,10 +26,7 @@ export function useMatchLookups() {
         // Single pass — load everything once. We assume the catalogues are
         // small enough for a school project; the API will reject pagination
         // requests above its max so we cap at 100.
-        const [c, v] = await Promise.all([
-          listClubs({ size: 100 }),
-          listVenues({ size: 100 }),
-        ]);
+        const [c, v] = await Promise.all([listClubs({ size: 100 }), listVenues({ size: 100 })]);
         if (cancelled) return;
         setClubs(new Map(c.content.map((cl) => [cl.id, cl])));
         setVenues(new Map(v.content.map((vn) => [vn.id, vn])));

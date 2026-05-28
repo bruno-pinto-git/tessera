@@ -102,8 +102,8 @@ export function UserFormDialog({ open, onOpenChange, onSaved }: UserFormDialogPr
           <DialogHeader>
             <DialogTitle>Novo utilizador</DialogTitle>
             <DialogDescription>
-              Cria um utilizador na plataforma. Podes atribuí-lo a um clube depois, na página
-              do clube → Membros.
+              Cria um utilizador na plataforma. Podes atribuí-lo a um clube depois, na página do
+              clube → Membros.
             </DialogDescription>
           </DialogHeader>
 

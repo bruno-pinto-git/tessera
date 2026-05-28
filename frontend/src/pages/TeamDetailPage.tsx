@@ -47,9 +47,7 @@ export function TeamDetailPage() {
 
   const isManagerOfClub =
     team != null &&
-    me?.clubMemberships?.some(
-      (m) => m.clubId === team.clubId && m.role === "MANAGER",
-    );
+    me?.clubMemberships?.some((m) => m.clubId === team.clubId && m.role === "MANAGER");
   const canManage = isPlatformAdmin || !!isManagerOfClub;
 
   const backTo = team
@@ -75,9 +73,7 @@ export function TeamDetailPage() {
 
       {error && <p className="text-sm text-destructive">Falha a carregar: {error}</p>}
 
-      {team && !Number.isNaN(teamId) && (
-        <PlayersSection teamId={teamId} canManage={canManage} />
-      )}
+      {team && !Number.isNaN(teamId) && <PlayersSection teamId={teamId} canManage={canManage} />}
     </div>
   );
 }

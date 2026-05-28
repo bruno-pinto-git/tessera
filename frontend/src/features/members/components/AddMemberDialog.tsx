@@ -23,7 +23,13 @@ interface AddMemberDialogProps {
   onAdded: () => void;
 }
 
-export function AddMemberDialog({ open, onOpenChange, clubId, role, onAdded }: AddMemberDialogProps) {
+export function AddMemberDialog({
+  open,
+  onOpenChange,
+  clubId,
+  role,
+  onAdded,
+}: AddMemberDialogProps) {
   const title = role === "MANAGER" ? "Adicionar gestor" : "Adicionar staff";
 
   return (
@@ -151,9 +157,7 @@ function ExistingUserPanel({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="rounded-md border max-h-72 overflow-auto">
-        {searching && (
-          <p className="text-sm text-muted-foreground p-3">A procurar…</p>
-        )}
+        {searching && <p className="text-sm text-muted-foreground p-3">A procurar…</p>}
         {!searching && users.length === 0 && (
           <p className="text-sm text-muted-foreground p-3">Sem resultados.</p>
         )}
@@ -174,11 +178,7 @@ function ExistingUserPanel({
                     {u.email ? ` · ${u.email}` : ""}
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => pick(u)}
-                  disabled={submitting === u.id}
-                >
+                <Button size="sm" onClick={() => pick(u)} disabled={submitting === u.id}>
                   {submitting === u.id ? "A adicionar…" : "Adicionar"}
                 </Button>
               </div>

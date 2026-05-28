@@ -11,12 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import {
-  positionLabel,
-  statusLabel,
-  type Player,
-  type PlayerStatus,
-} from "../api/playersApi";
+import { positionLabel, statusLabel, type Player, type PlayerStatus } from "../api/playersApi";
 import { usePlayersByTeam } from "../hooks/usePlayersByTeam";
 import { PlayerFormDialog } from "./PlayerFormDialog";
 import { DeletePlayerDialog } from "./DeletePlayerDialog";

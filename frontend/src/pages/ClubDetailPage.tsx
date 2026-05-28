@@ -46,11 +46,7 @@ export function ClubDetailPage() {
   const isManagerOfThis = me?.clubMemberships?.some(
     (m) => m.clubId === clubId && m.role === "MANAGER",
   );
-  const backTo = isPlatformAdmin
-    ? "/admin/clubs"
-    : isManagerOfThis
-      ? "/club"
-      : "/admin/clubs";
+  const backTo = isPlatformAdmin ? "/admin/clubs" : isManagerOfThis ? "/club" : "/admin/clubs";
 
   return (
     <div className="space-y-8">
