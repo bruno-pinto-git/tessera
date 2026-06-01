@@ -115,7 +115,7 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                 <TableHead>Encontro</TableHead>
                 <TableHead className="w-32">Estádio</TableHead>
                 <TableHead className="w-28">Estado</TableHead>
-                <TableHead className="w-24 text-right">{canManage ? "Ações" : ""}</TableHead>
+                <TableHead className="w-32 text-right">{canManage ? "Ações" : ""}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -148,9 +148,9 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                       <TableCell>
                         <MatchStatusBadge status={m.status} />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell>
                         {canManage && (
-                          <>
+                          <div className="flex items-center justify-end">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -176,7 +176,7 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                             >
                               <Trash2 className="size-4 text-destructive" />
                             </Button>
-                          </>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>

@@ -152,7 +152,7 @@ export function MatchesAdminPage() {
               <TableHead className="w-32">Estádio</TableHead>
               <TableHead className="w-24 text-center">Resultado</TableHead>
               <TableHead className="w-28">Estado</TableHead>
-              <TableHead className="w-24 text-right">Ações</TableHead>
+              <TableHead className="w-32 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -190,32 +190,34 @@ export function MatchesAdminPage() {
                     <TableCell>
                       <MatchStatusBadge status={m.status} />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setOpeningBoxOffice(m)}
-                        aria-label="Abrir bilheteira"
-                        title="Abrir bilheteira"
-                      >
-                        <Ticket className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEditing(m)}
-                        aria-label="Editar jogo"
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleting(m)}
-                        aria-label="Eliminar jogo"
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
+                    <TableCell>
+                      <div className="flex items-center justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setOpeningBoxOffice(m)}
+                          aria-label="Abrir bilheteira"
+                          title="Abrir bilheteira"
+                        >
+                          <Ticket className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditing(m)}
+                          aria-label="Editar jogo"
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleting(m)}
+                          aria-label="Eliminar jogo"
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
