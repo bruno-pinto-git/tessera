@@ -26,6 +26,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-amqp")
+    // Apache HttpClient 5 so the Keycloak admin RestTemplate uses
+    // HttpComponentsClientHttpRequestFactory — required for DELETE requests
+    // that carry a body (removing realm role mappings), which the default
+    // SimpleClientHttpRequestFactory (HttpURLConnection) cannot send.
+    implementation("org.apache.httpcomponents.client5:httpclient5")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.flywaydb:flyway-core")

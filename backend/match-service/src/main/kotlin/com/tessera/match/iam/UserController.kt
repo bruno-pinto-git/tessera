@@ -31,6 +31,8 @@ class UserController(
         val firstName: String?,
         val lastName: String?,
         val enabled: Boolean?,
+        /** App-level realm roles assigned to the user (e.g. `staff`). */
+        val roles: List<String>,
     )
 
     data class CreateUserRequest(
@@ -41,6 +43,17 @@ class UserController(
         @field:NotBlank @field:Size(min = 6, max = 200) val password: String?,
         @field:Pattern(regexp = "club-manager|staff",
             message = "role must be 'club-manager' or 'staff'") val role: String?,
+    )
+
+    data class UpdateUserRequest(
+        @field:Email val email: String?,
+        @field:Size(min = 1, max = 100) val firstName: String?,
+        @field:Size(min = 1, max = 100) val lastName: String?,
+        val enabled: Boolean?,
+        @field:Pattern(regexp = "club-manager|staff",
+            message = "role must be 'club-manager' or 'staff'") val role: String?,
+        /** When true, the user must choose a new password on next login. */
+        val forcePasswordReset: Boolean?,
     )
 
     @GetMapping
@@ -87,6 +100,50 @@ class UserController(
         return ResponseEntity.created(location).body(summary)
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('platform-admin')")
+    fun update(@PathVariable id: String, @Valid @RequestBody req: UpdateUserRequest): UserSummary {
+        val current = kcAdmin.getUser(id) ?: throw UserNotFoundException(id)
+
+        // Resolve the new role FIRST (fail fast) so we don't apply a partial
+        // update if the requested role doesn't exist.
+        val newRole = req.role?.let {
+            kcAdmin.fetchRealmRoleOrNull(it)
+                ?: throw IllegalArgumentException("Realm role '$it' not found in Keycloak.")
+        }
+
+        // Merge profile fields. Only add UPDATE_PASSWORD when explicitly asked;
+        // never clear existing required actions implicitly.
+        val requiredActions = if (req.forcePasswordReset == true) {
+            ((current.requiredActions ?: emptyList()) + "UPDATE_PASSWORD").distinct()
+        } else {
+            current.requiredActions
+        }
+        val merged = current.copy(
+            email          = req.email ?: current.email,
+            firstName      = req.firstName ?: current.firstName,
+            lastName       = req.lastName ?: current.lastName,
+            enabled        = req.enabled ?: current.enabled,
+            requiredActions = requiredActions,
+        )
+        kcAdmin.updateUser(id, merged)
+
+        // Reconcile the manageable role (club-manager / staff). Leave
+        // platform-admin / fan / default roles untouched.
+        if (newRole != null) {
+            val currentManaged = kcAdmin.getRealmRoleNames(id).filter { it in MANAGEABLE_ROLES }
+            val toRemove = currentManaged
+                .filter { it != newRole.name }
+                .mapNotNull { kcAdmin.fetchRealmRoleOrNull(it) }
+            kcAdmin.removeRealmRolesByObject(id, toRemove)
+            if (newRole.name !in currentManaged) {
+                kcAdmin.assignRealmRolesByObject(id, listOf(newRole))
+            }
+        }
+
+        return toSummary(kcAdmin.getUser(id) ?: error("User just updated not found: $id"))
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('platform-admin')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -94,14 +151,32 @@ class UserController(
         kcAdmin.deleteUser(id)
     }
 
-    private fun toSummary(u: KeycloakAdminClient.UserRepresentation) = UserSummary(
-        id        = u.id ?: "",
-        username  = u.username,
-        email     = u.email,
-        firstName = u.firstName,
-        lastName  = u.lastName,
-        enabled   = u.enabled,
-    )
+    private fun toSummary(u: KeycloakAdminClient.UserRepresentation): UserSummary {
+        val id = u.id ?: ""
+        // Effective roles so self-registered fans (who only have `fan` via the
+        // default-roles composite) still display their role.
+        val roles = if (id.isNotEmpty()) {
+            kcAdmin.getEffectiveRealmRoleNames(id).filter { it in APP_ROLES }
+        } else {
+            emptyList()
+        }
+        return UserSummary(
+            id        = id,
+            username  = u.username,
+            email     = u.email,
+            firstName = u.firstName,
+            lastName  = u.lastName,
+            enabled   = u.enabled,
+            roles     = roles,
+        )
+    }
+
+    private companion object {
+        /** Realm roles surfaced in the admin UI (everything else is hidden). */
+        val APP_ROLES = setOf("platform-admin", "club-manager", "staff", "fan")
+        /** Roles this endpoint is allowed to assign/remove on update. */
+        val MANAGEABLE_ROLES = setOf("club-manager", "staff")
+    }
 }
 
 class UserNotFoundException(val userId: String)

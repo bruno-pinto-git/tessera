@@ -175,8 +175,10 @@ class KeycloakAdminClient(
     }
 
     /**
-     * Creates a user with the given attributes. Sets the password right
-     * after creation; the user is enabled and the password is non-temporary.
+     * Creates a user with the given attributes and sets the password right
+     * after creation. When [temporaryPassword] is true (the default for users
+     * created from the admin UI) Keycloak marks the credential as temporary,
+     * which forces the user to choose a new password on their first login.
      * Returns the new user id.
      */
     fun createUser(
@@ -185,6 +187,7 @@ class KeycloakAdminClient(
         firstName: String?,
         lastName: String?,
         password: String,
+        temporaryPassword: Boolean = true,
     ): String {
         val url = "${props.baseUrl}/admin/realms/${props.realm}/users"
         val headers = authHeaders().apply { contentType = MediaType.APPLICATION_JSON }
@@ -200,11 +203,30 @@ class KeycloakAdminClient(
         val userId = resp.headers.location?.path?.substringAfterLast('/')
             ?: error("No Location header on user create response.")
 
-        // Set credential
-        val credUrl = "${props.baseUrl}/admin/realms/${props.realm}/users/$userId/reset-password"
-        val cred = CredentialRepresentation(type = "password", value = password, temporary = false)
-        rest.exchange(URI.create(credUrl), HttpMethod.PUT, HttpEntity(cred, headers), Void::class.java)
+        setPassword(userId, password, temporary = temporaryPassword)
         return userId
+    }
+
+    /**
+     * Updates the mutable profile fields of an existing user. The caller is
+     * expected to pass a representation already merged with the desired
+     * changes (e.g. fetched via [getUser] then `copy(...)`).
+     */
+    fun updateUser(userId: String, rep: UserRepresentation) {
+        val url = "${props.baseUrl}/admin/realms/${props.realm}/users/$userId"
+        val headers = authHeaders().apply { contentType = MediaType.APPLICATION_JSON }
+        rest.exchange(URI.create(url), HttpMethod.PUT, HttpEntity(rep, headers), Void::class.java)
+    }
+
+    /**
+     * Sets (resets) a user's password. A temporary password forces a change
+     * on next login; a permanent one does not.
+     */
+    fun setPassword(userId: String, password: String, temporary: Boolean) {
+        val url = "${props.baseUrl}/admin/realms/${props.realm}/users/$userId/reset-password"
+        val headers = authHeaders().apply { contentType = MediaType.APPLICATION_JSON }
+        val cred = CredentialRepresentation(type = "password", value = password, temporary = temporary)
+        rest.exchange(URI.create(url), HttpMethod.PUT, HttpEntity(cred, headers), Void::class.java)
     }
 
     fun deleteUser(userId: String) {
@@ -234,6 +256,47 @@ class KeycloakAdminClient(
         val url = "${props.baseUrl}/admin/realms/${props.realm}/users/$userId/role-mappings/realm"
         val headers = authHeaders().apply { contentType = MediaType.APPLICATION_JSON }
         rest.postForEntity(url, HttpEntity(roles, headers), Void::class.java)
+    }
+
+    /** Removes the given realm roles from a user. No-op for an empty list. */
+    fun removeRealmRolesByObject(userId: String, roles: List<RoleRepresentation>) {
+        if (roles.isEmpty()) return
+        val url = "${props.baseUrl}/admin/realms/${props.realm}/users/$userId/role-mappings/realm"
+        val headers = authHeaders().apply { contentType = MediaType.APPLICATION_JSON }
+        rest.exchange(URI.create(url), HttpMethod.DELETE, HttpEntity(roles, headers), Void::class.java)
+    }
+
+    /**
+     * Returns the names of the realm roles *directly* assigned to a user.
+     * Use this when reconciling assignments (you can only remove a role that
+     * is directly mapped, not one inherited through a composite).
+     */
+    fun getRealmRoleNames(userId: String): List<String> {
+        val url = "${props.baseUrl}/admin/realms/${props.realm}/users/$userId/role-mappings/realm"
+        val resp = rest.exchange(
+            URI.create(url),
+            HttpMethod.GET,
+            HttpEntity<Void>(authHeaders()),
+            Array<RoleRepresentation>::class.java,
+        )
+        return resp.body?.mapNotNull { it.name } ?: emptyList()
+    }
+
+    /**
+     * Returns the *effective* realm roles for a user — direct assignments plus
+     * everything inherited through composites (e.g. the `fan` role granted via
+     * the `default-roles-tessera` default role on self-registration). Use this
+     * for display so self-registered users still show as "fan".
+     */
+    fun getEffectiveRealmRoleNames(userId: String): List<String> {
+        val url = "${props.baseUrl}/admin/realms/${props.realm}/users/$userId/role-mappings/realm/composite"
+        val resp = rest.exchange(
+            URI.create(url),
+            HttpMethod.GET,
+            HttpEntity<Void>(authHeaders()),
+            Array<RoleRepresentation>::class.java,
+        )
+        return resp.body?.mapNotNull { it.name } ?: emptyList()
     }
 
     /** Returns the realm role with `name` or `null` if it doesn't exist. */
@@ -294,6 +357,7 @@ class KeycloakAdminClient(
         val lastName: String? = null,
         val enabled: Boolean? = null,
         val emailVerified: Boolean? = null,
+        val requiredActions: List<String>? = null,
     )
 
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -23,6 +23,10 @@ class UserProxyController(
     fun create(@RequestBody body: String, req: HttpServletRequest): ResponseEntity<String> =
         proxy.forward(req, matchUrl, body)
 
+    @PutMapping("/{id}")
+    fun update(@RequestBody body: String, req: HttpServletRequest): ResponseEntity<String> =
+        proxy.forward(req, matchUrl, body)
+
     @DeleteMapping("/{id}")
     fun delete(req: HttpServletRequest): ResponseEntity<String> =
         proxy.forward(req, matchUrl, null)

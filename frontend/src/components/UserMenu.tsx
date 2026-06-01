@@ -38,7 +38,7 @@ export function UserMenu() {
     primaryRole === "platform-admin"
       ? "Admin"
       : primaryRole === "club-manager"
-        ? "Gestor de clube"
+        ? "Gestor"
         : primaryRole === "staff"
           ? "Staff"
           : "Adepto";
