@@ -61,6 +61,9 @@ services:
       MBWAY_WEBHOOK_BASE_URL: ${MBWAY_WEBHOOK_BASE_URL:-http://host.docker.internal:8081}
       MBWAY_TERMINAL_ID: ${MBWAY_TERMINAL_ID:-47215}
       MBWAY_CLIENT_ID: ${MBWAY_CLIENT_ID:-tessera-mock}
+      # match-service URL, used to resolve a match's home club when a club
+      # manager opens a box office (scoped authorization in EventController).
+      MATCH_SERVICE_URL: http://match-service:8082
     depends_on:
       db-tickets:
         condition: service_healthy

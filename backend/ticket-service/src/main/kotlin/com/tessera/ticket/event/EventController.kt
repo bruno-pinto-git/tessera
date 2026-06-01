@@ -7,7 +7,10 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
@@ -71,6 +74,7 @@ class EventService(
 @RequestMapping("/api/v1/events")
 class EventController(
     private val service: EventService,
+    private val matchLookup: MatchLookupClient,
 ) {
 
     @GetMapping
@@ -82,11 +86,32 @@ class EventController(
     @GetMapping("/{id}")
     fun getOne(@PathVariable id: Long): EventResponse = toResponse(service.get(id))
 
+    /**
+     * Open a box office (create a PUBLISHED event). Platform admins may open
+     * one for any match; a club manager may only open one for a match where
+     * their club is the **home** team (resolved via match-service).
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('platform-admin')")
-    fun create(@RequestBody request: CreateEventRequest): EventResponse =
-        toResponse(service.create(request))
+    @PreAuthorize("isAuthenticated()")
+    fun create(
+        @RequestBody request: CreateEventRequest,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): EventResponse {
+        authorizeCreate(jwt, request)
+        return toResponse(service.create(request))
+    }
+
+    private fun authorizeCreate(jwt: Jwt, request: CreateEventRequest) {
+        if (jwt.isPlatformAdmin()) return
+        val matchId = request.matchId
+            ?: throw AccessDeniedException("Only platform admins can open a box office without a match.")
+        val homeClubId = matchLookup.homeClubId(matchId)
+            ?: throw AccessDeniedException("Could not resolve the match's home club.")
+        if (homeClubId !in jwt.managedClubIds()) {
+            throw AccessDeniedException("You can only open a box office for your own club's home matches.")
+        }
+    }
 
     private fun toResponse(e: Event) = EventResponse(
         id              = e.id,

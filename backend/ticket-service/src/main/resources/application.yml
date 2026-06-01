@@ -33,6 +33,10 @@ spring:
 
 # Tessera-specific event bus config.
 tessera:
+  # match-service base URL, used to resolve a match's home club when a club
+  # manager opens a box office (authorization check in EventController).
+  match-service:
+    base-url: ${MATCH_SERVICE_URL:http://match-service:8082}
   events:
     exchange: tessera.events
   mbway:
