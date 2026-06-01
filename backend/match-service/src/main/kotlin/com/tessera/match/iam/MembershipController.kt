@@ -56,7 +56,7 @@ class MembershipController(
     )
 
     @GetMapping
-    @PreAuthorize("@clubAuthz.canManageClub(authentication, #clubId)")
+    @PreAuthorize("@clubAuthz.canViewClub(authentication, #clubId)")
     fun list(@PathVariable clubId: Long): MembersResponse {
         ensureClubExists(clubId)
         val managers = membersOf(clubId, ClubRole.MANAGER)

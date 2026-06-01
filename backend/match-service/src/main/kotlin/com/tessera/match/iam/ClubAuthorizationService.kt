@@ -39,6 +39,16 @@ class ClubAuthorizationService(
         return memberships(auth).any { it.clubId == clubId && it.role == ClubRole.MANAGER }
     }
 
+    /**
+     * Read access to a club's scoped data (e.g. its members): platform-admins,
+     * or any MANAGER or STAFF member of the club. Staff get a read-only view of
+     * their club; management actions still require [canManageClub].
+     */
+    fun canViewClub(auth: Authentication, clubId: Long): Boolean {
+        if (auth.isPlatformAdmin()) return true
+        return memberships(auth).any { it.clubId == clubId }
+    }
+
     @Transactional(readOnly = true)
     fun canManageTeam(auth: Authentication, teamId: Long): Boolean {
         if (auth.isPlatformAdmin()) return true
