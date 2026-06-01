@@ -4,12 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Crest } from "@/components/Crest";
-import { clubBy } from "@/features/clubs/clubs";
-import type { PaidTicketView } from "../mockMyTickets";
+import type { TicketView } from "../hooks/useMyTickets";
 
-export function PaidTicketCard({ ticket }: { ticket: PaidTicketView }) {
-  const home = clubBy(ticket.homeClubId);
-  const away = clubBy(ticket.awayClubId);
+export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
+  const { home, away } = ticket;
 
   return (
     <Card className="overflow-hidden">
@@ -18,9 +16,7 @@ export function PaidTicketCard({ ticket }: { ticket: PaidTicketView }) {
         <div className="p-6 space-y-5">
           <div className="flex items-center justify-between">
             <StatusBadge status="PAID" />
-            <span className="text-[11px] text-muted-foreground font-mono">
-              #{ticket.id.toUpperCase()}
-            </span>
+            <span className="text-[11px] text-muted-foreground font-mono">#{ticket.id}</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -37,9 +33,8 @@ export function PaidTicketCard({ ticket }: { ticket: PaidTicketView }) {
           </div>
 
           <div className="space-y-1.5 text-xs">
-            <DL k="Local" v={ticket.venue} />
-            <DL k="Lugar" v={ticket.tier} />
-            <DL k="Portão" v={ticket.gate} />
+            <DL k="Local" v={ticket.venue ?? "—"} />
+            <DL k="Tipo" v={ticket.tier} />
             <DL k="Preço" v={ticket.price} />
           </div>
 
@@ -71,7 +66,9 @@ export function PaidTicketCard({ ticket }: { ticket: PaidTicketView }) {
               {ticket.code.slice(0, 8)}…{ticket.code.slice(-4)}
             </div>
           </div>
-          <div className="text-[10px] text-muted-foreground">Pago em {ticket.paidAt}</div>
+          {ticket.paidAt && (
+            <div className="text-[10px] text-muted-foreground">Pago em {ticket.paidAt}</div>
+          )}
         </div>
       </div>
     </Card>

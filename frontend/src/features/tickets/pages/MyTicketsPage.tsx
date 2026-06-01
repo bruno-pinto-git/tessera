@@ -2,23 +2,39 @@ import { Card } from "@/components/ui/card";
 import { PaidTicketCard } from "../components/PaidTicketCard";
 import { PendingTicketCard } from "../components/PendingTicketCard";
 import { PastTicketRow } from "../components/PastTicketRow";
-import { MOCK_PAID, MOCK_PENDING, MOCK_PAST } from "../mockMyTickets";
+import { useMyTickets } from "../hooks/useMyTickets";
 import { cn } from "@/lib/utils";
 
 /**
  * "Os meus bilhetes" — grouped by status. Three sections:
  *
  *  - Prontos a usar (PAID) — large QR + perforated stub
- *  - Aguarda pagamento (PENDING) — countdown + "concluir pagamento" CTA
- *  - Histórico (VALIDATED / CANCELLED) — rows, faded
+ *  - Aguarda pagamento (PENDING) — "concluir pagamento" CTA
+ *  - Histórico (VALIDATED) — rows, faded
  *
- * TODO: swap the three constants for the result of `listMyTickets()`
- * partitioned by status. Keep the visual structure.
+ * Data comes from `listMyTickets()` enriched with the related event / match /
+ * club / venue, partitioned by status (see `useMyTickets`).
  */
 export function MyTicketsPage() {
-  const paid = MOCK_PAID;
-  const pending = MOCK_PENDING;
-  const past = MOCK_PAST;
+  const { paid, pending, past, loading, error } = useMyTickets();
+
+  if (loading) {
+    return (
+      <Card>
+        <p className="px-6 py-10 text-sm text-muted-foreground text-center">
+          A carregar os teus bilhetes…
+        </p>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <p className="px-6 py-10 text-sm text-status-cancelled text-center">{error}</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-10">
@@ -47,7 +63,7 @@ export function MyTicketsPage() {
       </Group>
 
       {pending.length > 0 && (
-        <Group title="Aguarda pagamento" sub="Conclui em 15 min para garantir o lugar">
+        <Group title="Aguarda pagamento" sub="Conclui o pagamento para garantir o teu bilhete">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {pending.map((t) => (
               <PendingTicketCard key={t.id} ticket={t} />
@@ -56,7 +72,7 @@ export function MyTicketsPage() {
         </Group>
       )}
 
-      <Group title="Histórico" sub="Bilhetes já usados ou cancelados" muted>
+      <Group title="Histórico" sub="Bilhetes já validados" muted>
         {past.length === 0 ? (
           <EmptyState text="Ainda sem histórico." />
         ) : (
