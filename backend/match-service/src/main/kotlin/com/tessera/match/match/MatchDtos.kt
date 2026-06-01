@@ -11,6 +11,9 @@ data class MatchResponse(
     val id: Long,
     val homeTeamId: Long,
     val awayTeamId: Long,
+    /** Club of the home/away team. Null if the team can't be resolved. */
+    val homeClubId: Long?,
+    val awayClubId: Long?,
     val venueId: Long?,
     val kickoffAt: String,
     val status: MatchStatus,
@@ -37,10 +40,12 @@ data class MatchUpdateRequest(
     @field:Size(max = 200) val refereeName: String? = null,
 )
 
-internal fun Match.toResponse() = MatchResponse(
+internal fun Match.toResponse(homeClubId: Long? = null, awayClubId: Long? = null) = MatchResponse(
     id = id,
     homeTeamId = homeTeamId,
     awayTeamId = awayTeamId,
+    homeClubId = homeClubId,
+    awayClubId = awayClubId,
     venueId = venueId,
     kickoffAt = kickoffAt.toString(),
     status = status,

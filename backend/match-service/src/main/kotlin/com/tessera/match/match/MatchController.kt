@@ -29,8 +29,11 @@ class MatchController(
         @PageableDefault(size = 20) pageable: Pageable,
     ): PageEnvelope<MatchResponse> {
         val page = service.list(from, to, status, clubId, pageable)
+        val clubIds = service.clubIdsForTeams(
+            page.content.flatMap { listOf(it.homeTeamId, it.awayTeamId) },
+        )
         return PageEnvelope(
-            content = page.content.map { it.toResponse() },
+            content = page.content.map { it.toResponse(clubIds[it.homeTeamId], clubIds[it.awayTeamId]) },
             page = page.number,
             size = page.size,
             totalElements = page.totalElements,
@@ -39,30 +42,35 @@ class MatchController(
     }
 
     @GetMapping("/{id}")
-    fun get(@PathVariable id: Long): MatchResponse =
-        service.get(id).toResponse()
+    fun get(@PathVariable id: Long): MatchResponse = service.get(id).withClubs()
 
     @PostMapping
-    @PreAuthorize("hasRole('platform-admin')")
+    @PreAuthorize("@clubAuthz.canManageTeam(authentication, #req.homeTeamId)")
     fun create(@Valid @RequestBody req: MatchCreateRequest): ResponseEntity<MatchResponse> {
         val match = service.create(req)
         val location = UriComponentsBuilder.fromPath("/api/v1/matches/{id}")
             .buildAndExpand(match.id)
             .toUri()
-        return ResponseEntity.created(location).body(match.toResponse())
+        return ResponseEntity.created(location).body(match.withClubs())
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasAnyRole('platform-admin','club-manager','staff')")
+    @PreAuthorize("@clubAuthz.canManageMatch(authentication, #id)")
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody req: MatchUpdateRequest,
-    ): MatchResponse = service.update(id, req).toResponse()
+    ): MatchResponse = service.update(id, req).withClubs()
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('platform-admin')")
+    @PreAuthorize("@clubAuthz.canManageMatch(authentication, #id)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) {
         service.delete(id)
+    }
+
+    /** Maps a single match to a response, resolving its home/away club ids. */
+    private fun Match.withClubs(): MatchResponse {
+        val clubIds = service.clubIdsForTeams(listOf(homeTeamId, awayTeamId))
+        return toResponse(clubIds[homeTeamId], clubIds[awayTeamId])
     }
 }

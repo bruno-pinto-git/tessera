@@ -54,6 +54,20 @@ class ClubAuthorizationService(
     }
 
     /**
+     * Match management (create/update/delete) is scoped to the **home**
+     * club: true for platform admins, or for a MANAGER of the home team's
+     * club. Note this is stricter than [canEditSheet] (which also allows the
+     * away club and staff) — managing the fixture itself belongs to the host.
+     */
+    @Transactional(readOnly = true)
+    fun canManageMatch(auth: Authentication, matchId: Long): Boolean {
+        if (auth.isPlatformAdmin()) return true
+        val match = matchRepo.findActiveById(matchId) ?: return false
+        val homeClubId = teamRepo.findActiveById(match.homeTeamId)?.clubId ?: return false
+        return canManageClub(auth, homeClubId)
+    }
+
+    /**
      * True for platform admins, or for a manager/staff of either of the
      * two clubs involved in the match.
      */

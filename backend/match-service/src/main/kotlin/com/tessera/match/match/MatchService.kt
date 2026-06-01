@@ -35,6 +35,13 @@ class MatchService(
     fun get(id: Long): Match =
         repo.findActiveById(id) ?: throw MatchNotFoundException(id)
 
+    /** Resolves team id -> club id for the given team ids (single query). */
+    @Transactional(readOnly = true)
+    fun clubIdsForTeams(teamIds: Collection<Long>): Map<Long, Long> {
+        if (teamIds.isEmpty()) return emptyMap()
+        return teamRepo.findAllById(teamIds.toSet()).associate { it.id to it.clubId }
+    }
+
     @Transactional
     fun create(req: MatchCreateRequest): Match {
         if (req.homeTeamId == req.awayTeamId) {
