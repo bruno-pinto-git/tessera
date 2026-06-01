@@ -38,7 +38,7 @@ export function Layout() {
                   <NavItem to="/tickets/mine">Os meus bilhetes</NavItem>
                 </li>
               )}
-              {hasRole("club-manager") && (
+              {(hasRole("club-manager") || hasRole("staff")) && (
                 <li>
                   <NavItem to="/club">O meu clube</NavItem>
                 </li>

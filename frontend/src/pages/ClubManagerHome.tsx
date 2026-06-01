@@ -6,10 +6,10 @@ import { getClub, type Club } from "@/features/clubs/api/clubsApi";
 import { ApiError } from "@/api/client";
 
 /**
- * Landing page for users with `club-manager`. Fetches /me, filters the
- * clubMemberships down to MANAGER entries, and resolves each one against
- * the real club record. From there the user can drill into a per-club
- * management area (teams / players / sheets — still under construction).
+ * Landing page for users with `club-manager` or `staff`. Fetches /me, takes
+ * every club the user belongs to (as MANAGER or STAFF) and resolves each one
+ * against the real club record. From there the user drills into the per-club
+ * area: managers manage it, staff get a read-only view.
  */
 export function ClubManagerHome() {
   const { me, loading: meLoading, error: meError } = useMe();
@@ -17,9 +17,7 @@ export function ClubManagerHome() {
   const [loadingClubs, setLoadingClubs] = useState(false);
   const [missingIds, setMissingIds] = useState<number[]>([]);
 
-  const managedIds = (me?.clubMemberships ?? [])
-    .filter((m) => m.role === "MANAGER")
-    .map((m) => m.clubId);
+  const managedIds = [...new Set((me?.clubMemberships ?? []).map((m) => m.clubId))];
   const managedKey = managedIds.join(",");
 
   useEffect(() => {
@@ -63,7 +61,7 @@ export function ClubManagerHome() {
         <h1 className="text-2xl font-bold tracking-tight">O meu clube</h1>
         <p className="text-sm text-muted-foreground">
           {me?.firstName ? `Olá ${me.firstName}. ` : null}
-          Gere abaixo os clubes que te foram atribuídos.
+          Acede abaixo aos clubes que te foram atribuídos.
         </p>
       </header>
 
@@ -76,7 +74,8 @@ export function ClubManagerHome() {
             <CardTitle className="text-base">Sem clubes atribuídos</CardTitle>
             <CardDescription>
               Ainda não foste associado a nenhum clube. Pede ao administrador da plataforma para te
-              adicionar ao grupo <code>/clubs/&lt;id&gt;/managers</code> no Keycloak.
+              adicionar ao grupo <code>/clubs/&lt;id&gt;/managers</code> ou{" "}
+              <code>/clubs/&lt;id&gt;/staff</code> no Keycloak.
             </CardDescription>
           </CardHeader>
         </Card>

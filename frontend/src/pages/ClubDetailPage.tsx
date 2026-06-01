@@ -47,8 +47,10 @@ export function ClubDetailPage() {
   const isManagerOfThis = me?.clubMemberships?.some(
     (m) => m.clubId === clubId && m.role === "MANAGER",
   );
+  // Manager OR staff of this club — staff get the same dashboard, read-only.
+  const isMemberOfThis = me?.clubMemberships?.some((m) => m.clubId === clubId);
   const canManage = isPlatformAdmin || !!isManagerOfThis;
-  const backTo = isPlatformAdmin ? "/admin/clubs" : isManagerOfThis ? "/club" : "/admin/clubs";
+  const backTo = isPlatformAdmin ? "/admin/clubs" : isMemberOfThis ? "/club" : "/admin/clubs";
 
   return (
     <div className="space-y-8">
@@ -67,9 +69,9 @@ export function ClubDetailPage() {
 
       {error && <p className="text-sm text-destructive">Falha a carregar: {error}</p>}
 
-      {/* Members panel - admins and managers of this club. Managers see a
-          scoped mode (staff-only editing, inline staff creation). */}
-      {!Number.isNaN(clubId) && (isPlatformAdmin || isManagerOfThis) && (
+      {/* Members panel - admins, managers and staff of this club. Managers see
+          a scoped mode (staff-only editing); staff get it read-only. */}
+      {!Number.isNaN(clubId) && (isPlatformAdmin || isMemberOfThis) && (
         <MembersSection clubId={clubId} canManage={canManage} managerMode={!isPlatformAdmin} />
       )}
 

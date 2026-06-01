@@ -53,7 +53,7 @@ export function AppRoutes() {
         <Route
           path="club"
           element={
-            <ProtectedRoute roles={["club-manager"]}>
+            <ProtectedRoute roles={["club-manager", "staff"]}>
               <ClubManagerHome />
             </ProtectedRoute>
           }
@@ -61,7 +61,7 @@ export function AppRoutes() {
         <Route
           path="club/:id"
           element={
-            <ProtectedRoute roles={["club-manager", "platform-admin"]}>
+            <ProtectedRoute roles={["club-manager", "staff", "platform-admin"]}>
               <ClubDetailPage />
             </ProtectedRoute>
           }
