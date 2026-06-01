@@ -8,6 +8,7 @@ import { useMe } from "@/auth/useMe";
 import { getClub, type Club } from "@/features/clubs/api/clubsApi";
 import { MembersSection } from "@/features/members/components/MembersSection";
 import { TeamsSection } from "@/features/teams/components/TeamsSection";
+import { MatchesSection } from "@/features/matches/components/MatchesSection";
 
 /**
  * Per-club management area opened from `/club/<id>` (managers) or
@@ -46,6 +47,7 @@ export function ClubDetailPage() {
   const isManagerOfThis = me?.clubMemberships?.some(
     (m) => m.clubId === clubId && m.role === "MANAGER",
   );
+  const canManage = isPlatformAdmin || !!isManagerOfThis;
   const backTo = isPlatformAdmin ? "/admin/clubs" : isManagerOfThis ? "/club" : "/admin/clubs";
 
   return (
@@ -65,14 +67,18 @@ export function ClubDetailPage() {
 
       {error && <p className="text-sm text-destructive">Falha a carregar: {error}</p>}
 
-      {/* Members panel - platform-admin only. */}
-      {isPlatformAdmin && !Number.isNaN(clubId) && <MembersSection clubId={clubId} />}
+      {/* Members panel - admins and managers of this club. Managers see a
+          scoped mode (staff-only editing, inline staff creation). */}
+      {!Number.isNaN(clubId) && (isPlatformAdmin || isManagerOfThis) && (
+        <MembersSection clubId={clubId} canManage={canManage} managerMode={!isPlatformAdmin} />
+      )}
 
       {/* Teams panel - visible to everyone reading the page, manage actions
           gated by canManage. */}
-      {!Number.isNaN(clubId) && (
-        <TeamsSection clubId={clubId} canManage={isPlatformAdmin || !!isManagerOfThis} />
-      )}
+      {!Number.isNaN(clubId) && <TeamsSection clubId={clubId} canManage={canManage} />}
+
+      {/* Jogos & Bilheteira - home matches for this club. */}
+      {!Number.isNaN(clubId) && <MatchesSection clubId={clubId} canManage={canManage} />}
 
       <section className="grid gap-4 md:grid-cols-2">
         <SectionCard

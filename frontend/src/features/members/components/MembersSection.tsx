@@ -14,6 +14,12 @@ import { AddMemberDialog } from "./AddMemberDialog";
 
 interface MembersSectionProps {
   clubId: number;
+  /** Whether the current user can add/remove members. Defaults to true
+   *  (admin behaviour); the backend enforces it regardless. */
+  canManage?: boolean;
+  /** Manager (non-admin) mode: managers list is read-only, only staff is
+   *  editable, and new users are created inline as STAFF. */
+  managerMode?: boolean;
 }
 
 /**
@@ -22,7 +28,11 @@ interface MembersSectionProps {
  * user) and removing. Removing only revokes the Keycloak group membership
  * — it doesn't delete the user.
  */
-export function MembersSection({ clubId }: MembersSectionProps) {
+export function MembersSection({
+  clubId,
+  canManage = true,
+  managerMode = false,
+}: MembersSectionProps) {
   const [data, setData] = useState<ClubMembers | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +86,7 @@ export function MembersSection({ clubId }: MembersSectionProps) {
               members={data.managers}
               onAddClick={() => setAddingRole("MANAGER")}
               onChanged={refetch}
+              canManage={managerMode ? false : canManage}
             />
             <MemberList
               title="Staff"
@@ -84,6 +95,7 @@ export function MembersSection({ clubId }: MembersSectionProps) {
               members={data.staff}
               onAddClick={() => setAddingRole("STAFF")}
               onChanged={refetch}
+              canManage={canManage}
             />
           </div>
         )}
@@ -95,6 +107,7 @@ export function MembersSection({ clubId }: MembersSectionProps) {
         clubId={clubId}
         role={addingRole ?? "MANAGER"}
         onAdded={refetch}
+        managerMode={managerMode}
       />
     </Card>
   );
@@ -107,6 +120,7 @@ function MemberList({
   members,
   onAddClick,
   onChanged,
+  canManage,
 }: {
   title: string;
   role: ClubMembershipRole;
@@ -114,6 +128,7 @@ function MemberList({
   members: ClubMember[];
   onAddClick: () => void;
   onChanged: () => void;
+  canManage: boolean;
 }) {
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -135,10 +150,12 @@ function MemberList({
     <section className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{title}</h3>
-        <Button size="sm" variant="outline" onClick={onAddClick}>
-          <Plus className="size-4" />
-          Adicionar
-        </Button>
+        {canManage && (
+          <Button size="sm" variant="outline" onClick={onAddClick}>
+            <Plus className="size-4" />
+            Adicionar
+          </Button>
+        )}
       </div>
 
       {error && <p className="text-xs text-destructive">{error}</p>}
@@ -158,15 +175,17 @@ function MemberList({
                   {m.email ? ` · ${m.email}` : ""}
                 </div>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleRemove(m)}
-                disabled={removing === m.userId}
-                aria-label={`Remover ${m.username}`}
-              >
-                <Trash2 className="size-4 text-destructive" />
-              </Button>
+              {canManage && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleRemove(m)}
+                  disabled={removing === m.userId}
+                  aria-label={`Remover ${m.username}`}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              )}
             </div>
           );
         })}

@@ -17,8 +17,15 @@ export interface ClubMembers {
 }
 
 export interface AddMemberRequest {
-  userId: string;
+  /** Existing user to attach. Omit to create a new user inline (managers). */
+  userId?: string;
   role: ClubMembershipRole;
+  /** Inline-create fields (used when no `userId` is given). */
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  password?: string;
 }
 
 export function listMembers(clubId: number) {

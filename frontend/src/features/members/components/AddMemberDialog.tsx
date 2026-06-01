@@ -21,6 +21,10 @@ interface AddMemberDialogProps {
   clubId: number;
   role: ClubMembershipRole;
   onAdded: () => void;
+  /** When true, only the "create new staff user" form is shown — the global
+   *  user directory is hidden, and the new user is created inline (no
+   *  platform-admin `createUser` call). Managers get this mode. */
+  managerMode?: boolean;
 }
 
 export function AddMemberDialog({
@@ -29,8 +33,16 @@ export function AddMemberDialog({
   clubId,
   role,
   onAdded,
+  managerMode = false,
 }: AddMemberDialogProps) {
-  const title = role === "MANAGER" ? "Adicionar gestor" : "Adicionar staff";
+  // Managers can only ever create STAFF.
+  const effectiveRole: ClubMembershipRole = managerMode ? "STAFF" : role;
+  const title = effectiveRole === "MANAGER" ? "Adicionar gestor" : "Adicionar staff";
+
+  const handleAdded = () => {
+    onAdded();
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,36 +50,33 @@ export function AddMemberDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Atribui um utilizador existente ao clube, ou cria um novo utilizador.
+            {managerMode
+              ? "Cria um novo utilizador de staff para este clube."
+              : "Atribui um utilizador existente ao clube, ou cria um novo utilizador."}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="existing" className="w-full">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="existing">Utilizador existente</TabsTrigger>
-            <TabsTrigger value="new">Criar novo</TabsTrigger>
-          </TabsList>
-          <TabsContent value="existing">
-            <ExistingUserPanel
-              clubId={clubId}
-              role={role}
-              onAdded={() => {
-                onAdded();
-                onOpenChange(false);
-              }}
-            />
-          </TabsContent>
-          <TabsContent value="new">
-            <NewUserPanel
-              clubId={clubId}
-              role={role}
-              onAdded={() => {
-                onAdded();
-                onOpenChange(false);
-              }}
-            />
-          </TabsContent>
-        </Tabs>
+        {managerMode ? (
+          <NewUserPanel
+            clubId={clubId}
+            role={effectiveRole}
+            managerMode
+            onAdded={handleAdded}
+          />
+        ) : (
+          <Tabs defaultValue="existing" className="w-full">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="existing">Utilizador existente</TabsTrigger>
+              <TabsTrigger value="new">Criar novo</TabsTrigger>
+            </TabsList>
+            <TabsContent value="existing">
+              <ExistingUserPanel clubId={clubId} role={effectiveRole} onAdded={handleAdded} />
+            </TabsContent>
+            <TabsContent value="new">
+              <NewUserPanel clubId={clubId} role={effectiveRole} onAdded={handleAdded} />
+            </TabsContent>
+          </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -195,10 +204,12 @@ function NewUserPanel({
   clubId,
   role,
   onAdded,
+  managerMode = false,
 }: {
   clubId: number;
   role: ClubMembershipRole;
   onAdded: () => void;
+  managerMode?: boolean;
 }) {
   const [form, setForm] = useState({
     username: "",
@@ -228,18 +239,31 @@ function NewUserPanel({
     setSubmitting(true);
     setError(null);
     try {
-      // The realm role for new users is determined by the club role:
-      // MANAGER -> realm role "club-manager", STAFF -> "staff".
-      const realmRole = role === "MANAGER" ? "club-manager" : "staff";
-      const user = await createUser({
-        username: form.username.trim(),
-        email: form.email.trim() || undefined,
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
-        password: form.password,
-        role: realmRole,
-      });
-      await addMember(clubId, { userId: user.id, role });
+      if (managerMode) {
+        // Managers can't touch the platform-admin `createUser` endpoint.
+        // The members POST creates the user inline (server forces STAFF).
+        await addMember(clubId, {
+          role,
+          username: form.username.trim(),
+          email: form.email.trim() || undefined,
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          password: form.password,
+        });
+      } else {
+        // The realm role for new users is determined by the club role:
+        // MANAGER -> realm role "club-manager", STAFF -> "staff".
+        const realmRole = role === "MANAGER" ? "club-manager" : "staff";
+        const user = await createUser({
+          username: form.username.trim(),
+          email: form.email.trim() || undefined,
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          password: form.password,
+          role: realmRole,
+        });
+        await addMember(clubId, { userId: user.id, role });
+      }
       onAdded();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -307,7 +331,9 @@ function NewUserPanel({
             required
           />
           <p className="text-xs text-muted-foreground">
-            O utilizador pode mudar a password depois no perfil dele.
+            {managerMode
+              ? "Password temporária — o utilizador deve alterá-la no primeiro acesso."
+              : "O utilizador pode mudar a password depois no perfil dele."}
           </p>
         </div>
       </div>

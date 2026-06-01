@@ -27,6 +27,10 @@ interface MatchFormDialogProps {
    *  round trip). */
   knownTeams: Map<number, Team>;
   onSaved: () => void;
+  /** When set AND creating a new match, the home club is fixed to this id and
+   *  its selector is disabled — managers can only create home matches for
+   *  their own club. The home TEAM selector stays enabled. */
+  lockHomeClubId?: number;
 }
 
 interface FormState {
@@ -58,8 +62,12 @@ export function MatchFormDialog({
   venues,
   knownTeams,
   onSaved,
+  lockHomeClubId,
 }: MatchFormDialogProps) {
   const isEdit = !!match;
+  // Lock the home club only when creating (managers can't reassign on edit,
+  // and the home fieldset is already disabled on edit anyway).
+  const homeClubLocked = !isEdit && lockHomeClubId != null;
   const [form, setForm] = useState<FormState>(EMPTY);
   const [homeTeams, setHomeTeams] = useState<Team[]>([]);
   const [awayTeams, setAwayTeams] = useState<Team[]>([]);
@@ -84,11 +92,13 @@ export function MatchFormDialog({
         refereeName: match.refereeName ?? "",
       });
     } else {
-      setForm(EMPTY);
+      setForm(
+        homeClubLocked ? { ...EMPTY, homeClubId: String(lockHomeClubId) } : EMPTY,
+      );
       setHomeTeams([]);
       setAwayTeams([]);
     }
-  }, [open, match, knownTeams]);
+  }, [open, match, knownTeams, homeClubLocked, lockHomeClubId]);
 
   // Whenever the selected club changes, reload that side's teams.
   useEffect(() => {
@@ -211,6 +221,7 @@ export function MatchFormDialog({
                   id="m-home-club"
                   value={form.homeClubId}
                   onChange={(v) => setForm({ ...form, homeClubId: v, homeTeamId: "" })}
+                  disabled={homeClubLocked}
                 >
                   <option value="">— Escolhe —</option>
                   {sortedClubs.map((c) => (
