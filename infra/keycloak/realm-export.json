@@ -322,5 +322,16 @@
         "defaultScope": "openid profile email"
       }
     }
+  ],
+  "identityProviderMappers": [
+    {
+      "name": "google-fan-role",
+      "identityProviderAlias": "google",
+      "identityProviderMapper": "oidc-hardcoded-role-idp-mapper",
+      "config": {
+        "role": "fan",
+        "syncMode": "FORCE"
+      }
+    }
   ]
 }
