@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Ticket, ScanLine } from "lucide-react";
+import { Calendar, Ticket } from "lucide-react";
 
 export function HomePage() {
   const { authenticated, username, login } = useAuth();
@@ -29,7 +29,7 @@ export function HomePage() {
         )}
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2">
         <FeatureCard
           icon={<Calendar className="size-5 text-primary" />}
           title="Calendário de jogos"
@@ -43,13 +43,6 @@ export function HomePage() {
           description="Compra bilhetes online e apresenta o QR code à entrada do estádio."
           to="/tickets/mine"
           ctaLabel="Os meus bilhetes"
-        />
-        <FeatureCard
-          icon={<ScanLine className="size-5 text-primary" />}
-          title="Validação no portão"
-          description="Para staff: lê o QR code e valida o bilhete em segundos."
-          to="/validate"
-          ctaLabel="Validar bilhete"
         />
       </section>
     </div>

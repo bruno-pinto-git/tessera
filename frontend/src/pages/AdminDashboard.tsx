@@ -46,14 +46,14 @@ const SECTIONS: Section[] = [
     description: "Equipas dentro de cada clube (sénior, sub-19, feminina…).",
     to: "/admin/teams",
     icon: <Users className="size-5 text-primary" />,
-    status: "soon",
+    status: "ready",
   },
   {
     title: "Jogadores",
     description: "Plantéis e dados dos jogadores.",
     to: "/admin/players",
     icon: <UserSquare2 className="size-5 text-primary" />,
-    status: "soon",
+    status: "ready",
   },
   {
     title: "Jogos",

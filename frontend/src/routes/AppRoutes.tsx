@@ -12,11 +12,12 @@ import { EventsPage } from "@/features/events/pages/EventsPage";
 import { EventDetailPage } from "@/features/events/pages/EventDetailPage";
 import { MyTicketsPage } from "@/features/tickets/pages/MyTicketsPage";
 import { TicketsPage } from "@/features/tickets/pages/TicketsPage";
-import { ValidatePage } from "@/features/validation/pages/ValidatePage";
 import { ClubsAdminPage } from "@/features/clubs/pages/ClubsAdminPage";
 import { UsersAdminPage } from "@/features/users/pages/UsersAdminPage";
 import { VenuesAdminPage } from "@/features/venues/pages/VenuesAdminPage";
 import { MatchesAdminPage } from "@/features/matches/pages/MatchesAdminPage";
+import { PlayersAdminPage } from "@/features/players/pages/PlayersAdminPage";
+import { TeamsAdminPage } from "@/features/teams/pages/TeamsAdminPage";
 
 export function AppRoutes() {
   return (
@@ -49,15 +50,6 @@ export function AppRoutes() {
         />
 
         {/* Staff / admin */}
-        <Route
-          path="validate"
-          element={
-            <ProtectedRoute roles={["staff", "platform-admin"]}>
-              <ValidatePage />
-            </ProtectedRoute>
-          }
-        />
-
         <Route
           path="club"
           element={
@@ -112,6 +104,22 @@ export function AppRoutes() {
           element={
             <ProtectedRoute roles={["platform-admin"]}>
               <UsersAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/teams"
+          element={
+            <ProtectedRoute roles={["platform-admin"]}>
+              <TeamsAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/players"
+          element={
+            <ProtectedRoute roles={["platform-admin"]}>
+              <PlayersAdminPage />
             </ProtectedRoute>
           }
         />

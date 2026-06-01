@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { UserSquare2, ClipboardList } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
 import { useMe } from "@/auth/useMe";
 import { getClub, type Club } from "@/features/clubs/api/clubsApi";
@@ -11,11 +11,11 @@ import { TeamsSection } from "@/features/teams/components/TeamsSection";
 
 /**
  * Per-club management area opened from `/club/<id>` (managers) or
- * `/admin/clubs/<id>` (admins — future). Phase 2 stub: shows the club
- * header and a dashboard of sections (Teams / Players / Sheets) that are
- * still under construction. The scope-aware backend `@PreAuthorize`
- * checks are in place, so when these UIs land they "just work" for both
- * roles.
+ * `/admin/clubs/<id>` (admins). Shows the club header, its members
+ * (admin-only) and its teams. Players are managed per team — open a team
+ * from the teams panel to reach its squad. Match sheets are still under
+ * construction. The scope-aware backend `@PreAuthorize` checks are in
+ * place, so management actions "just work" for both roles.
  */
 export function ClubDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -75,11 +75,6 @@ export function ClubDetailPage() {
       )}
 
       <section className="grid gap-4 md:grid-cols-2">
-        <SectionCard
-          icon={<UserSquare2 className="size-5 text-primary" />}
-          title="Jogadores"
-          description="Plantéis das equipas, com cartões e estatísticas."
-        />
         <SectionCard
           icon={<ClipboardList className="size-5 text-primary" />}
           title="Fichas técnicas"
