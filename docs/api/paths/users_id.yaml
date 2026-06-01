@@ -29,6 +29,42 @@ get:
     "500":
       $ref: "../components/responses/errors.yaml#/InternalServerError"
 
+put:
+  operationId: updateUser
+  tags: [Users]
+  summary: Update a user
+  description: |
+    Updates a user's profile and account state. Only the fields present in
+    the body are changed. The role, when supplied, reassigns the
+    *manageable* role (`club-manager`/`staff`) — the previous one is removed
+    and the new one added; `platform-admin` and `fan` are left untouched.
+    `forcePasswordReset` adds the `UPDATE_PASSWORD` required action so the
+    user must choose a new password on their next login.
+  x-required-roles: [platform-admin]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "../components/schemas/updateUserRequest.yaml"
+  responses:
+    "200":
+      description: Updated user.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/userSummary.yaml"
+    "400":
+      $ref: "../components/responses/errors.yaml#/BadRequest"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "404":
+      $ref: "../components/responses/errors.yaml#/NotFound"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"
+
 delete:
   operationId: deleteUser
   tags: [Users]
@@ -36,8 +72,10 @@ delete:
   description: |
     Permanently removes the user from Keycloak. Any club memberships are
     revoked at the same time (the user falls out of the corresponding
-    groups). This is **not** reversible — for a temporary lock, disable
-    the user from the Keycloak admin console instead.
+    groups). This is **not** reversible — for a temporary lock, disable the
+    user instead (`PUT /users/{id}` with `enabled: false`). Note: users who
+    sign in via a social identity provider (Google) are re-provisioned on
+    their next login, so deleting them is not a permanent ban — disable them.
   x-required-roles: [platform-admin]
   responses:
     "204":

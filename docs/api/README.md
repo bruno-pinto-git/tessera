@@ -31,8 +31,8 @@ npm install
 
 | Goal | Command |
 |---|---|
-| Lint the spec | `npm run lint` |
-| Validate / parse | `npm run validate` |
+| Validate / parse (Redocly) | `npm run validate` |
+| Lint conventions (Spectral) | `npm run lint` |
 | Bundle for BFF (single-file) | `npm run bundle:bff` |
 | Build standalone Redoc HTML | `npm run build:redoc` |
 | Run all the above | `npm run build` |
@@ -40,11 +40,18 @@ npm install
 | Generate Kotlin client (android) | `npm run generate:android` |
 
 `npm run bundle:bff` writes the flattened spec to
-`backend/bff-service/src/main/resources/static/openapi.yaml`. The BFF
-serves Swagger UI from this file at <http://localhost:8080/api/docs>
+`backend/bff-service/src/main/resources/static/api/openapi.yaml`. The
+BFF serves Swagger UI from this file at <http://localhost:8080/api/docs>
 (or <http://localhost:8000/api/docs> through NGINX). **Re-run the
 bundle whenever you change a spec file**, or the BFF will serve a
 stale version.
+
+The web SPA consumes the spec directly (no `generate:web` step
+required for day-to-day work): `frontend` runs `npm run codegen:api`
+(`openapi-typescript`) against this `openapi.yaml` to regenerate
+`frontend/src/api/schema.gen.ts`. The `generate:web` /
+`generate:android` scripts above are the heavier `openapi-generator`
+clients, kept for when full typed clients are wanted.
 
 ## Authoring conventions
 
@@ -59,8 +66,11 @@ stale version.
 - **Errors use Problem Details** (`application/problem+json`).
   Reference `components/responses/errors.yaml`.
 - **Roles** declared via the `x-required-roles` extension on each
-  operation: `[admin]`, `[staff, admin]`, `[fan, admin]`, or omit to
-  mean "any authenticated user".
+  operation, using the realm role names
+  `platform-admin`, `club-manager`, `staff`, `fan`:
+  e.g. `[platform-admin]`, `[staff, club-manager]`, or omit to mean
+  "any authenticated user". Public (unauthenticated) reads set
+  `security: []` on the operation instead.
 - **Date/time** values are ISO 8601 with timezone (`format: date-time`).
 - **JSON casing** is camelCase.
 
@@ -68,8 +78,12 @@ stale version.
 
 | Resources | Author |
 |---|---|
-| `me`, `clubs`, `teams`, `players`, `venues`, `matches`, `matchSheets`, `stats` | Bruno |
+| `me`, `users`, `members`, `clubs`, `teams`, `players`, `venues`, `matches`, `matchSheets`, `stats` | Bruno |
 | `tickets`, `events`, payment flow | Colleague |
+
+`users` (Keycloak user administration, `platform-admin` only) and
+`members` (per-club manager/staff membership) were added after the
+initial split and are also covered by the spec.
 
 Common pieces (security, errors, pagination) are shared and edited by
 either author with PR review by the other.

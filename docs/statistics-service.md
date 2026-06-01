@@ -92,9 +92,9 @@ dinamicamente. O filtro `playerId` usa subquery `EXISTS` sobre
 
 | Method | Path | Role | Descricao |
 |--------|------|------|-----------|
-| GET | `/api/v1/stats/sales/summary` | admin | total agregado (sold, validated, revenue, rate) |
-| GET | `/api/v1/stats/sales/by-match/{matchId}` | admin | agregado para um match |
-| GET | `/api/v1/stats/sales/range?from=...&to=...` | admin | janela temporal |
+| GET | `/api/v1/stats/sales/summary` | platform-admin | total agregado (sold, validated, revenue, rate) |
+| GET | `/api/v1/stats/sales/by-match/{matchId}` | platform-admin | agregado para um match |
+| GET | `/api/v1/stats/sales/range?from=...&to=...` | platform-admin | janela temporal |
 
 `from` e inclusivo, `to` e exclusivo. `validationRate` no endpoint
 `range` e sempre 0 (validacao acontece depois do paid e enviesa a

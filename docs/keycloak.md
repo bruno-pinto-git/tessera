@@ -18,8 +18,8 @@ nos servicos backend, etc.), ver [security.md](security.md).
 - **Versao:** Keycloak 26.0
 - **Modo:** Desenvolvimento (`start-dev`)
 - **Porta:** 8180
-- **Base de dados:** H2 embebida (desenvolvimento); em producao deve ser substituida por PostgreSQL
-- **Importacao automatica:** O realm `tessera` e importado automaticamente a partir do ficheiro `infra/keycloak/realm-export.json` na primeira execucao
+- **Base de dados:** H2 embebida e **efemera** (sem volume persistente — o unico mount e o ficheiro de realm em read-only); em producao deve ser substituida por PostgreSQL
+- **Importacao automatica:** O realm `tessera` e (re)importado a partir do ficheiro `infra/keycloak/realm-export.json` sempre que o container e recriado, ja que o estado nao e persistido
 
 ```yaml
 keycloak:
@@ -49,23 +49,34 @@ O realm `tessera` e o espaco de configuracao que contem todos os utilizadores, r
 
 ## Roles (Papeis)
 
-O sistema define tres roles que correspondem aos tres perfis de utilizador identificados na proposta do projeto:
+O realm define **quatro** roles de realm. Um utilizador pode acumular
+roles; `club-manager` e `staff` sao scoped a clubes especificos atraves
+de pertenca a grupos (`/clubs/<id>/managers` e `/clubs/<id>/staff`).
 
-### admin — Administrador do Clube
+### platform-admin — Administrador da Plataforma
 
-Acesso total a gestao do clube. Permissoes:
+Administrador de sistema, transversal a todos os clubes. Permissoes:
 
-- Gestao de jogadores e planteis
+- Visao de todos os clubes
+- Gestao do catalogo (clubes, recintos)
+- Criacao e edicao de utilizadores e atribuicao de gestores de clube
+- Consulta de relatorios de bilheteira e estatisticas
+
+### club-manager — Gestor de Clube
+
+Gestor scoped a um ou mais clubes (via grupo `/clubs/<id>/managers`).
+Permissoes:
+
+- Gestao de jogadores e planteis do clube
 - Criacao e gestao de jogos
 - Configuracao de eventos de bilheteira (precos, estados)
-- Consulta de relatorios de bilheteira e estatisticas
-- Gestao de membros staff do clube
 
 ### staff — Staff do Clube
 
-Operacoes no dia de jogo. Permissoes:
+Operacoes no dia de jogo, scoped a um ou mais clubes (via grupo
+`/clubs/<id>/staff`). Permissoes:
 
-- Validacao de bilhetes na entrada do recinto (leitura QR code)
+- Validacao de bilhetes na entrada do recinto (leitura QR code, Android)
 - Preenchimento da ficha tecnica do jogo em tempo real
 - Registo de ocorrencias (golos, cartoes, substituicoes)
 - Consulta de jogos e fichas tecnicas
@@ -79,7 +90,10 @@ Utilizador final da plataforma. Permissoes:
 - Visualizacao de fichas tecnicas e estatisticas
 - Gestao do perfil pessoal
 
-**Role por defeito:** Quando um novo utilizador se regista, recebe automaticamente o role `fan`.
+**Role por defeito:** O role por defeito do realm
+(`default-roles-tessera`) e um role composto que inclui `fan`. Por isso,
+quando um novo utilizador se regista (formulario de registo ou login
+social Google), recebe efetivamente o role `fan`.
 
 ## Clients (Aplicacoes)
 
@@ -89,12 +103,12 @@ Utilizador final da plataforma. Permissoes:
 |-------------|-------|
 | Tipo | Publico (sem secret) |
 | Protocolo | OpenID Connect |
-| Fluxo | Authorization Code + PKCE |
+| Fluxo | Authorization Code + PKCE (S256); Direct Access Grants ativado |
 | Redirect URIs | `http://localhost:5173/*`, `http://localhost:8000/*` |
 | Web Origins | `http://localhost:5173`, `http://localhost:8000` |
-| Token Lifespan | 30 minutos |
+| Token Lifespan | 1800s (30 minutos) |
 
-Utilizado pela aplicacao web React. Como client publico, nao armazena credenciais no browser — utiliza PKCE (Proof Key for Code Exchange) para seguranca adicional no fluxo de autorizacao.
+Utilizado pela aplicacao web React. Como client publico, nao armazena credenciais no browser — utiliza PKCE (Proof Key for Code Exchange, metodo `S256`) para seguranca adicional no fluxo de autorizacao.
 
 ### tessera-android — Aplicacao Android
 
@@ -102,9 +116,9 @@ Utilizado pela aplicacao web React. Como client publico, nao armazena credenciai
 |-------------|-------|
 | Tipo | Publico (sem secret) |
 | Protocolo | OpenID Connect |
-| Fluxo | Authorization Code + PKCE |
+| Fluxo | Authorization Code + PKCE (S256) |
 | Redirect URIs | `tessera://callback/*` |
-| Token Lifespan | 60 minutos |
+| Token Lifespan | 3600s (60 minutos) |
 
 Utilizado pela aplicacao movel Android. O redirect URI usa um custom scheme (`tessera://`) para interceptar o callback de autenticacao na app.
 
@@ -114,32 +128,106 @@ Utilizado pela aplicacao movel Android. O redirect URI usa um custom scheme (`te
 |-------------|-------|
 | Tipo | Confidencial (com secret) |
 | Protocolo | OpenID Connect |
-| Service Account | Ativado |
+| Service Account | Ativado (`serviceAccountsEnabled = true`) |
 | Secret | `change-me-in-production` |
 
-Utilizado pelo BFF para comunicacao servico-a-servico. Como client confidencial, usa um secret para autenticar-se diretamente com o Keycloak (Client Credentials Grant).
+Client confidencial usado para comunicacao servico-a-servico. A sua
+conta de servico (utilizador `service-account-tessera-bff`) tem roles de
+`realm-management` (`manage-users`, `view-users`, `manage-groups`, etc.)
+e e usada pelo `KeycloakAdminClient` do **match-service** (grant
+`client_credentials`) para chamar a **Keycloak Admin REST API** na
+gestao de utilizadores e grupos (ver [security.md](security.md)).
+
+## Identity Providers (Login Social)
+
+O realm tem configurado login social atraves de identity providers
+externos. O principal e o **Google**:
+
+| Propriedade | Valor |
+|-------------|-------|
+| Alias | `google` |
+| Provider ID | `google` |
+| Estado | Ativado |
+| Default Scope | `openid profile email` |
+
+Esta tambem definido um **identity provider mapper** do tipo
+`oidc-hardcoded-role-idp-mapper` (`google-fan-role`) que atribui
+automaticamente o realm role `fan` aos utilizadores que entram via
+Google, com `syncMode = FORCE` (reaplicado em cada login):
+
+```json
+{
+  "name": "google-fan-role",
+  "identityProviderAlias": "google",
+  "identityProviderMapper": "oidc-hardcoded-role-idp-mapper",
+  "config": { "role": "fan", "syncMode": "FORCE" }
+}
+```
+
+Assim, qualquer utilizador que faca login com a sua conta Google fica
+imediatamente como adepto (`fan`), sem atribuicao manual.
+
+**Nota sobre utilizadores brokered:** apagar um utilizador criado via
+Google **nao** e um banimento permanente — no proximo login Google o
+Keycloak volta a aprovisiona-lo. Para bloquear efetivamente uma conta,
+deve-se **desativar** (disable) em vez de apagar.
+
+> Existe ainda um IdP `microsoft` definido no realm-export, mas sem
+> mapper de role automatico associado.
+
+## Gestao de Utilizadores via API
+
+Para alem desta consola, a plataforma tem endpoints proprios de gestao
+de utilizadores em `/api/v1/users` (match-service
+`com.tessera.match.iam.UserController`, reencaminhados pelo BFF
+`UserProxyController`). **Todos exigem o role `platform-admin`.**
+
+Internamente, o match-service usa o `KeycloakAdminClient`, que se
+autentica com a conta de servico do client confidencial `tessera-bff`
+(grant `client_credentials`) e chama a **Keycloak Admin REST API** para
+pesquisar, criar, atualizar e eliminar utilizadores, atribuir roles
+(`club-manager`/`staff`) e gerir grupos de clube. A pagina
+`/admin/users` do frontend assenta nestes endpoints. Detalhes em
+[security.md](security.md).
 
 ## Utilizadores de Teste
 
-Para desenvolvimento e testes, o realm inclui tres utilizadores pre-configurados:
+Para desenvolvimento e testes, o realm inclui utilizadores pre-configurados:
 
 | Username | Password | Email | Role |
 |----------|----------|-------|------|
-| `admin` | `admin` | admin@tessera.pt | admin |
+| `admin` | `admin` | admin@tessera.pt | platform-admin |
+| `gestor` | `gestor` | gestor@tessera.pt | club-manager |
 | `staff` | `staff` | staff@tessera.pt | staff |
 | `adepto` | `adepto` | adepto@tessera.pt | fan |
+
+Existe ainda a conta de servico `service-account-tessera-bff` (do client
+confidencial `tessera-bff`), nao destinada a login interativo.
 
 **Nota:** Estas credenciais sao apenas para desenvolvimento. Em producao, os utilizadores devem ser criados com passwords seguras.
 
 ## Protocol Mappers
 
-Os clients `tessera-web` e `tessera-android` incluem um protocol mapper customizado que adiciona os realm roles ao token JWT:
+Os clients `tessera-web` e `tessera-android` incluem tres protocol
+mappers customizados:
+
+| Mapper | Tipo | Claim | Descricao |
+|--------|------|-------|-----------|
+| `realm-roles` | `oidc-usermodel-realm-role-mapper` (multivalued) | `roles` | Realm roles do utilizador |
+| `subject` | `oidc-usermodel-property-mapper` | `sub` | Id do utilizador |
+| `groups` | `oidc-group-membership-mapper` (full path) | `groups` | Pertenca a grupos (path completo) |
+
+O mapper `realm-roles` garante que os roles aparecem no claim `roles`,
+permitindo ao frontend e aos servicos backend verificar permissoes sem
+consultas adicionais ao Keycloak. O claim `groups` (com path completo)
+e usado para resolver o scope de `club-manager`/`staff` por clube.
 
 ```json
 {
   "name": "realm-roles",
   "protocolMapper": "oidc-usermodel-realm-role-mapper",
   "config": {
+    "multivalued": "true",
     "claim.name": "roles",
     "access.token.claim": "true",
     "id.token.claim": "true",
@@ -148,19 +236,18 @@ Os clients `tessera-web` e `tessera-android` incluem um protocol mapper customiz
 }
 ```
 
-Isto garante que os roles do utilizador aparecem no claim `roles` do token, permitindo ao frontend e ao BFF verificar permissoes sem consultas adicionais ao Keycloak.
-
 ### Exemplo de Token JWT (payload)
 
 ```json
 {
   "sub": "a1b2c3d4-...",
-  "preferred_username": "admin",
-  "email": "admin@tessera.pt",
+  "preferred_username": "gestor",
+  "email": "gestor@tessera.pt",
   "realm_access": {
-    "roles": ["admin", "default-roles-tessera"]
+    "roles": ["club-manager", "default-roles-tessera"]
   },
-  "roles": ["admin"]
+  "roles": ["club-manager"],
+  "groups": ["/clubs/1/managers"]
 }
 ```
 
@@ -242,7 +329,7 @@ para producao desde que o JWKS endpoint seja acessivel.
 
 ## Importacao do Realm
 
-O ficheiro `infra/keycloak/realm-export.json` e importado automaticamente quando o container inicia pela primeira vez. Para re-importar (ex: apos alteracoes ao ficheiro):
+O ficheiro `infra/keycloak/realm-export.json` e importado automaticamente sempre que o container e (re)criado, dado que o Keycloak corre com H2 efemera (sem volume persistente). Para re-importar (ex: apos alteracoes ao ficheiro):
 
 1. Parar e remover o container Keycloak
 2. Reiniciar — o Keycloak ira re-importar o ficheiro

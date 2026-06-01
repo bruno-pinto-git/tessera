@@ -1,0 +1,41 @@
+type: object
+description: |
+  Payload for updating a Keycloak user. All fields are optional — only the
+  ones present are applied. `role` reassigns the manageable role
+  (`club-manager`/`staff`); `forcePasswordReset` makes the user choose a new
+  password on next login. Passwords are not set here (create a user with a
+  temporary password, or force a reset).
+properties:
+  email:
+    type: string
+    format: email
+    examples:
+      - "gestor2@tessera.pt"
+  firstName:
+    type: string
+    minLength: 1
+    maxLength: 100
+    examples:
+      - "Gestor"
+  lastName:
+    type: string
+    minLength: 1
+    maxLength: 100
+    examples:
+      - "Dois"
+  enabled:
+    type: boolean
+    description: Enable or disable the account. Disabled users cannot authenticate.
+    examples:
+      - false
+  role:
+    type: string
+    enum: [club-manager, staff]
+    description: Reassign the manageable realm role. Leaves platform-admin/fan untouched.
+    examples:
+      - "staff"
+  forcePasswordReset:
+    type: boolean
+    description: When true, adds the UPDATE_PASSWORD required action (change on next login).
+    examples:
+      - true

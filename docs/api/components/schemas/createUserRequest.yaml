@@ -33,7 +33,9 @@ properties:
     type: string
     minLength: 6
     maxLength: 200
-    description: Initial password. The user can change it later.
+    description: |
+      Initial password. Set as **temporary** in Keycloak — the user is
+      forced to choose a new password on their first login.
     examples:
       - "gestor12345"
   role:

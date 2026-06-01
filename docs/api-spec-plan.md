@@ -1,5 +1,46 @@
 # Tessera — API Specification Plan (v1)
 
+> **Status (beta) — what this plan got right, and what changed.**
+> This was the original planning document. Most of it shipped; the notes
+> below reconcile it with the current code and spec. The OpenAPI spec is
+> live and multi-file under `docs/api/` (entry point `docs/api/openapi.yaml`),
+> the BFF serves Swagger UI from the bundled copy, and the web SPA's types
+> are generated from it via `npm run codegen:api` → `frontend/src/api/schema.gen.ts`.
+>
+> Implemented and in the spec:
+> - Match domain: clubs, teams, players, venues, matches, match sheets
+>   (lineup + occurrences + lock/unlock).
+> - Ticketing: events and tickets (create → pay → list `/tickets/mine` →
+>   gate `POST /tickets/validate`).
+> - Statistics (read-side, RabbitMQ-fed): `/stats/match-sheets`,
+>   `/stats/match-sheets/{matchId}`, `/stats/sales/summary`,
+>   `/stats/sales/by-match/{matchId}`, `/stats/sales/range`.
+> - Profile: `GET /me` (now also returns `clubMemberships`).
+> - **User management (added after this plan):** `/users` — `GET` search,
+>   `POST` create, `GET /users/{id}`, `DELETE /users/{id}` — `platform-admin`
+>   only, wrapping Keycloak. Plus per-club membership at
+>   `/clubs/{clubId}/members` and `/clubs/{clubId}/members/{userId}`.
+>   All present in the OpenAPI spec.
+>
+> Deviations from this plan:
+> - **Roles** are `platform-admin`, `club-manager`, `staff`, `fan` (this
+>   doc's `🔴 admin` legend predates that). `x-required-roles` uses those
+>   exact names.
+> - **Match-sheet lineup** is per-player (`POST .../sheet/lineup`,
+>   `PATCH/DELETE .../sheet/lineup/{playerId}`), not the bulk
+>   `PUT .../sheet/lineup` upsert sketched in §6.7.
+> - **Statistics surface** differs from §6.8: there is no
+>   `/stats/players/{id}`, `/stats/teams/{id}` or `/stats/seasons/.../standings`
+>   yet. The shipped stats are the match-sheet history and sales endpoints
+>   listed above.
+> - **Occurrence types** now also include `FOUL`.
+> - **SPA `/validate` page was removed** — ticket validation is Android-only.
+>   The `POST /tickets/validate` endpoint still exists and is exercised by
+>   staff (see `docs/http-tests/09-tickets.http`).
+>
+> Gaps / not yet done: extended per-player and per-team statistics and
+> season standings (§6.8) remain unimplemented.
+
 ## 1. Goal
 
 Define a formal OpenAPI 3.1 contract for the Tessera REST API as a binding agreement between the three consumers: web SPA, android (Newland for staff, phone for fans), and the BFF. The spec is the source of truth — backend implementations and clients are derived from it.
@@ -102,7 +143,7 @@ Denormalized tables fed by RabbitMQ events. Examples:
 
 ## 6. Endpoint catalog (your scope)
 
-Strawman — every entry needs to be filled out (request/response schema, errors, examples) when authoring the spec. `🟢 fan` `🟡 staff` `🔴 admin` `⚪ public` indicate required roles.
+Strawman — every entry needs to be filled out (request/response schema, errors, examples) when authoring the spec. `🟢 fan` `🟡 staff` `🔴 admin` `⚪ public` indicate required roles. **Note:** as shipped, `🔴 admin` maps to `platform-admin` (with `club-manager` also allowed on club-scoped writes via `@clubAuthz`); see the status note at the top of this file for the actual role names and the final stats/lineup surface.
 
 ### 6.1 Profile
 | Method | Path | Roles | Notes |

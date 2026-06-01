@@ -1,8 +1,10 @@
 # match-service
 
 O microsservico responsavel pela atividade desportiva: clubes, equipas,
-jogadores, jogos e fichas tecnicas. E o servico de dominio mais rico
-do Tessera.
+jogadores, recintos, jogos e fichas tecnicas. E o servico de dominio mais
+rico do Tessera. Aloja tambem a gestao de utilizadores (IAM) atraves de
+um wrapper sobre a Keycloak Admin REST API (ver seccao **IAM / Gestao de
+utilizadores**).
 
 - **Porta:** 8082
 - **Base de dados:** `tessera_matches` (PostgreSQL 16)
@@ -20,6 +22,8 @@ do Tessera.
 | **Player** | `player` | `/teams/{teamId}/players` + `/players/{id}` | FK → team; soft delete |
 | **Match** | `match` | `/matches` + `/matches/{id}` | FKs → team x2, venue; soft delete |
 | **MatchSheet** | `match_sheet` + `lineup_entry` + `occurrence` | `/matches/{id}/sheet/...` | Lazy create; lock/unlock |
+| **User** | _(sem tabela — Keycloak)_ | `/users` + `/users/{id}` | Wrapper Keycloak Admin API; so `platform-admin` |
+| **ClubMembership** | _(sem tabela — grupos Keycloak)_ | `/clubs/{clubId}/members` + `/clubs/{clubId}/members/{userId}` | manager/staff por grupo; admin OU manager do clube (`@clubAuthz.canManageClub`) |
 
 ## Convencoes da API
 
@@ -32,6 +36,32 @@ do Tessera.
 | Envelope de pagina | `{ content, page, size, totalElements, totalPages }` |
 | Erros | RFC 7807 Problem Details (`application/problem+json`) |
 | Auth | Bearer JWT do Keycloak (excepto GETs publicos) |
+| Roles | `platform-admin`, `club-manager`, `staff`, `fan` (realm roles) |
+
+### Modelo de autorizacao
+
+A maioria das escritas e gated por role de realm via `@PreAuthorize`:
+
+- **`platform-admin`** — acesso total (clubes, venues, matches, IAM).
+- **`club-manager` / `staff`** — acesso *com escopo* ao seu clube. As
+  escritas sobre equipas, jogadores e fichas usam o bean
+  `@clubAuthz` (`ClubAuthorizationService`) que valida, alem do role,
+  a pertenca do utilizador ao clube em causa (claim `groups` do JWT,
+  extraido por `ClubMembershipExtractor`). Um `platform-admin` passa
+  sempre; caso contrario, e preciso uma `ClubMembership` (MANAGER para
+  gerir equipas/jogadores, MANAGER ou STAFF para editar a ficha) do
+  clube alvo. Falha de escopo devolve **403**.
+
+  Verificacoes expostas pelo `@clubAuthz`:
+
+  - `canManageClub(clubId)` — admin ou MANAGER do clube.
+  - `canManageTeam(teamId)` / `canManagePlayer(playerId)` — resolve o
+    clube via team/player e delega em `canManageClub`.
+  - `canManageMatch(matchId)` — admin ou MANAGER do clube da **equipa da
+    casa** do jogo (resolve `homeTeamId` → `clubId`). Mais restrito que
+    `canEditSheet`: gerir o jogo em si pertence ao anfitriao.
+  - `canEditSheet(matchId)` — admin ou manager/staff de **qualquer** dos
+    dois clubes envolvidos.
 
 ## Diagrama de dominio
 
@@ -72,9 +102,9 @@ Club { id, name, foundedYear?, crestUrl?, createdAt, deletedAt? }
 |--------|------|------|-----------|
 | GET | `/clubs` | publico | Lista paginada, suporta filtro `?name=...` |
 | GET | `/clubs/{id}` | publico | Detalhe |
-| POST | `/clubs` | admin | Cria |
-| PATCH | `/clubs/{id}` | admin | Atualizacao parcial |
-| DELETE | `/clubs/{id}` | admin | Soft delete |
+| POST | `/clubs` | platform-admin | Cria |
+| PATCH | `/clubs/{id}` | platform-admin | Atualizacao parcial |
+| DELETE | `/clubs/{id}` | platform-admin | Soft delete |
 
 **Constraints:** `name` UNIQUE entre clubes ativos (case-insensitive).
 
@@ -91,9 +121,9 @@ Venue { id, name, capacity, address?, createdAt, deletedAt? }
 |--------|------|------|
 | GET | `/venues` | publico |
 | GET | `/venues/{id}` | publico |
-| POST | `/venues` | admin |
-| PATCH | `/venues/{id}` | admin |
-| DELETE | `/venues/{id}` | admin |
+| POST | `/venues` | platform-admin |
+| PATCH | `/venues/{id}` | platform-admin |
+| DELETE | `/venues/{id}` | platform-admin |
 
 **Constraints:** `name` UNIQUE entre venues ativos; `capacity` ∈ [0, 200000].
 
@@ -113,9 +143,12 @@ SUB_13, SUB_11, SUB_9, SUB_7, VETERANS, OTHER.
 |--------|------|------|
 | GET | `/clubs/{clubId}/teams` | publico |
 | GET | `/teams/{id}` | publico |
-| POST | `/clubs/{clubId}/teams` | admin |
-| PATCH | `/teams/{id}` | admin |
-| DELETE | `/teams/{id}` | admin |
+| POST | `/clubs/{clubId}/teams` | platform-admin / club-manager do clube |
+| PATCH | `/teams/{id}` | platform-admin / club-manager do clube |
+| DELETE | `/teams/{id}` | platform-admin / club-manager do clube |
+
+Escritas gated por `@clubAuthz.canManageClub` / `canManageTeam`
+(escopo por clube — ver **Modelo de autorizacao**).
 
 **Constraints:** unique index parcial `(club_id, category) WHERE deleted_at IS NULL`.
 Tentativa de duplicar categoria devolve **409**.
@@ -143,9 +176,9 @@ Player {
 | GET | `/teams/{teamId}/players` | publico | Paginado, ordenado por shirt |
 | GET | `/clubs/{clubId}/players` | publico | **Squad completo do clube** (todas as equipas ativas), paginado, ordem alfabetica |
 | GET | `/players/{id}` | publico | |
-| POST | `/teams/{teamId}/players` | admin | |
-| PATCH | `/players/{id}` | admin | |
-| DELETE | `/players/{id}` | admin | |
+| POST | `/teams/{teamId}/players` | platform-admin / club-manager | `@clubAuthz.canManageTeam` |
+| PATCH | `/players/{id}` | platform-admin / club-manager | `@clubAuthz.canManagePlayer` |
+| DELETE | `/players/{id}` | platform-admin / club-manager | `@clubAuthz.canManagePlayer` |
 
 **Constraints:** unique index parcial
 `(team_id, shirt_number) WHERE deleted_at IS NULL AND shirt_number IS NOT NULL`.
@@ -175,9 +208,25 @@ Match {
 |--------|------|------|-------|
 | GET | `/matches` | publico | Filtros: `?from`, `?to`, `?status`, `?clubId` |
 | GET | `/matches/{id}` | publico | |
-| POST | `/matches` | admin | Sempre criado em SCHEDULED |
-| PATCH | `/matches/{id}` | admin / staff | Status transitions e scores |
-| DELETE | `/matches/{id}` | admin | Soft delete |
+| POST | `/matches` | platform-admin / manager do clube da casa | `@clubAuthz.canManageTeam(#req.homeTeamId)`; sempre criado em SCHEDULED |
+| PATCH | `/matches/{id}` | platform-admin / manager do clube da casa | `@clubAuthz.canManageMatch`; status transitions e scores |
+| DELETE | `/matches/{id}` | platform-admin / manager do clube da casa | `@clubAuthz.canManageMatch`; soft delete |
+
+Gerir um jogo (criar/editar/eliminar) e privilegio do **clube
+anfitriao**: exige ser `platform-admin` ou MANAGER do clube da equipa da
+casa (`homeTeamId`). Isto e mais restrito que a edicao da ficha tecnica
+(`canEditSheet`), que aceita managers/staff de qualquer dos dois clubes.
+
+> **Nota historica:** ate recentemente `PATCH /matches/{id}` usava um
+> `hasAnyRole('platform-admin','club-manager','staff')` **sem escopo** —
+> qualquer manager/staff conseguia editar qualquer jogo — e POST/DELETE
+> eram so admin. O escopo por clube da casa fechou esse buraco.
+
+A `MatchResponse` expoe `homeClubId` e `awayClubId` (clube de cada
+equipa, resolvidos por `MatchService.clubIdsForTeams` numa unica query;
+`null` se a equipa nao for resolvivel). Estes campos permitem ao
+frontend e ao ticket-service saber a que clube pertence cada jogo sem
+chamadas extra.
 
 ### Filtro `?clubId`
 
@@ -258,13 +307,16 @@ Se qualquer destas condicoes falhar, a operacao devolve **409**.
 | Method | Path | Role |
 |--------|------|------|
 | GET | `/matches/{id}/sheet` | publico |
-| POST | `/matches/{id}/sheet/lineup` | staff / admin |
-| PATCH | `/matches/{id}/sheet/lineup/{playerId}` | staff / admin |
-| DELETE | `/matches/{id}/sheet/lineup/{playerId}` | staff / admin |
-| POST | `/matches/{id}/sheet/occurrences` | staff / admin |
-| DELETE | `/matches/{id}/sheet/occurrences/{occId}` | staff / admin |
-| POST | `/matches/{id}/sheet/lock` | staff / admin |
-| POST | `/matches/{id}/sheet/unlock` | **admin** |
+| POST | `/matches/{id}/sheet/lineup` | `@clubAuthz.canEditSheet` |
+| PATCH | `/matches/{id}/sheet/lineup/{playerId}` | `@clubAuthz.canEditSheet` |
+| DELETE | `/matches/{id}/sheet/lineup/{playerId}` | `@clubAuthz.canEditSheet` |
+| POST | `/matches/{id}/sheet/occurrences` | `@clubAuthz.canEditSheet` |
+| DELETE | `/matches/{id}/sheet/occurrences/{occId}` | `@clubAuthz.canEditSheet` |
+| POST | `/matches/{id}/sheet/lock` | `@clubAuthz.canEditSheet` |
+| POST | `/matches/{id}/sheet/unlock` | **platform-admin** |
+
+`canEditSheet` permite o `platform-admin` ou qualquer manager/staff de
+um dos dois clubes envolvidos no jogo (ver **Modelo de autorizacao**).
 
 ### Tipos de occurrence
 
@@ -293,6 +345,123 @@ rejeitado.
 - **Bloqueio por cartao vermelho**: depois de receber `RED_CARD`, o
   jogador nao pode ser autor de occurrences subsequentes — 409
 
+## IAM / Gestao de utilizadores
+
+O pacote `com.tessera.match.iam` adiciona ao match-service a gestao de
+utilizadores e de pertencas a clube. Nao ha persistencia Tessera-side: e
+um wrapper fino sobre a **Keycloak Admin REST API**. O Keycloak continua a
+ser a fonte da verdade para utilizadores, roles e grupos.
+
+### KeycloakAdminClient
+
+Cliente REST minimo (`KeycloakAdminClient.kt`) para a Admin API. Autentica
+com a **service account do client confidencial `tessera-bff`** via grant
+`client_credentials` e mantem o token em cache ate perto da expiracao
+(renova 30s antes). Operacoes expostas (so as que o Tessera precisa):
+
+- **Grupos:** `findGroupByPath`, `createTopLevelGroup`, `createChildGroup`,
+  `deleteGroup`, `listGroupMembers`, `addUserToGroup`, `removeUserFromGroup`.
+- **Utilizadores:** `searchUsers` (paginado por `first`/`max`), `getUser`,
+  `createUser` (com password **temporaria** por defeito), `updateUser`,
+  `deleteUser`, `setPassword`.
+- **Realm role mappings:** `assignRealmRoles` / `assignRealmRolesByObject`,
+  `removeRealmRolesByObject`, `getRealmRoleNames` (mappings **directos**),
+  `getEffectiveRealmRoleNames` (composito/efectivo), `fetchRealmRoleOrNull`.
+
+A distincao directos vs efectivos importa: so se pode **remover** um role
+directamente mapeado, e o efectivo inclui o que e herdado por composites
+(ex.: `fan` vem do default role `default-roles-tessera` no auto-registo),
+usado para *display*.
+
+#### Dependencia httpclient5
+
+O `build.gradle.kts` depende de
+`org.apache.httpcomponents.client5:httpclient5`. Com este no classpath, o
+`RestTemplateBuilder` do Spring Boot passa a usar o
+`HttpComponentsClientHttpRequestFactory` em vez do
+`SimpleClientHttpRequestFactory` (HttpURLConnection) por defeito. E
+necessario porque a remocao de realm role mappings e um pedido **DELETE
+com corpo** — o factory por defeito nao consegue enviar corpo num DELETE.
+
+### UserController — `/api/v1/users`
+
+**Todos os endpoints exigem `platform-admin`** (`@PreAuthorize("hasRole('platform-admin')")`).
+
+| Method | Path | Descricao |
+|--------|------|-----------|
+| GET | `/users` | Pesquisa (`?search=`, paginada por `?first=0&max=20`, `max` limitado a 100) |
+| GET | `/users/{id}` | Detalhe (404 `UserNotFoundException` se inexistente) |
+| POST | `/users` | Cria utilizador + atribui role `club-manager` ou `staff` |
+| PUT | `/users/{id}` | Atualiza perfil e/ou reatribui role; force password reset opcional |
+| DELETE | `/users/{id}` | Apaga (204) |
+
+O `UserSummary` devolvido inclui os **realm roles efectivos** do
+utilizador filtrados pelos roles de app (`platform-admin`, `club-manager`,
+`staff`, `fan`).
+
+**Criacao (`POST`):** valida `username` (3-60), `email`, `firstName`/
+`lastName` (1-100), `password` (6-200) e `role` (regex `club-manager|staff`
+— `platform-admin` e `fan` nao se atribuem por aqui). Resolve primeiro o
+realm role (falha cedo com 400 se nao existir), cria o utilizador, e atribui
+o role; se a atribuicao falhar, faz **rollback** apagando o utilizador
+orfao. A password inicial e **temporaria** → o Keycloak forca a sua
+alteracao no primeiro login. Devolve **201** com `Location`.
+
+**Atualizacao (`PUT`):** faz merge dos campos `email`/`firstName`/
+`lastName`/`enabled` (campos `null` mantem o valor atual). Se vier `role`,
+reconcilia o role *gerivel* (`club-manager`/`staff`) — remove o antigo e
+adiciona o novo — deixando `platform-admin`/`fan`/default roles intactos.
+Se `forcePasswordReset = true`, acrescenta a required action
+`UPDATE_PASSWORD` (forca nova password no proximo login).
+
+### MembershipController — `/api/v1/clubs/{clubId}/members`
+
+Gere quem e manager/staff de um clube especifico. As pertencas sao
+representadas por **grupos Keycloak** sob
+`/clubs/<clubId>/managers` e `/clubs/<clubId>/staff`, geridos pelo
+`KeycloakGroupService` (`ensureClubGroups` / `deleteClubGroups`,
+idempotentes). A presenca nestes grupos aparece na claim `groups` do JWT,
+que o `ClubMembershipExtractor` traduz em decisoes de escopo no
+`ClubAuthorizationService`.
+
+**Escopo por clube:** todos os endpoints sao gated por
+`@clubAuthz.canManageClub(authentication, #clubId)` — passa o
+`platform-admin` (gere qualquer clube) ou o **manager do proprio clube**.
+Os managers estao limitados ao role **STAFF** (verificacao server-side):
+nao podem adicionar nem remover outros managers, nem atribuir
+`platform-admin`. (Antes, estes endpoints eram exclusivos do
+`platform-admin`.)
+
+| Method | Path | Descricao |
+|--------|------|-----------|
+| GET | `/clubs/{clubId}/members` | Lista managers e staff do clube |
+| POST | `/clubs/{clubId}/members` | Liga utilizador existente (`userId`) **ou** cria um novo inline; junta-o ao grupo (`role` MANAGER/STAFF, default STAFF) |
+| DELETE | `/clubs/{clubId}/members/{userId}?role=...` | Remove do grupo |
+
+**Criacao inline de staff (`POST`):** quando o pedido nao traz `userId`,
+o `AddMemberRequest` aceita `username`/`email`/`firstName`/`lastName`/
+`password` e aprovisiona um novo utilizador no Keycloak — com password
+**temporaria**, o realm role `staff` e a pertenca ao grupo
+`/clubs/<clubId>/staff`. Se a atribuicao de role falhar, o utilizador
+orfao e apagado (rollback). Isto permite a um manager criar staff novo
+sem aceder a lista global `/api/v1/users` (que permanece so
+`platform-admin`).
+
+### Configuracao
+
+`KeycloakAdminProperties` (`@ConfigurationProperties("tessera.keycloak.admin")`),
+lida via `application.yml` / variaveis de ambiente em `docker-compose.yml`:
+
+| Propriedade | Env var | Default |
+|-------------|---------|---------|
+| `base-url` | `TESSERA_KEYCLOAK_ADMIN_BASE_URL` | `http://keycloak:8180` |
+| `realm` | `TESSERA_KEYCLOAK_ADMIN_REALM` | `tessera` |
+| `client-id` | `TESSERA_KEYCLOAK_ADMIN_CLIENT_ID` | `tessera-bff` |
+| `client-secret` | `TESSERA_KEYCLOAK_ADMIN_CLIENT_SECRET` | _(override em producao)_ |
+
+A service account do `tessera-bff` tem os roles `realm-management`
+necessarios concedidos no realm export.
+
 ## Migracoes Flyway
 
 | Versao | Ficheiro | Conteudo |
@@ -315,7 +484,7 @@ Details:
 
 | Excecao | Status | Type |
 |---------|--------|------|
-| `ClubNotFoundException`, `VenueNotFoundException`, `TeamNotFoundException`, `PlayerNotFoundException`, `MatchNotFoundException`, `LineupEntryNotFoundException`, `OccurrenceNotFoundException` | 404 | `.../errors/not-found` |
+| `ClubNotFoundException`, `VenueNotFoundException`, `TeamNotFoundException`, `PlayerNotFoundException`, `MatchNotFoundException`, `LineupEntryNotFoundException`, `OccurrenceNotFoundException`, `UserNotFoundException` | 404 | `.../errors/not-found` |
 | `*NameConflictException`, `*CategoryConflictException`, `*ShirtConflictException`, `InvalidMatchTransitionException`, `LineupConflictException`, `LineupRoleLimitException`, `TooManySubstitutionsException`, `PlayerSentOffException`, `SheetLockedException`, `SheetNotEditableException` | 409 | `.../errors/conflict` |
 | `MethodArgumentNotValidException` (bean validation) | 400 | `.../errors/validation` |
 | `HttpMessageNotReadableException` (JSON malformado) | 400 | `.../errors/malformed-json` |

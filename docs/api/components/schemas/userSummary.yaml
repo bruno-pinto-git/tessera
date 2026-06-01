@@ -33,3 +33,14 @@ properties:
     description: Whether the user can log in. Disabled users keep their data but cannot authenticate.
     examples:
       - true
+  roles:
+    type: array
+    description: |
+      Effective realm roles assigned to the user (direct assignments plus
+      those inherited through composites, e.g. `fan` granted via the
+      `default-roles-tessera` default role). Filtered to the app roles.
+    items:
+      type: string
+      enum: [platform-admin, club-manager, staff, fan]
+    examples:
+      - ["club-manager"]

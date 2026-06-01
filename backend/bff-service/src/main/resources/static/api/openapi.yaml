@@ -221,6 +221,43 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    put:
+      operationId: updateUser
+      tags:
+        - Users
+      summary: Update a user
+      description: |
+        Updates a user's profile and account state. Only the fields present in
+        the body are changed. The role, when supplied, reassigns the
+        *manageable* role (`club-manager`/`staff`) — the previous one is removed
+        and the new one added; `platform-admin` and `fan` are left untouched.
+        `forcePasswordReset` adds the `UPDATE_PASSWORD` required action so the
+        user must choose a new password on their next login.
+      x-required-roles:
+        - platform-admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateUserRequest'
+      responses:
+        '200':
+          description: Updated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/userSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     delete:
       operationId: deleteUser
       tags:
@@ -229,8 +266,10 @@ paths:
       description: |
         Permanently removes the user from Keycloak. Any club memberships are
         revoked at the same time (the user falls out of the corresponding
-        groups). This is **not** reversible — for a temporary lock, disable
-        the user from the Keycloak admin console instead.
+        groups). This is **not** reversible — for a temporary lock, disable the
+        user instead (`PUT /users/{id}` with `enabled: false`). Note: users who
+        sign in via a social identity provider (Google) are re-provisioned on
+        their next login, so deleting them is not a permanent ban — disable them.
       x-required-roles:
         - platform-admin
       responses:
@@ -2271,6 +2310,8 @@ components:
       $ref: '#/components/schemas/userSummary'
     CreateUserRequest:
       $ref: '#/components/schemas/createUserRequest'
+    UpdateUserRequest:
+      $ref: '#/components/schemas/updateUserRequest'
     ClubMember:
       $ref: '#/components/schemas/clubMember'
     ClubMembers:
@@ -2526,6 +2567,21 @@ components:
           description: Whether the user can log in. Disabled users keep their data but cannot authenticate.
           examples:
             - true
+        roles:
+          type: array
+          description: |
+            Effective realm roles assigned to the user (direct assignments plus
+            those inherited through composites, e.g. `fan` granted via the
+            `default-roles-tessera` default role). Filtered to the app roles.
+          items:
+            type: string
+            enum:
+              - platform-admin
+              - club-manager
+              - staff
+              - fan
+          examples:
+            - - club-manager
     createUserRequest:
       type: object
       description: |
@@ -2567,7 +2623,9 @@ components:
           type: string
           minLength: 6
           maxLength: 200
-          description: Initial password. The user can change it later.
+          description: |
+            Initial password. Set as **temporary** in Keycloak — the user is
+            forced to choose a new password on their first login.
           examples:
             - gestor12345
         role:
@@ -2578,6 +2636,50 @@ components:
           description: Realm role to assign. Restricted to operational roles.
           examples:
             - club-manager
+    updateUserRequest:
+      type: object
+      description: |
+        Payload for updating a Keycloak user. All fields are optional — only the
+        ones present are applied. `role` reassigns the manageable role
+        (`club-manager`/`staff`); `forcePasswordReset` makes the user choose a new
+        password on next login. Passwords are not set here (create a user with a
+        temporary password, or force a reset).
+      properties:
+        email:
+          type: string
+          format: email
+          examples:
+            - gestor2@tessera.pt
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - Gestor
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          examples:
+            - Dois
+        enabled:
+          type: boolean
+          description: Enable or disable the account. Disabled users cannot authenticate.
+          examples:
+            - false
+        role:
+          type: string
+          enum:
+            - club-manager
+            - staff
+          description: Reassign the manageable realm role. Leaves platform-admin/fan untouched.
+          examples:
+            - staff
+        forcePasswordReset:
+          type: boolean
+          description: When true, adds the UPDATE_PASSWORD required action (change on next login).
+          examples:
+            - true
     pageEnvelope:
       type: object
       description: |

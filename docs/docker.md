@@ -6,19 +6,43 @@ O projeto utiliza Docker e Docker Compose para contentorizar todos os componente
 
 ## Containers
 
-O `docker-compose.yml` na raiz do projeto define 9 containers:
+O `docker-compose.yml` na raiz do projeto define 10 containers:
 
 | Container | Imagem | Porta | Funcao |
 |-----------|--------|-------|--------|
 | `nginx` | Build local (multi-stage) | 8000 | Reverse proxy + frontend SPA |
 | `bff-service` | Build local | 8080 | Backend for Frontend |
-| `ticket-service` | Build local | 8081 | Servico de bilheteira |
-| `match-service` | Build local | 8082 | Servico de jogos e fichas tecnicas |
+| `ticket-service` | Build local | 8081 | Servico de bilheteira (pagamentos MB WAY) |
+| `match-service` | Build local | 8082 | Jogos, fichas tecnicas e gestao de utilizadores |
 | `statistics-service` | Build local | 8083 | Servico de estatisticas |
+| `rabbitmq` | rabbitmq:3.13-management-alpine | 5672 / 15672 | Event bus assincrono (AMQP + UI de gestao) |
 | `db-tickets` | postgres:16-alpine | interno | BD do ticket-service |
 | `db-matches` | postgres:16-alpine | interno | BD do match-service |
 | `db-statistics` | postgres:16-alpine | interno | BD do statistics-service |
-| `keycloak` | keycloak:26.0 | 8180 | Autenticacao e autorizacao |
+| `keycloak` | quay.io/keycloak/keycloak:26.0 | 8180 | Autenticacao e autorizacao |
+
+O Keycloak corre em modo `start-dev --import-realm` e importa o realm de
+`infra/keycloak/realm-export.json` no arranque. **Nao tem volume persistente** —
+o estado e re-importado a cada arranque a partir do ficheiro de realm.
+
+### MB WAY — gateway externo (mock)
+
+O `ticket-service` integra com um gateway de pagamentos MB WAY. Em
+desenvolvimento e uma app mock (mock-mbway) que corre **fora** do Docker
+Compose (tipicamente uma app Android ou processo no host), por isso **nao** ha
+um container `mock-mbway` no `docker-compose.yml`. O `ticket-service`
+referencia-o via variaveis de ambiente, com defaults apontados a
+`host.docker.internal`:
+
+| Var | Default (dev) | Uso |
+|-----|---------------|-----|
+| `MBWAY_GATEWAY_URL` | `http://host.docker.internal:8443` | Endpoint do gateway MB WAY |
+| `MBWAY_WEBHOOK_BASE_URL` | `http://host.docker.internal:8081` | Base URL para callbacks do gateway |
+| `MBWAY_TERMINAL_ID` | `47215` | Identificador do terminal |
+| `MBWAY_CLIENT_ID` | `tessera-mock` | Identificador do cliente |
+
+Para um dispositivo real na LAN, sobrepoem-se `MBWAY_GATEWAY_URL` e
+`MBWAY_WEBHOOK_BASE_URL` com o IP do dispositivo.
 
 ## Estrategia de Build
 
@@ -77,16 +101,17 @@ Os servicos referenciam-se pelo nome do container (ex: `http://ticket-service:80
 
 ## Volumes
 
-As bases de dados utilizam volumes nomeados para persistencia de dados:
+As bases de dados e o RabbitMQ utilizam volumes nomeados para persistencia:
 
 ```yaml
 volumes:
   db-tickets-data:
   db-matches-data:
   db-statistics-data:
+  rabbitmq-data:
 ```
 
-Os dados persistem entre reinicializacoes dos containers. Para apagar os dados, e necessario remover os volumes explicitamente (ver `scripts/run/reset.ps1`).
+Os dados persistem entre reinicializacoes dos containers. Para apagar os dados, e necessario remover os volumes explicitamente (ver `scripts/run/reset.ps1`). O Keycloak nao tem volume — re-importa o realm a cada arranque.
 
 ## Variaveis de Ambiente
 
@@ -102,13 +127,32 @@ ticket-service:
 
 O Spring Boot automaticamente mapeia `SPRING_DATASOURCE_URL` para `spring.datasource.url`.
 
+Alem da base de dados e do RabbitMQ, o `match-service` recebe as credenciais
+de administracao do Keycloak (usadas para gerir utilizadores via Admin API):
+
+```yaml
+match-service:
+  environment:
+    TESSERA_KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8180
+    TESSERA_KEYCLOAK_ADMIN_REALM: tessera
+    TESSERA_KEYCLOAK_ADMIN_CLIENT_ID: tessera-bff
+    TESSERA_KEYCLOAK_ADMIN_CLIENT_SECRET: change-me-in-production
+```
+
+Todos os servicos backend recebem ainda as credenciais do RabbitMQ
+(`SPRING_RABBITMQ_HOST/PORT/USERNAME/PASSWORD`) e o JWKS do Keycloak via
+`KEYCLOAK_JWKS_URI`.
+
 ## Dependencias e Health Checks
 
-Os servicos backend dependem das bases de dados estarem saudaveis antes de iniciar:
+Os servicos backend dependem da sua base de dados e do RabbitMQ estarem
+saudaveis antes de iniciar:
 
 ```yaml
 depends_on:
   db-tickets:
+    condition: service_healthy
+  rabbitmq:
     condition: service_healthy
 ```
 
@@ -121,6 +165,10 @@ healthcheck:
   timeout: 3s
   retries: 5
 ```
+
+O RabbitMQ define o seu proprio health check
+(`rabbitmq-diagnostics check_port_connectivity`). O `match-service` depende
+ainda do `keycloak` (`condition: service_started`).
 
 ## .dockerignore
 
@@ -156,6 +204,6 @@ nginx:
 |----------|-------|---------|
 | `gradlew: not found` no Alpine | Caracteres `\r\n` (Windows) no script | Adicionamos `sed -i 's/\r$//' gradlew` |
 | `Could not find or load main class "-Xmx64m"` | BusyBox `sh` nao interpreta quotes do gradlew | Mudamos para abordagem runtime-only (build local) |
-| NGINX retornava 404 para /realms/ e /api/ | `default.conf` da imagem base interceptava pedidos | `RUN rm /etc/nginx/conf.d/default.conf` no Dockerfile |
+| NGINX retornava 404 para /api/ | `default.conf` da imagem base interceptava pedidos | `RUN rm /etc/nginx/conf.d/default.conf` no Dockerfile |
 | Porta 80 ja em uso | Outra instancia NGINX (WSL) no host | Mudamos para porta 8000 |
 | `.dockerignore` excluia o JAR | `build/` no ignore bloqueava `build/libs/*.jar` | Adicionamos `!build/libs/` como excecao |

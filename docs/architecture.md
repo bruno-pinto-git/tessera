@@ -2,39 +2,46 @@
 
 ## Visao Geral
 
-O Tessera e uma plataforma digital de gestao de bilheteira e ficha tecnica para clubes de futebol de divisoes inferiores. O sistema segue uma arquitetura de microsservicos, composta por quatro servicos backend, uma Single Page Application (SPA) web, uma aplicacao movel Android, e servicos de infraestrutura (NGINX, Keycloak, PostgreSQL).
+O Tessera e uma plataforma digital de gestao de bilheteira e ficha tecnica para clubes de futebol de divisoes inferiores. O sistema segue uma arquitetura de microsservicos, composta por quatro servicos backend, uma Single Page Application (SPA) web, uma aplicacao movel Android, e servicos de infraestrutura (NGINX, Keycloak, RabbitMQ, PostgreSQL).
+
+A SPA web inclui a area publica de catalogo/compra de bilhetes e uma area completa de administracao para o papel `platform-admin` (`/admin` com gestao de clubes, equipas, jogadores, estadios, jogos e utilizadores; o UI das fichas tecnicas esta planeado). O papel `club-manager` ("Gestor") tem uma area de gestao **scoped** que espelha a do admin mas limitada aos clubes que gere (`/club` lista os clubes geridos; `/club/:id` reutiliza a mesma `ClubDetailPage` do admin): gere equipas e jogadores, os jogos **em casa**, a bilheteira desses jogos e os membros (apenas staff, incluindo criar staff novo inline) — sem tocar noutros clubes nem no catalogo da plataforma. A validacao de bilhetes na porta do estadio passou a ser exclusivamente Android (a antiga pagina `/validate` da SPA foi removida).
 
 ## Diagrama de Arquitetura
 
 ```
-                          ┌─────────────┐
-                          │   Browser   │
-                          │  (React SPA)│
-                          └──────┬──────┘
-                                 │
-                          ┌──────▼──────┐
-                          │   NGINX     │
-                          │  (port 8000)│
-                          └──┬───┬───┬──┘
-                             │   │   │
-              ┌──────────────┘   │   └──────────────┐
-              │                  │                   │
-     ┌────────▼───────┐  ┌──────▼──────┐  ┌────────▼────────┐
-     │   /*  (SPA)    │  │  /api/* BFF  │  │ /realms/* KC    │
-     │  Static Files  │  │  (port 8080) │  │  (port 8180)    │
-     └────────────────┘  └──┬───┬───┬──┘  └─────────────────┘
-                            │   │   │
-             ┌──────────────┘   │   └──────────────┐
-             │                  │                   │
-    ┌────────▼────────┐ ┌──────▼───────┐ ┌─────────▼──────────┐
-    │ ticket-service  │ │ match-service│ │ statistics-service  │
-    │  (port 8081)    │ │ (port 8082)  │ │   (port 8083)      │
-    └────────┬────────┘ └──────┬───────┘ └─────────┬──────────┘
-             │                 │                    │
-    ┌────────▼────────┐ ┌──────▼───────┐ ┌─────────▼──────────┐
-    │  db-tickets     │ │  db-matches  │ │   db-statistics     │
-    │  (PostgreSQL)   │ │ (PostgreSQL) │ │   (PostgreSQL)      │
-    └─────────────────┘ └──────────────┘ └─────────────────────┘
+                          ┌─────────────┐         ┌─────────────┐
+                          │   Browser   │ ─JWT──>  │   Keycloak  │
+                          │  (React SPA)│ <─────── │ (port 8180) │
+                          └──────┬──────┘  login   └──────▲──────┘
+                                 │                        │
+                          ┌──────▼──────┐                 │ (rede docker:
+                          │   NGINX     │                 │  validacao JWT
+                          │  (port 8000)│                 │  + Admin API)
+                          └────┬───┬────┘                 │
+                               │   │                       │
+              ┌────────────────┘   └──────────────┐        │
+              │                                     │        │
+     ┌────────▼───────┐                   ┌────────▼────────┐
+     │   /*  (SPA)    │                   │  /api/* → BFF   │
+     │  Static Files  │                   │  (port 8080)    │
+     └────────────────┘                   └──┬───┬───┬──────┘
+                                             │   │   │
+                            ┌────────────────┘   │   └──────────────┐
+                            │                     │                   │
+                   ┌────────▼────────┐ ┌─────────▼────┐ ┌────────────▼───────┐
+                   │ ticket-service  │ │ match-service│ │ statistics-service  │
+                   │  (port 8081)    │ │ (port 8082)  │ │   (port 8083)      │
+                   └────────┬────────┘ └──────┬───────┘ └─────────┬──────────┘
+                            │                 │ ─────────────────┘ │
+                   ┌────────▼────────┐ ┌──────▼───────┐ ┌──────────▼─────────┐
+                   │  db-tickets     │ │  db-matches  │ │   db-statistics     │
+                   │  (PostgreSQL)   │ │ (PostgreSQL) │ │   (PostgreSQL)      │
+                   └─────────────────┘ └──────────────┘ └─────────────────────┘
+
+NGINX so encaminha /api/* para o BFF e serve a SPA (try_files → index.html).
+O Keycloak NAO e proxiado pelo NGINX: a SPA fala diretamente com :8180
+(VITE_KEYCLOAK_URL) e os servicos backend usam http://keycloak:8180 na rede
+Docker. (Proxiar /admin/ do Keycloak colidia com as rotas /admin/* da SPA.)
 ```
 
 ## Microsservicos
@@ -46,7 +53,7 @@ O Tessera e uma plataforma digital de gestao de bilheteira e ficha tecnica para 
 O BFF e o ponto de entrada unico para todas as chamadas API dos clientes (SPA web e aplicacao Android). As suas responsabilidades incluem:
 
 - **Validar tokens JWT** emitidos pelo Keycloak (resource server)
-- **Encaminhar pedidos** aos microsservicos internos preservando o cabecalho `Authorization`
+- **Encaminhar pedidos** aos microsservicos internos preservando o cabecalho `Authorization` (incluindo `/api/v1/users`, encaminhado para o match-service para gestao de utilizadores)
 - **Agregar chamadas** a multiplos microsservicos numa unica resposta (a desenvolver)
 - **Adaptar respostas** ao formato esperado por cada frontend
 - Desacoplar os clientes da topologia interna dos servicos
@@ -86,6 +93,7 @@ Gere toda a informacao relacionada com a atividade desportiva:
 - Criacao e gestao de jogos (calendario, status state machine)
 - Ficha tecnica dos jogos (lineup, golos, cartoes, substituicoes)
 - Lock/unlock de fichas + auto-lock quando o jogo termina
+- Gestao de utilizadores (pacote `com.tessera.match.iam`): o `KeycloakAdminClient` e o `UserController` (`/api/v1/users`) encapsulam a Admin REST API do Keycloak, usando a service account do client confidencial `tessera-bff`, para criar/editar/ativar-desativar/forcar reset de password/eliminar utilizadores e ler os seus papeis
 
 Base de dados: `tessera_matches`. Detalhes em [match-service.md](match-service.md).
 
@@ -124,10 +132,10 @@ Base de dados: `tessera_statistics`. Detalhes em
 | Base de Dados | PostgreSQL | 16 (Alpine) |
 | Migracoes BD | Flyway | — |
 | Autenticacao | Keycloak | 26.0 |
-| Event bus | RabbitMQ | 3.13 |
+| Event bus | RabbitMQ | 3.13 (management-alpine) |
 | Reverse Proxy | NGINX | Alpine |
 | Contentorizacao | Docker + Docker Compose | — |
-| Build Tool | Gradle (Kotlin DSL) | 8.13 |
+| Build Tool | Gradle (Kotlin DSL) | 8.14.2 |
 | JDK | Eclipse Temurin | 21 |
 
 ## Comunicacao entre Servicos
@@ -144,7 +152,7 @@ Cliente → NGINX (:8000) → BFF (:8080) → Servico Interno (:808X) → Postgr
 
 O sistema usa **OAuth 2.0 / OpenID Connect** com Keycloak como Identity Provider, seguindo o padrao **JWT pass-through**:
 
-1. Cliente faz login no Keycloak e recebe um JWT
+1. Cliente faz login diretamente no Keycloak (`:8180`, nao via NGINX) e recebe um JWT
 2. Cliente envia JWT em cada pedido (`Authorization: Bearer ...`)
 3. BFF valida o token (assinatura via JWKS) e encaminha o `Authorization` ao servico downstream
 4. Servico downstream re-valida o JWT e aplica `@PreAuthorize` por papel
@@ -153,7 +161,7 @@ O sistema usa **OAuth 2.0 / OpenID Connect** com Keycloak como Identity Provider
 Browser ──JWT──> NGINX ──> BFF (valida JWT) ──Authorization fwd──> match-service (re-valida + check role)
 ```
 
-**Tres papeis** no realm `tessera`: `admin`, `staff`, `fan`. Cada endpoint declara o papel exigido.
+**Quatro papeis** no realm `tessera`: `platform-admin`, `club-manager`, `staff`, `fan`. Cada endpoint declara o papel exigido.
 
 Defesa em profundidade: mesmo que a rede interna do Docker fosse comprometida, todos os servicos ainda exigem JWT valido. Detalhes em [security.md](security.md).
 
@@ -196,6 +204,7 @@ tessera/
 │   ├── match-service/        # Jogos, fichas tecnicas, clubes, jogadores
 │   ├── statistics-service/   # Relatorios e estatisticas
 │   └── settings.gradle.kts   # Multi-module Gradle (IntelliJ)
+├── mock-mbway/               # Mock do gateway de pagamento MB WAY (dev)
 ├── frontend/                 # React SPA (TypeScript + Vite)
 ├── infra/                    # Infra-as-config: imagens off-the-shelf
 │   ├── keycloak/             # Configuracao do realm Keycloak

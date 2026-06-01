@@ -1,8 +1,8 @@
 # ticket-service
 
 Servico responsavel pelos bilhetes digitais: catalogo de eventos,
-compra, pagamento, listagem por utilizador e por jogo, e validacao no
-portao via QR code.
+compra, pagamento (sincrono para CARD/CASH, assincrono via gateway MB WAY),
+listagem por utilizador e por jogo, e validacao no portao via QR code.
 
 - **Porta:** 8081
 - **Base de dados:** `tessera_tickets` (PostgreSQL 16)
@@ -55,7 +55,35 @@ compra de bilhetes.
 |--------|------|------|
 | GET | `/api/v1/events` | publico |
 | GET | `/api/v1/events/{id}` | publico |
-| POST | `/api/v1/events` | admin |
+| POST | `/api/v1/events` | autenticado: admin (qualquer jogo) ou manager do clube da casa |
+
+O `status` no POST e opcional e faz default a `PUBLISHED`, de modo a
+que os bilhetes possam ser comprados imediatamente. No fluxo web, este
+endpoint e chamado a partir do match-service ("Abrir bilheteira" num
+jogo) para criar um `event` `PUBLISHED` ligado ao `matchId`.
+
+#### Autorizacao da abertura de bilheteira (escopo por clube)
+
+Abrir uma bilheteira deixou de ser exclusivo do `platform-admin`. O
+`POST /api/v1/events` usa `@PreAuthorize("isAuthenticated()")` e depois
+faz um check em codigo (`EventController.authorizeCreate`):
+
+- **`platform-admin`** — pode abrir bilheteira para **qualquer** jogo
+  (ou ate sem `matchId`).
+- **`club-manager`** — so pode abrir para um jogo cujo **clube da casa**
+  ele gere. Sem `matchId`, e recusado com 403.
+
+O clube da casa do jogo e resolvido pelo `MatchLookupClient`, um cliente
+read-only minimo que chama o match-service
+(`GET /api/v1/matches/{id}` — endpoint publico, sem token forwarded) e
+le o campo `homeClubId` da resposta. Os clubes que o utilizador gere sao
+parseados do claim `groups` do JWT (`/clubs/<id>/managers`), espelhando o
+`ClubMembershipExtractor` do match-service. Se `homeClubId` nao constar
+dos clubes geridos, devolve **403**.
+
+A URL base do match-service vem da config `tessera.match-service.base-url`
+(env `MATCH_SERVICE_URL`, default `http://match-service:8082`), tambem
+declarada no `docker-compose.yml` do ticket-service.
 
 ### `ticket`
 
@@ -70,12 +98,26 @@ validou). Lifecycle:
 
 | Method | Path | Role | Descricao |
 |--------|------|------|-----------|
-| POST | `/api/v1/tickets` | authenticated | Cria bilhete em PENDING para o utilizador autenticado |
+| POST | `/api/v1/tickets` | authenticated | Cria bilhete em PENDING para o utilizador autenticado (`{ eventId, supporter }`) |
 | GET | `/api/v1/tickets/mine` | authenticated | Lista os bilhetes do `sub` autenticado |
 | GET | `/api/v1/tickets?eventId=` | staff, admin | Lista por evento |
 | GET | `/api/v1/tickets/{id}` | owner OR staff/admin | Detalhe |
-| POST | `/api/v1/tickets/{id}/pay` | owner OR staff/admin | PENDING → PAID |
-| POST | `/api/v1/tickets/validate` | staff, admin | PAID → VALIDATED, scan no portao |
+| POST | `/api/v1/tickets/{id}/pay` | owner OR staff/admin | Inicia pagamento (PENDING → PAID, ou aguarda MB WAY) |
+| POST | `/api/v1/tickets/validate` | staff, admin | PAID → VALIDATED, scan no portao (so Android) |
+| POST | `/api/v1/webhooks/mbway` | publico (gateway) | Callback MB WAY: confirma/recusa pagamento |
+
+Notas de autorizacao:
+
+- O corpo de `POST /tickets` e `{ eventId, supporter }`; o preco e
+  derivado server-side a partir do `event` (normal vs supporter), o
+  cliente nao envia preco.
+- `pay` e `/tickets/{id}` usam `isAuthenticated()` no `@PreAuthorize` e
+  depois validam **owner OR staff/admin** em codigo (devolvem 403 caso
+  contrario).
+- `validate` e `?eventId=` usam `@PreAuthorize("hasAnyRole('staff','admin')")`.
+  Repare que estas verificacoes usam os nomes de autoridade `staff` e
+  `admin`; o role de plataforma **platform-admin nao e aceite** nestes
+  endpoints (apenas `staff` ou `admin`).
 
 ## QR code
 
@@ -84,6 +126,12 @@ nao do backend. Mantemos o backend simples: cada bilhete tem um `code`
 do tipo UUID v4 gerado por defaut na coluna (`gen_random_uuid()`), com
 constraint `UNIQUE`. O cliente renderiza este UUID como QR (a SPA usa
 o pacote `qrcode.react`; o Android usa ZXing).
+
+A validacao no portao acontece **apenas na app Android** (staff). A
+pagina `/validate` da SPA web foi **removida** — a SPA so trata da
+compra de bilhetes; o scan e a transicao para `VALIDATED` sao feitos
+pela app Android com leitor ZXing. O endpoint `POST /tickets/validate`
+exige `staff`/`admin` (ver nota de autorizacao acima).
 
 Quando o staff faz scan, o leitor extrai a string UUID e envia para
 `POST /api/v1/tickets/validate` com `{ code: "..." }`. O servico
@@ -104,30 +152,63 @@ re-usar um bilhete.
 `POST /api/v1/tickets/{id}/pay` aceita:
 
 ```json
-{ "paymentMethod": "MBWAY", "mbwayReference": "REF-1234" }
+{ "paymentMethod": "MBWAY", "phoneNumber": "351912345678", "mbwayReference": "REF-1234" }
 ```
 
-Metodos permitidos: `MBWAY`, `CARD`, `CASH`. `mbwayReference` e
-opcional (so faz sentido com MBWAY).
+Metodos permitidos: `MBWAY`, `CARD`, `CASH` (case-insensitive). Ha dois
+fluxos consoante o metodo:
 
-A integracao real com a passarela de pagamentos esta fora do scope do
-projeto academico — o endpoint trata o request como confirmacao
-**ja recebida** da passarela (o frontend chama-o no callback de
-sucesso). Para extender: adicionar um servico externo (Stripe / MB WAY
-SDK) e mover este endpoint para webhook.
+- **CARD / CASH** — *sincrono*. O bilhete transita `PENDING → PAID`
+  imediatamente, grava `payment_date` e publica `ticket.ticket.paid`
+  no commit. Nao ha gateway externo no loop.
+- **MBWAY** — *assincrono*. `phoneNumber` e **obrigatorio**. O servico
+  chama o `MbwayGatewayClient` (protocolo SIBS; `mock-mbway` em dev,
+  SIBS real em producao via `tessera.mbway.gateway-url`), que empurra
+  uma notificacao para o telemovel do cliente. O bilhete fica `PENDING`
+  com o `mbway_transaction_id` gravado. A transicao para `PAID`
+  acontece mais tarde, no `MbwayWebhookService`, quando o gateway chama
+  o webhook. `mbwayReference` e opcional e so faz sentido com MBWAY.
 
-Apos o commit, o evento `ticket.ticket.paid` e publicado e o
-`statistics-service` insere uma linha em `ticket_sale`.
+### Webhook MB WAY
+
+`POST /api/v1/webhooks/mbway` e **publico** (o gateway chama
+server-to-server, sem JWT). O `MbwayWebhookService` correlaciona pelo
+`transactionID` e:
+
+- `Success` → bilhete PENDING passa a `PAID` e publica
+  `ticket.ticket.paid` (post-commit).
+- `Declined` / `Expired` → no-op; o bilhete fica `PENDING` e o
+  utilizador pode tentar de novo.
+- Idempotente: se o bilhete ja estiver `PAID`/`VALIDATED`, o webhook
+  e no-op (defende contra entregas duplicadas do gateway).
+
+A SPA, depois de iniciar um pagamento MBWAY, faz polling a
+`GET /tickets/{id}` ate o estado resolver (PAID ou timeout). CARD
+resolve no proprio request. CASH esta **desativado na SPA** (so e usado
+ao balcao por staff/admin); MBWAY e CARD sao as opcoes web.
+
+Apos o commit (sincrono ou via webhook), o evento `ticket.ticket.paid`
+e publicado e o `statistics-service` insere uma linha em `ticket_sale`.
 
 ## Autorizacao
 
 - `GET /api/v1/events/**` — publico
+- `POST /api/v1/webhooks/mbway` — publico (gateway server-to-server)
 - Tudo o resto exige JWT valido
 - `@PreAuthorize` por endpoint:
-  - `isAuthenticated()` para criar bilhete / listar os meus / consultar
-  - Owner OR staff/admin para pagar / consultar bilhete alheio
+  - `isAuthenticated()` para criar bilhete / listar os meus / consultar /
+    pagar (com verificacao owner OR staff/admin feita em codigo no `pay`
+    e no `getOne`)
   - `hasAnyRole('staff','admin')` para validar / listar por evento
-  - `hasRole('admin')` para criar eventos
+  - `isAuthenticated()` para abrir bilheteira (`POST /events`), com check
+    em codigo: admin (qualquer jogo) ou manager do clube da casa do jogo
+    (resolvido via `MatchLookupClient` — ver seccao `event`)
+
+Os roles da realm sao `platform-admin`, `club-manager`, `staff`, `fan`
+(mapeados para autoridades `ROLE_*`). O identificador de utilizador e
+resolvido do JWT preferindo `sub`, com fallback para
+`preferred_username` e `sid` (a realm export atual nem sempre emite
+`sub`).
 
 ## Tabelas
 
@@ -140,8 +221,11 @@ Constraints: precos ≥ 0; status ∈ {DRAFT, PUBLISHED, SALES_CLOSED, CANCELLED
 ### `ticket` (V1 + V2)
 
 `id, event_id, code (UUID UNIQUE), price, status, payment_method,
-mbway_reference, owner_sub, created_at, payment_date, validation_date,
-validator_sub`
+mbway_reference, mbway_transaction_id, owner_sub, created_at,
+payment_date, validation_date, validator_sub`
+
+`mbway_transaction_id` guarda o id devolvido pelo gateway MB WAY ao
+iniciar um pagamento, para o webhook correlacionar o callback ao bilhete.
 
 Constraints:
 
@@ -172,11 +256,13 @@ out-of-order delivery (consumidor de `validated` que chegue antes do
 |--------|----------|
 | V1 | `event` + `ticket` |
 | V2 | `owner_sub`, `validator_sub`; drop coluna legacy `validator_id BIGINT` |
+| V3 | `mbway_transaction_id` (correlacao do webhook MB WAY) |
 
 ## Trabalho futuro
 
-- [ ] Integracao real com passarela de pagamentos (Stripe / MB WAY SDK +
-      webhook)
+- [x] ~~Integracao com passarela de pagamentos MB WAY (gateway + webhook)~~
+      — concluido (protocolo SIBS; `mock-mbway` em dev). Falta apenas
+      ligar ao SIBS real e validar a assinatura AES-GCM no webhook.
 - [ ] Endpoint para transitar `event.status` (PUBLISHED → SALES_CLOSED)
 - [ ] Limite por evento (capacidade do estadio) com row-level locking
 - [ ] Refund flow (`VALIDATED → REFUNDED` se autorizado pelo admin)

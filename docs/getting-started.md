@@ -77,9 +77,15 @@ Apos o arranque, os seguintes servicos estao disponiveis:
 | Servico | URL |
 |---------|-----|
 | Aplicacao Web (SPA) | http://localhost:8000 |
+| Area de administracao (SPA) | http://localhost:8000/admin |
 | API (via BFF) | http://localhost:8000/api |
 | Keycloak Admin | http://localhost:8180/admin |
-| Keycloak Realm Info | http://localhost:8000/realms/tessera |
+| Keycloak Realm Info | http://localhost:8180/realms/tessera |
+| RabbitMQ Management | http://localhost:15672 (tessera/tessera) |
+
+> O NGINX (`:8000`) so encaminha `/api/*` para o BFF e serve a SPA. O Keycloak
+> NAO e proxiado pelo NGINX — e acedido diretamente em `:8180` (a SPA usa
+> `VITE_KEYCLOAK_URL`; os servicos backend usam `http://keycloak:8180`).
 
 ### Testar Autenticacao
 
@@ -88,11 +94,12 @@ Aceder a `http://localhost:8180/admin` e fazer login:
 
 Para testar os utilizadores do realm tessera:
 
-| Username | Password | Perfil |
+| Username | Password | Papel |
 |----------|----------|--------|
-| admin | admin | Administrador do clube |
-| staff | staff | Staff do clube |
-| adepto | adepto | Adepto |
+| admin | admin | platform-admin |
+| gestor | gestor | club-manager |
+| staff | staff | staff |
+| adepto | adepto | fan |
 
 ### Obter um JWT manualmente (PowerShell)
 
@@ -149,7 +156,21 @@ docs/http-tests/
 
 Total de aprox. **56 asserts** automaticos.
 
-## 7. Comandos Uteis
+## 7. Popular Dados de Exemplo (seed)
+
+Os scripts em `scripts/seed/` autenticam-se no Keycloak como `admin` e fazem
+POST aos endpoints do match-service (via BFF, `http://localhost:8000`) para
+popular a plataforma com dados reais:
+
+```powershell
+.\scripts\seed\seed-clubs.ps1     # clubes (Wikidata)
+.\scripts\seed\seed-venues.ps1    # estadios da Liga 3 2024-25 (Wikidata)
+.\scripts\seed\seed-liga3.ps1     # clubes/equipas da Liga 3
+```
+
+Todos aceitam `-DryRun` para mostrar o que seria enviado sem fazer POST.
+
+## 8. Comandos Uteis
 
 ### Parar tudo
 ```powershell
@@ -191,11 +212,12 @@ tessera/
 │   ├── ticket-service/       # Bilheteira (porta 8081)
 │   ├── match-service/        # Jogos e fichas tecnicas (porta 8082)
 │   └── statistics-service/   # Estatisticas (porta 8083)
+├── mock-mbway/               # Mock do gateway de pagamento MB WAY (dev)
 ├── frontend/                 # React SPA
 ├── infra/                    # Infra-as-config (imagens off-the-shelf)
 │   ├── keycloak/             # Configuracao do Keycloak
 │   └── nginx/                # Configuracao e Dockerfile NGINX
-├── scripts/                  # Scripts de build e execucao
+├── scripts/                  # Scripts de build, execucao e seed
 ├── docs/                     # Documentacao
 └── docker-compose.yml        # Orquestracao Docker
 ```
@@ -215,7 +237,10 @@ docker compose logs -f
 Verificar que esta a aceder via `http://localhost:8000` (NGINX) e nao diretamente aos servicos.
 
 ### Keycloak nao importa o realm
-O realm so e importado na primeira execucao. Para re-importar:
+O Keycloak corre `start-dev --import-realm` sem volume persistente, pelo que o
+realm `tessera` (`infra/keycloak/realm-export.json`) e (re)importado sempre que
+o container arranca — qualquer alteracao feita na consola e efemera. Para
+forcar uma reimportacao limpa:
 ```powershell
 docker compose stop keycloak
 docker compose rm -f keycloak

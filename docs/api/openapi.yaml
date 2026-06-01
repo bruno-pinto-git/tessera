@@ -171,6 +171,8 @@ components:
       $ref: "./components/schemas/userSummary.yaml"
     CreateUserRequest:
       $ref: "./components/schemas/createUserRequest.yaml"
+    UpdateUserRequest:
+      $ref: "./components/schemas/updateUserRequest.yaml"
     ClubMember:
       $ref: "./components/schemas/clubMember.yaml"
     ClubMembers:

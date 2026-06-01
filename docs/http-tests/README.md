@@ -15,8 +15,16 @@ http-tests/
 ├── 04-players.http              # Player CRUD
 ├── 05-matches.http              # Match CRUD + state transitions
 ├── 06-match-sheets.http         # Lineup, occurrences, lock/unlock
+├── 07-sheet-rules.http          # Match-sheet business rules (roster/sub/red-card limits)
+├── 08-statistics.http           # statistics-service read-side (match-sheet history + sales)
+├── 09-tickets.http              # ticket-service end-to-end (event/buy/pay/validate)
+├── 10-bff-passthrough.http      # BFF forwards auth + downstream status codes
 └── 99-rbac-checks.http          # Negative auth tests (401, 403)
 ```
+
+These `.http` files are **exploration / smoke tests only**. The
+authoritative backend tests are the JUnit suites living in each
+service's `src/test`.
 
 ## How to use
 
@@ -27,9 +35,11 @@ http-tests/
    on their own ports) or `local-via-nginx` (goes through the reverse
    proxy on `:8000`).
 3. Click ▶ next to a request.
-4. Run files in order: `00-auth.http` first (it sets `adminToken`,
-   `staffToken`, `adeptoToken` as **global** variables that the other
-   files read).
+4. Run files in order: `00-auth.http` first (it logs in the three seed
+   users — `admin` (platform-admin), `staff` (staff) and `adepto` (fan)
+   — and sets `adminToken`, `staffToken`, `adeptoToken` as **global**
+   variables that the other files read). A fourth seed user exists,
+   `gestor` (club-manager), but the current smoke suite does not log it in.
 
 ### VS Code (REST Client extension)
 
@@ -50,10 +60,12 @@ http-tests/
 ## Variables
 
 - **Environment vars** (per-env, in `http-client.env.json`):
-  `matchServiceUrl`, `ticketServiceUrl`, `bffUrl`, `keycloakUrl`.
+  `matchServiceUrl`, `ticketServiceUrl`, `statisticsServiceUrl`,
+  `bffUrl`, `keycloakUrl`.
 - **Global vars** (set at runtime by tests):
   `adminToken`, `staffToken`, `adeptoToken`,
-  `clubId`, `teamId`, `playerId`, `matchId`, `venueId`, etc.
+  `clubId`, `teamId`, `playerId`, `matchId`, `venueId`,
+  `ticketEventId`, `ticketId`, `ticketCode`, etc.
 
 ## Re-running everything
 
