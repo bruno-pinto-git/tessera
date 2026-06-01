@@ -7,13 +7,13 @@
     <string name="welcome_logo_desc">Logótipo Tessera</string>
 
     <string name="login_tagline">Inicia sessão para validar bilhetes no portão.</string>
-    <string name="login_username">Utilizador</string>
-    <string name="login_password">Palavra-passe</string>
-    <string name="login_action">Iniciar sessão</string>
-    <string name="login_error_empty">Preenche utilizador e palavra-passe.</string>
-    <string name="login_error_credentials">Credenciais inválidas.</string>
+    <string name="login_preparing">A preparar autenticação…</string>
+    <string name="login_exchanging">A concluir sessão…</string>
+    <string name="login_success">Sessão iniciada.</string>
+    <string name="login_error_credentials">Não foi possível autenticar.</string>
     <string name="login_error_network">Sem ligação ao servidor.</string>
     <string name="login_error_unknown">Erro a iniciar sessão.</string>
+    <string name="login_retry">Tentar novamente</string>
     <string name="menu_user_greeting">Sessão de %1$s</string>
     <string name="menu_logout">Terminar sessão</string>
 
