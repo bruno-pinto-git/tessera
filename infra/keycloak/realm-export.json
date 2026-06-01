@@ -321,6 +321,25 @@
         "syncMode": "IMPORT",
         "defaultScope": "openid profile email"
       }
+    },
+    {
+      "alias": "microsoft",
+      "displayName": "Microsoft",
+      "providerId": "microsoft",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": false,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "8b82d774-8f31-410e-bff4-9536ad00ff37",
+        "clientSecret": "wnE8Q~jmFxqf4MwFr8XXOM9bSQIYPlW.SHNZsa3y",
+        "syncMode": "IMPORT",
+        "defaultScope": "openid profile email User.Read"
+      }
     }
   ],
   "identityProviderMappers": [
