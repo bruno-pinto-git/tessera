@@ -47,7 +47,7 @@ pertence via grupos `/clubs/<id>/managers` e `/clubs/<id>/staff`:
 |-------|-----------|-----------|
 | `platform-admin` | Administrador da plataforma/sistema | Ve todos os clubes, gere o catalogo, cria/edita utilizadores e atribui gestores de clube |
 | `club-manager` | Gestor scoped a um ou mais clubes (via grupo `/clubs/<id>/managers`) | Gere equipas, jogadores, jogos em casa, bilheteira desses jogos e staff (members) do clube |
-| `staff` | Staff scoped a um ou mais clubes (via grupo `/clubs/<id>/staff`) | Validacao de bilhetes no dia de jogo, preenchimento de ficha tecnica |
+| `staff` | Staff scoped a um ou mais clubes (via grupo `/clubs/<id>/staff`) | Validacao de bilhetes no dia de jogo, preenchimento de ficha tecnica; consulta **read-only** do seu clube na area "O meu clube" (equipas, jogadores, jogos, membros) |
 | `fan` | Adepto | Consulta de catalogo, compra e consulta de bilhetes |
 
 O papel por defeito do realm (`default-roles-tessera`) e um papel
@@ -154,10 +154,16 @@ pertenca de grupo adequada — falha de escopo devolve **403**.
 | **Matches** (create/update/delete) | manager do **clube da equipa da casa** (ou admin) | `@clubAuthz.canManageTeam(homeTeamId)` no create; `canManageMatch` no update/delete |
 | **Match sheet** (lineup/occurrences/lock) | manager **ou** staff de um dos dois clubes envolvidos (ou admin); `unlock` so admin | `@clubAuthz.canEditSheet` |
 | **Box office / Events** (abrir bilheteira) | manager do **clube da casa** do jogo (ou admin) | check in-code no ticket-service (ver abaixo) |
-| **Members** (`/clubs/{id}/members`) | manager do **clube** — apenas role STAFF (ou admin) | `@clubAuthz.canManageClub`; non-admins restritos a STAFF server-side |
+| **Members** (`/clubs/{id}/members`) | escrita (add/remove): manager do **clube** — apenas role STAFF (ou admin); leitura (GET): qualquer **membro** do clube (manager ou staff) ou admin | escrita `@clubAuthz.canManageClub` (non-admins restritos a STAFF); leitura `@clubAuthz.canViewClub` |
 | **Users** (`/api/v1/users`) | `platform-admin` | `hasRole('platform-admin')` |
 
 Notas:
+
+- **Leitura scoped (staff):** `@clubAuthz.canViewClub` (admin ou qualquer
+  membro — manager **ou** staff — do clube) permite ao staff consultar a
+  area "O meu clube" do seu clube em **modo leitura**. Equipas/jogadores/
+  jogos sao GET publicos; os membros usam `canViewClub`. A UI esconde
+  todas as acoes de escrita para staff (`canManage = false`).
 
 - **Matches** sao geridos pelo clube **anfitriao**: criar/editar/eliminar
   um jogo exige ser manager do clube da equipa da casa.
