@@ -1,10 +1,13 @@
 package com.tessera.android.data
 
 import android.content.Context
+import android.util.Base64
 import android.util.Log
 import com.tessera.android.shared.AuthSession
 import com.tessera.android.shared.TokenSet
 import java.net.URLEncoder
+import java.security.MessageDigest
+import java.security.SecureRandom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -14,6 +17,12 @@ import org.http4k.core.Method
 import org.http4k.core.Request
 import org.json.JSONObject
 
+data class AuthRequest(
+    val url: String,
+    val verifier: String,
+    val state: String,
+)
+
 class KeycloakClient(context: Context) {
 
     private val tag = "KeycloakClient"
@@ -21,16 +30,39 @@ class KeycloakClient(context: Context) {
     private val refreshMutex = Mutex()
     private val tokenStore = TokenStore(context)
 
-    suspend fun login(username: String, password: String): Result<TokenSet> =
+    fun buildAuthRequest(): AuthRequest {
+        val verifier = randomBase64Url(64)
+        val state = randomBase64Url(24)
+        val challenge = pkceChallenge(verifier)
+        val params = mapOf(
+            "response_type" to "code",
+            "client_id" to KeycloakConfig.CLIENT_ID,
+            "redirect_uri" to KeycloakConfig.REDIRECT_URI,
+            "scope" to KeycloakConfig.SCOPES.joinToString(" "),
+            "code_challenge" to challenge,
+            "code_challenge_method" to "S256",
+            "state" to state,
+        )
+        val query = params.entries.joinToString("&") { (k, v) ->
+            "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
+        }
+        return AuthRequest(
+            url = "${KeycloakConfig.ISSUER}/protocol/openid-connect/auth?$query",
+            verifier = verifier,
+            state = state,
+        )
+    }
+
+    suspend fun exchangeCode(code: String, verifier: String): Result<TokenSet> =
         withContext(Dispatchers.IO) {
             runCatching {
                 exchange(
                     form(
-                        "grant_type" to "password",
+                        "grant_type" to "authorization_code",
                         "client_id" to KeycloakConfig.CLIENT_ID,
-                        "username" to username,
-                        "password" to password,
-                        "scope" to KeycloakConfig.SCOPES.joinToString(" "),
+                        "code" to code,
+                        "redirect_uri" to KeycloakConfig.REDIRECT_URI,
+                        "code_verifier" to verifier,
                     ),
                 )
             }
@@ -120,6 +152,24 @@ class KeycloakClient(context: Context) {
         pairs.joinToString("&") { (k, v) ->
             "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
         }
+
+    private fun randomBase64Url(bytes: Int): String {
+        val buf = ByteArray(bytes)
+        SecureRandom().nextBytes(buf)
+        return Base64.encodeToString(
+            buf,
+            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP,
+        )
+    }
+
+    private fun pkceChallenge(verifier: String): String {
+        val sha = MessageDigest.getInstance("SHA-256")
+            .digest(verifier.toByteArray(Charsets.US_ASCII))
+        return Base64.encodeToString(
+            sha,
+            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP,
+        )
+    }
 
     private companion object {
         const val SKEW_MS = 5_000L

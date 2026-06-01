@@ -301,5 +301,26 @@
       ],
       "realmRoles": ["fan"]
     }
+  ],
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": false,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "744575456601-kt5lkklecr8m76iscc5vmj5csovn767h.apps.googleusercontent.com",
+        "clientSecret": "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",
+        "syncMode": "IMPORT",
+        "defaultScope": "openid profile email"
+      }
+    }
   ]
 }
