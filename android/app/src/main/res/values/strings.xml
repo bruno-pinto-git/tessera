@@ -14,8 +14,18 @@
     <string name="login_error_network">Sem ligação ao servidor.</string>
     <string name="login_error_unknown">Erro a iniciar sessão.</string>
     <string name="login_retry">Tentar novamente</string>
+    <string name="login_check_settings">Verifica o IP do servidor em Configurações (ícone no canto).</string>
     <string name="menu_user_greeting">Sessão de %1$s</string>
+    <string name="menu_settings">Configurações</string>
     <string name="menu_logout">Terminar sessão</string>
+
+    <string name="settings_title">Configuração do servidor</string>
+    <string name="settings_help">No PC, corre ipconfig e introduz aqui o endereço IPv4 da rede do hotspot.</string>
+    <string name="settings_host_label">Endereço IP do servidor</string>
+    <string name="settings_host_hint">ex: 192.168.43.5</string>
+    <string name="settings_save">Guardar</string>
+    <string name="settings_saved">Configuração guardada.</string>
+    <string name="settings_back">Voltar</string>
 
     <string name="validate_eyebrow">Tessera · Portão</string>
     <string name="validate_title">Validação de bilhetes</string>

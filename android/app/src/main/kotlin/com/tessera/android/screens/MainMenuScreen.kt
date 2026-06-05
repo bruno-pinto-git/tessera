@@ -25,6 +25,7 @@ import com.tessera.android.shared.AuthSession
 @Composable
 fun MainMenuScreen(
     onValidateClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onLogout: () -> Unit,
 ) {
     Column(
@@ -64,6 +65,17 @@ fun MainMenuScreen(
         ) {
             Text(
                 text = stringResource(R.string.menu_validate_tickets),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onSettingsClick,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 14.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.menu_settings),
                 style = MaterialTheme.typography.labelLarge,
             )
         }

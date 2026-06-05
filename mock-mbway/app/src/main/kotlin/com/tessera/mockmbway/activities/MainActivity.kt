@@ -11,10 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import com.tessera.mockmbway.data.MockSibsServer
 import com.tessera.mockmbway.data.NetworkInfo
-import com.tessera.mockmbway.data.PaymentExpiryScheduler
-import com.tessera.mockmbway.data.PaymentNotifications
-import com.tessera.mockmbway.data.Sounder
 import com.tessera.mockmbway.screens.PaymentsScreen
+import com.tessera.mockmbway.services.ServerService
 import com.tessera.mockmbway.shared.PendingPaymentsState
 import com.tessera.mockmbway.ui.theme.MockMbwayTheme
 
@@ -30,26 +28,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.i(tag, "onCreate — starting MockSibsServer, scheduler, sounder, notifications")
-        PaymentNotifications.init(applicationContext)
+        Log.i(tag, "onCreate — launching foreground ServerService")
         requestNotificationsPermissionIfNeeded()
-        Sounder.init()
-        MockSibsServer.start(applicationContext)
-        PaymentExpiryScheduler.start()
+        ServerService.start(this)
         PendingPaymentsState.serverEndpoint.value = formatEndpoint()
         setContent {
             MockMbwayTheme {
                 PaymentsScreen()
             }
         }
-    }
-
-    override fun onDestroy() {
-        Log.i(tag, "onDestroy — stopping scheduler + server + sounder")
-        super.onDestroy()
-        PaymentExpiryScheduler.stop()
-        MockSibsServer.stop()
-        Sounder.destroy()
     }
 
     private fun requestNotificationsPermissionIfNeeded() {

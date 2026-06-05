@@ -19,6 +19,10 @@
     <string name="notif_channel_description">Notificações de pedidos de pagamento recebidos pela app mock.</string>
     <string name="notif_title">Pedido MB WAY</string>
 
+    <string name="server_notif_channel">Servidor MB WAY</string>
+    <string name="server_notif_title">Gateway MB WAY ativo</string>
+    <string name="server_notif_text">O servidor está a aceitar pedidos do ticket-service.</string>
+
     <string name="section_pending">Pendentes</string>
     <string name="section_history">Histórico</string>
     <string name="resolution_accepted">Aceite</string>

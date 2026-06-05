@@ -13,6 +13,7 @@ import com.newland.nsdk.core.api.internal.barcodescanner.ScanParameters
 import com.tessera.android.data.KeycloakClient
 import com.tessera.android.data.NsdkRepository
 import com.tessera.android.data.Sounder
+import com.tessera.android.shared.ServerConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -124,7 +125,7 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun sendValidate(client: HttpHandler, body: String, token: String?): Int {
-        val req = Request(Method.POST, "$BASE_URL/api/v1/tickets/validate")
+        val req = Request(Method.POST, "${ServerConfig.baseUrl}/api/v1/tickets/validate")
             .header("Content-Type", "application/json")
             .let { if (token != null) it.header("Authorization", "Bearer $token") else it }
             .body(body)
@@ -178,7 +179,6 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
 
     private companion object {
         const val TAG = "ValidateViewModel"
-        const val BASE_URL = "http://192.168.1.61:8000"
         const val RESULT_DISPLAY_MS = 5_000L
         val UUID_REGEX = Regex(
             "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",

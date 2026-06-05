@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Base64
 import android.util.Log
 import com.tessera.android.shared.AuthSession
+import com.tessera.android.shared.ServerConfig
 import com.tessera.android.shared.TokenSet
 import java.net.URLEncoder
 import java.security.MessageDigest
@@ -47,7 +48,7 @@ class KeycloakClient(context: Context) {
             "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
         }
         return AuthRequest(
-            url = "${KeycloakConfig.ISSUER}/protocol/openid-connect/auth?$query",
+            url = "${ServerConfig.issuer}/protocol/openid-connect/auth?$query",
             verifier = verifier,
             state = state,
         )
@@ -93,22 +94,17 @@ class KeycloakClient(context: Context) {
         }
     }
 
-    suspend fun bootstrap() {
+    fun bootstrap() {
         val saved = runCatching { tokenStore.load() }.getOrNull() ?: return
-        AuthSession.update(saved)
         val refreshExpired = saved.refreshExpiresAtMs?.let {
             System.currentTimeMillis() >= it - SKEW_MS
         } ?: false
         if (refreshExpired) {
             Log.i(tag, "Saved refresh token expired — clearing session")
-            AuthSession.clear()
             tokenStore.clear()
             return
         }
-        if (System.currentTimeMillis() >= saved.expiresAtMs - SKEW_MS) {
-            Log.i(tag, "Saved access token expired — attempting refresh")
-            freshAccessToken()
-        }
+        AuthSession.update(saved)
     }
 
     fun logout() {
@@ -119,7 +115,7 @@ class KeycloakClient(context: Context) {
     fun dispose() = Unit
 
     private fun exchange(formBody: String): TokenSet {
-        val req = Request(Method.POST, "${KeycloakConfig.ISSUER}/protocol/openid-connect/token")
+        val req = Request(Method.POST, "${ServerConfig.issuer}/protocol/openid-connect/token")
             .header("Content-Type", "application/x-www-form-urlencoded")
             .header("Accept", "application/json")
             .body(formBody)

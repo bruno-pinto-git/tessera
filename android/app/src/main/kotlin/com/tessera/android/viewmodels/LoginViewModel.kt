@@ -83,6 +83,12 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         start()
     }
 
+    fun onLoadError() {
+        if (state is LoginState.Authorizing) {
+            state = LoginState.Error(R.string.login_error_network)
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         client.dispose()

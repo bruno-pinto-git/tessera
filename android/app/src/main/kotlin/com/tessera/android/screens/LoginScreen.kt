@@ -2,6 +2,7 @@ package com.tessera.android.screens
 
 import android.net.Uri
 import android.webkit.CookieManager
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -15,8 +16,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +41,7 @@ import com.tessera.android.viewmodels.LoginViewModel
 @Composable
 fun LoginScreen(
     onAuthenticated: () -> Unit,
+    onSettings: () -> Unit,
     viewModel: LoginViewModel = viewModel(),
 ) {
     val state = viewModel.state
@@ -50,16 +56,31 @@ fun LoginScreen(
     ) {
         when (val s = state) {
             LoginState.Loading -> CenteredProgress(stringResource(R.string.login_preparing))
-            is LoginState.Authorizing -> AuthWebView(url = s.url, onCallback = viewModel::onCallbackReceived)
+            is LoginState.Authorizing -> AuthWebView(
+                url = s.url,
+                onCallback = viewModel::onCallbackReceived,
+                onError = viewModel::onLoadError,
+            )
             LoginState.Exchanging -> CenteredProgress(stringResource(R.string.login_exchanging))
             LoginState.Success -> CenteredProgress(stringResource(R.string.login_success))
             is LoginState.Error -> ErrorPanel(messageRes = s.messageRes, onRetry = viewModel::retry)
+        }
+
+        IconButton(
+            onClick = onSettings,
+            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.menu_settings),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 @Composable
-private fun AuthWebView(url: String, onCallback: (Uri) -> Unit) {
+private fun AuthWebView(url: String, onCallback: (Uri) -> Unit, onError: () -> Unit) {
     AndroidView(
         factory = { context ->
             CookieManager.getInstance().apply {
@@ -80,6 +101,14 @@ private fun AuthWebView(url: String, onCallback: (Uri) -> Unit) {
                             return true
                         }
                         return false
+                    }
+
+                    override fun onReceivedError(
+                        view: WebView,
+                        request: WebResourceRequest,
+                        error: WebResourceError,
+                    ) {
+                        if (request.isForMainFrame) onError()
                     }
                 }
                 loadUrl(url)
@@ -122,6 +151,13 @@ private fun ErrorPanel(messageRes: Int, onRetry: () -> Unit) {
             text = stringResource(messageRes),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.login_check_settings),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))

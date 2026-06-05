@@ -5,10 +5,12 @@ import android.util.Log
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.tessera.android.data.KeycloakClient
 import com.tessera.android.data.NsdkRepository
 import com.tessera.android.data.Sounder
 import com.tessera.android.navigation.AppNavigation
 import com.tessera.android.shared.ScanState
+import com.tessera.android.shared.ServerConfig
 import com.tessera.android.ui.theme.TesseraTheme
 
 class MainActivity : ComponentActivity() {
@@ -18,6 +20,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.i(tag, "onCreate — initializing NSDK + Sounder")
+        ServerConfig.load(this)
+        KeycloakClient(this).bootstrap()
         NsdkRepository.init(this)
         Sounder.init()
         setContent {
