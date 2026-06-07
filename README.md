@@ -1,5 +1,7 @@
 # Tessera
 
+[![backend-tests](https://github.com/bruno-pinto-git/tessera/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/bruno-pinto-git/tessera/actions/workflows/backend-tests.yml)
+
 **Plataforma digital de bilheteira e ficha técnica para clubes de futebol de divisões inferiores.**
 
 Tessera permite a clubes amadores/semiprofissionais venderem bilhetes digitais (com QR validável à entrada do estádio) e gerirem a sua atividade desportiva — clubes, equipas, jogadores, jogos e fichas técnicas — a partir de uma única plataforma. Adeptos compram online; staff valida à porta; gestores administram o seu clube; administradores gerem o catálogo da plataforma.
