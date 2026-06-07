@@ -1,0 +1,66 @@
+name: backend-tests
+
+# Runs the JUnit suites for every backend service on pushes and PRs targeting
+# the integration branches. Each service is an independent Gradle build, so we
+# fan out over them with a matrix (a failure in one doesn't hide the others).
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+
+jobs:
+  test:
+    name: test (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - bff-service
+          - ticket-service
+          - match-service
+          - statistics-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Caches ~/.gradle across runs (dependencies + wrapper distribution).
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run tests + coverage
+        working-directory: backend/${{ matrix.service }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon test jacocoTestReport
+
+      # Always publish the test + JaCoCo coverage reports so results are
+      # inspectable (even on failure).
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ matrix.service }}
+          path: backend/${{ matrix.service }}/build/reports/tests/test
+          if-no-files-found: ignore
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}
+          path: backend/${{ matrix.service }}/build/reports/jacoco/test
+          if-no-files-found: ignore
