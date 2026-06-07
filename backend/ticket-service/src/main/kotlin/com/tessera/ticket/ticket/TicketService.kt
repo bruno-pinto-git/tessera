@@ -97,7 +97,7 @@ class TicketService(
     }
 
     /**
-     * Transition PAID → VALIDATED. The validator (staff/admin) is identified
+     * Transition PAID → VALIDATED. The validator (staff/platform-admin) is identified
      * by the Keycloak subject UUID from the JWT. Publishes
      * `ticket.ticket.validated` once the surrounding transaction commits.
      */

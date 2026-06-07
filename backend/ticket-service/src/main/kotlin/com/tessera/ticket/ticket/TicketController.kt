@@ -55,7 +55,7 @@ class TicketController(
 
     /**
      * Create a PENDING ticket for the authenticated user.
-     * Open to all authenticated roles (fan/staff/admin).
+     * Open to all authenticated roles (fan/staff/platform-admin).
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -73,7 +73,7 @@ class TicketController(
 
     /**
      * Transition PENDING → PAID. The buyer (owner) confirms the payment;
-     * staff/admin may also pay on behalf of a fan (over-the-counter cash).
+     * staff/platform-admin may also pay on behalf of a fan (over-the-counter cash).
      */
     @PostMapping("/{id}/pay")
     @PreAuthorize("isAuthenticated()")
@@ -84,7 +84,7 @@ class TicketController(
     ): TicketResponse {
         val ticket = ticketService.getById(id)
         if (!isOwnerOrPrivileged(jwt, ticket)) {
-            throw AccessDeniedException("Only the ticket owner or staff/admin can pay for this ticket.")
+            throw AccessDeniedException("Only the ticket owner or staff/platform-admin can pay for this ticket.")
         }
         val method = request.paymentMethod ?: throw IllegalArgumentException("paymentMethod is required")
         val updated = ticketService.pay(id, method, request.phoneNumber, request.mbwayReference)
@@ -93,10 +93,10 @@ class TicketController(
     }
 
     /**
-     * Validate a ticket at the gate. Staff/admin only.
+     * Validate a ticket at the gate. Staff/platform-admin only.
      */
     @PostMapping("/validate")
-    @PreAuthorize("hasAnyRole('staff', 'admin')")
+    @PreAuthorize("hasAnyRole('staff', 'platform-admin')")
     fun validate(
         @RequestBody request: ValidateTicketRequest,
         @AuthenticationPrincipal jwt: Jwt,
@@ -125,10 +125,10 @@ class TicketController(
     }
 
     /**
-     * List tickets for an event. Staff/admin only.
+     * List tickets for an event. Staff/platform-admin only.
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('staff', 'admin')")
+    @PreAuthorize("hasAnyRole('staff', 'platform-admin')")
     fun listByEvent(
         @RequestParam eventId: Long,
         pageable: Pageable,
@@ -138,7 +138,7 @@ class TicketController(
     }
 
     /**
-     * Single-ticket lookup. The caller must be the owner or staff/admin.
+     * Single-ticket lookup. The caller must be the owner or staff/platform-admin.
      */
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
@@ -173,7 +173,7 @@ class TicketController(
                 ?.get("roles")
                 ?.let { @Suppress("UNCHECKED_CAST") (it as List<String>) }
             ?: emptyList()
-        return "staff" in roles || "admin" in roles
+        return "staff" in roles || "platform-admin" in roles
     }
 
     private fun toResponse(ticket: Ticket) = TicketResponse(

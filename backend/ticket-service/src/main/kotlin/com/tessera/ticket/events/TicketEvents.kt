@@ -29,6 +29,6 @@ data class TicketValidatedEvent(
     val ticketId: Long,
     val matchId: Long?,
     val validatedAt: OffsetDateTime,
-    /** Keycloak subject UUID of the staff/admin user that validated the ticket. */
+    /** Keycloak subject UUID of the staff/platform-admin user that validated the ticket. */
     val validatorSub: String?,
 )

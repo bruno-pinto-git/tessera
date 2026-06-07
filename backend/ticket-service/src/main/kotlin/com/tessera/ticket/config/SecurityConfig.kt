@@ -25,7 +25,7 @@ import org.springframework.security.web.access.AccessDeniedHandler
  *
  * - Public read endpoints (catalog browsing): GET on /api/v1/events.
  * - All other endpoints require a valid JWT; method-level @PreAuthorize
- *   narrows down per-role (fan/staff/admin).
+ *   narrows down per-role (fan/staff/platform-admin).
  *
  * Mirrors the match-service SecurityConfig pattern: realm-level roles claim
  * (`roles`) is translated to Spring authorities prefixed `ROLE_`.

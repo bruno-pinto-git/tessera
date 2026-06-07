@@ -41,6 +41,7 @@ class TicketControllerSecurityTest {
     // jwt() defaults the `sub` claim to "user".
     private fun fan() = jwt().authorities(SimpleGrantedAuthority("ROLE_fan"))
     private fun staff() = jwt().authorities(SimpleGrantedAuthority("ROLE_staff"))
+    private fun platformAdmin() = jwt().authorities(SimpleGrantedAuthority("ROLE_platform-admin"))
 
     // ----- create (isAuthenticated) -------------------------------------------
 
@@ -58,7 +59,7 @@ class TicketControllerSecurityTest {
         ).andExpect(status().isCreated)
     }
 
-    // ----- pay (owner or staff/admin) -----------------------------------------
+    // ----- pay (owner or staff/platform-admin) --------------------------------
 
     @Test
     fun `owner can pay their own ticket`() {
@@ -79,7 +80,7 @@ class TicketControllerSecurityTest {
         ).andExpect(status().isForbidden)
     }
 
-    // ----- validate (staff/admin only) ----------------------------------------
+    // ----- validate (staff/platform-admin only) -------------------------------
 
     @Test
     fun `validate is 403 for a fan`() {
@@ -99,6 +100,15 @@ class TicketControllerSecurityTest {
     }
 
     @Test
+    fun `validate succeeds for a platform-admin`() {
+        doReturn(ticket(ownerSub = "user")).whenever(ticketService).validate(any(), any())
+        mvc.perform(
+            post("/api/v1/tickets/validate").with(platformAdmin())
+                .contentType(MediaType.APPLICATION_JSON).content("""{"code":"${UUID.randomUUID()}"}"""),
+        ).andExpect(status().isOk)
+    }
+
+    @Test
     fun `validate without a token is 401`() {
         mvc.perform(
             post("/api/v1/tickets/validate").contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +116,7 @@ class TicketControllerSecurityTest {
         ).andExpect(status().isUnauthorized)
     }
 
-    // ----- list by event (staff/admin only) -----------------------------------
+    // ----- list by event (staff/platform-admin only) --------------------------
 
     @Test
     fun `list tickets by event is 403 for a fan`() {
@@ -131,7 +141,7 @@ class TicketControllerSecurityTest {
         mvc.perform(get("/api/v1/tickets/mine").with(fan())).andExpect(status().isOk)
     }
 
-    // ----- getOne (owner or staff/admin) --------------------------------------
+    // ----- getOne (owner or staff/platform-admin) -----------------------------
 
     @Test
     fun `a fan cannot read someone else's ticket`() {
