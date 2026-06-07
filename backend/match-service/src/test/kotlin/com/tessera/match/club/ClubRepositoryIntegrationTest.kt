@@ -1,5 +1,6 @@
 package com.tessera.match.club
 
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
@@ -21,6 +22,7 @@ import kotlin.test.assertTrue
  * the custom @Query JPQL that the service-layer unit tests only mocked:
  * case-insensitive name matching and the soft-delete (deletedAt IS NULL) filters.
  */
+@Tag("integration")
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers

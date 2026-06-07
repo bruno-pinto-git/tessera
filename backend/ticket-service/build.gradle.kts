@@ -52,7 +52,13 @@ kotlin {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // Integration tests (Testcontainers) run only with -Pintegration, so the
+        // default `test` stays fast and needs no Docker.
+        if (!project.hasProperty("integration")) {
+            excludeTags("integration")
+        }
+    }
     finalizedBy(tasks.jacocoTestReport)
 }
 

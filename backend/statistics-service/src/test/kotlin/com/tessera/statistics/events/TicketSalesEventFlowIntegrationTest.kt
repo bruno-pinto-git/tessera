@@ -2,6 +2,7 @@ package com.tessera.statistics.events
 
 import com.tessera.statistics.sales.TicketSale
 import com.tessera.statistics.sales.TicketSaleRepository
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,6 +27,7 @@ import kotlin.test.assertNotNull
  * Boots the full statistics-service context against Testcontainers Postgres
  * (Flyway-managed schema) + RabbitMQ.
  */
+@Tag("integration")
 @SpringBootTest
 @Testcontainers
 class TicketSalesEventFlowIntegrationTest {

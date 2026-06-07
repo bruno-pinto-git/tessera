@@ -3,6 +3,7 @@ package com.tessera.ticket.events
 import com.tessera.ticket.event.Event
 import com.tessera.ticket.event.EventRepository
 import com.tessera.ticket.ticket.TicketService
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
@@ -35,6 +36,7 @@ private const val CAPTURE_QUEUE = "test.capture.ticket-paid"
  * Boots the full ticket-service against Testcontainers Postgres + RabbitMQ and
  * binds a throwaway queue to capture the published message.
  */
+@Tag("integration")
 @SpringBootTest
 @Testcontainers
 @Import(TicketPaymentEventFlowIntegrationTest.TestQueueConfig::class)

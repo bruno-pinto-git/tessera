@@ -8,6 +8,7 @@ import com.tessera.match.player.PlayerPosition
 import com.tessera.match.team.Team
 import com.tessera.match.team.TeamCategory
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
@@ -30,6 +31,7 @@ import kotlin.test.assertTrue
  * JPQL runs against the real schema, with the real FK chain
  * (club -> team -> player -> match -> match_sheet -> lineup/occurrence).
  */
+@Tag("integration")
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
