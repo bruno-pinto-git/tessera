@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEventsCatalog } from "@/features/events/hooks/useEventsCatalog";
 
 export interface NextMatch {
   eventId: number;
@@ -8,36 +9,42 @@ export interface NextMatch {
   kickoffAt: Date;
 }
 
+/** Only surface a match if it kicks off within this window. */
+const WINDOW_MS = 24 * 60 * 60 * 1000;
+
 /**
- * Returns the next match within the configured window (24h by default),
- * or `null` if there is no imminent match. Used by <MatchdayBanner>.
+ * Returns the next PUBLISHED + SCHEDULED match kicking off within the next 24h,
+ * or `null` if there is none. Derived from the real events catalog
+ * (`useEventsCatalog`), which joins events -> match -> teams/clubs and already
+ * resolves short club names — so this stays a thin selector over real data.
  *
- * TODO: replace the hard-coded mock with a real query against
- * match-service (`GET /api/v1/matches?status=SCHEDULED&from=...&to=...`)
- * once the catalog is wired. Polling every 60s is enough.
+ * Used by <MatchdayBanner>. Re-evaluates every 60s so the banner appears /
+ * disappears and the countdown stays fresh without a page reload.
  */
 export function useNextMatch(): NextMatch | null {
-  // For now we surface a single mock match a few hours from now so the
-  // banner shows up during development. Set to `null` if you want to see
-  // the layout without the banner.
-  const [match] = useState<NextMatch | null>(() => {
-    const kickoffAt = new Date(Date.now() + 3 * 60 * 60 * 1000 + 22 * 60 * 1000);
-    return {
-      eventId: 1,
-      homeShort: "Aljustrel",
-      awayShort: "Praiense",
-      kickoffAt,
-    };
-  });
+  const { entries } = useEventsCatalog();
 
-  // Re-render every 60s so the countdown stays fresh.
+  // Tick every 60s so the window re-evaluates and the countdown refreshes.
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setTick((n) => n + 1), 60_000);
     return () => window.clearInterval(id);
   }, []);
 
-  return match;
+  const now = Date.now();
+  const next = entries
+    .filter((e) => e.matchStatus === "SCHEDULED" && e.kickoffAt != null)
+    .map((e) => ({ entry: e, ts: new Date(e.kickoffAt as string).getTime() }))
+    .filter(({ ts }) => Number.isFinite(ts) && ts > now && ts - now <= WINDOW_MS)
+    .sort((a, b) => a.ts - b.ts)[0];
+
+  if (!next) return null;
+  return {
+    eventId: next.entry.eventId,
+    homeShort: next.entry.homeShort,
+    awayShort: next.entry.awayShort,
+    kickoffAt: new Date(next.entry.kickoffAt as string),
+  };
 }
 
 /** Human-readable "Xh YYmin" formatter for the banner. */
