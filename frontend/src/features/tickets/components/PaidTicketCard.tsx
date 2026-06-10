@@ -24,10 +24,7 @@ export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
             <div className="text-sm text-muted-foreground">vs</div>
             <Crest initials={away.initials} tone={away.tone} size={36} />
             <div className="ml-2">
-              <div className="font-semibold leading-tight">
-                {home.short} <span className="text-muted-foreground font-normal">vs</span>{" "}
-                {away.short}
-              </div>
+              <div className="font-semibold leading-tight">{ticket.title}</div>
               <div className="text-xs text-muted-foreground">{ticket.day}</div>
             </div>
           </div>

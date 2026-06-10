@@ -72,9 +72,13 @@ export function useEventsCatalog(): UseCatalogResult {
         );
 
         // 5. Stitch.
-        const built: CatalogEntry[] = published.map((event, i) => {
+        const built: CatalogEntry[] = published.flatMap((event, i) => {
           const matchRes = matchResults[i];
           const match: Match | null = matchRes.status === "fulfilled" ? matchRes.value : null;
+          // The event points at a match that no longer resolves (e.g. the admin
+          // deleted it) — hide it from the catalog instead of rendering a
+          // nameless "Casa vs Visitante" card.
+          if (match == null) return [];
           const homeTeam = match ? (teamMap.get(match.homeTeamId) ?? null) : null;
           const awayTeam = match ? (teamMap.get(match.awayTeamId) ?? null) : null;
           const homeClub = homeTeam ? (clubMap.get(homeTeam.clubId) ?? null) : null;
@@ -82,7 +86,7 @@ export function useEventsCatalog(): UseCatalogResult {
           const venue =
             match && match.venueId != null ? (venueMap.get(match.venueId) ?? null) : null;
 
-          return buildEntry({
+          return [buildEntry({
             event,
             match,
             homeTeam,
@@ -91,7 +95,7 @@ export function useEventsCatalog(): UseCatalogResult {
             awayClub,
             venue,
             teamCategoryLabel,
-          });
+          })];
         });
 
         // 6. Sort by kickoff ascending (upcoming first), with no-kickoff at the end.
@@ -154,6 +158,14 @@ export function useEventCatalog(eventId: number) {
 
         const match: Match | null =
           event.matchId != null ? await getMatch(event.matchId).catch(() => null) : null;
+        if (cancelled) return;
+
+        // The event points at a match that no longer exists (deleted) — treat the
+        // page as not-found rather than rendering a nameless, still-buyable event.
+        if (event.matchId != null && match == null) {
+          setNotFound(true);
+          return;
+        }
 
         const [homeTeam, awayTeam] = match
           ? await Promise.all([

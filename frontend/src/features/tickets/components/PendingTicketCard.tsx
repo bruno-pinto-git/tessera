@@ -19,10 +19,7 @@ export function PendingTicketCard({ ticket }: { ticket: TicketView }) {
           <div className="text-xs text-muted-foreground">vs</div>
           <Crest initials={away.initials} tone={away.tone} size={32} />
           <div className="ml-1">
-            <div className="font-semibold leading-tight">
-              {home.short} <span className="text-muted-foreground font-normal">vs</span>{" "}
-              {away.short}
-            </div>
+            <div className="font-semibold leading-tight">{ticket.title}</div>
             <div className="text-xs text-muted-foreground">
               {ticket.day} · {ticket.tier} · {ticket.price}
             </div>

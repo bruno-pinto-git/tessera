@@ -17,6 +17,10 @@ export interface TicketView {
   eventId: number;
   home: CrestInfo;
   away: CrestInfo;
+  /** "Home vs Away", or "Jogo cancelado" when the match no longer exists. */
+  title: string;
+  /** True when the ticket's match was deleted and can no longer be resolved. */
+  matchRemoved: boolean;
   /** kickoffAt formatted pt-PT, e.g. "Sáb, 16/05 · 16:00". */
   day: string;
   venue: string | null;
@@ -137,6 +141,12 @@ export function useMyTickets(): UseMyTicketsResult {
           const venue = match?.venueId != null ? venues.get(match.venueId) : undefined;
           const { day, ms } = formatDay(match?.kickoffAt);
 
+          // The match id is known but couldn't be resolved -> it was deleted.
+          const matchRemoved = matchId != null && match === undefined;
+          const home = crestForClub(homeClub);
+          const away = crestForClub(awayClub);
+          const title = matchRemoved ? "Jogo cancelado" : `${home.short} vs ${away.short}`;
+
           const supporter =
             event?.priceSupporter != null && Number(t.price) === Number(event.priceSupporter);
 
@@ -145,9 +155,11 @@ export function useMyTickets(): UseMyTicketsResult {
             code: t.code,
             status: t.status,
             eventId: t.eventId,
-            home: crestForClub(homeClub),
-            away: crestForClub(awayClub),
-            day,
+            home,
+            away,
+            title,
+            matchRemoved,
+            day: matchRemoved ? "Jogo removido pela organização" : day,
             venue: venue?.name ?? null,
             tier: supporter ? "Sócio" : "Normal",
             price: formatEur(t.price),
