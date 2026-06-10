@@ -2,6 +2,7 @@ package com.tessera.ticket.ticket
 
 import com.tessera.ticket.event.Event
 import com.tessera.ticket.event.EventRepository
+import com.tessera.ticket.event.MatchLookupClient
 import com.tessera.ticket.events.TicketEventPublisher
 import com.tessera.ticket.payments.MbwayGatewayClient
 import org.junit.jupiter.api.Test
@@ -13,7 +14,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.springframework.security.access.AccessDeniedException
 import java.math.BigDecimal
+import java.time.OffsetDateTime
 import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -32,8 +35,10 @@ class TicketServiceTest {
     private val eventRepository: EventRepository = mock()
     private val publisher: TicketEventPublisher = mock()
     private val mbwayGateway: MbwayGatewayClient = mock()
+    private val matchLookup: MatchLookupClient = mock()
 
-    private val service = TicketService(ticketRepository, eventRepository, publisher, mbwayGateway)
+    private val service =
+        TicketService(ticketRepository, eventRepository, publisher, mbwayGateway, matchLookup)
 
     // ----- create -------------------------------------------------------------
 
@@ -127,14 +132,14 @@ class TicketServiceTest {
     fun `validate fails for an unknown code`() {
         val code = UUID.randomUUID()
         whenever(ticketRepository.findByCode(code)).thenReturn(null)
-        assertFailsWith<TicketNotFoundException> { service.validate(code, "staff-sub") }
+        assertFailsWith<TicketNotFoundException> { service.validate(code, "staff-sub", isPlatformAdmin = true, staffClubIds = emptySet()) }
     }
 
     @Test
     fun `validate rejects a ticket that is not paid`() {
         val code = UUID.randomUUID()
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PENDING))
-        assertFailsWith<InvalidTicketStatusException> { service.validate(code, "staff-sub") }
+        assertFailsWith<InvalidTicketStatusException> { service.validate(code, "staff-sub", isPlatformAdmin = true, staffClubIds = emptySet()) }
     }
 
     @Test
@@ -144,11 +149,98 @@ class TicketServiceTest {
         whenever(ticketRepository.findByCode(code)).thenReturn(t)
         doReturn(t).whenever(ticketRepository).save(any())
 
-        val validated = service.validate(code, "staff-sub")
+        val validated = service.validate(code, "staff-sub", isPlatformAdmin = true, staffClubIds = emptySet())
 
         assertEquals(TicketStatus.VALIDATED, validated.status)
         assertEquals("staff-sub", validated.validatorSub)
         verify(publisher).publishTicketValidated(validated)
+    }
+
+    // ----- validate: club + activity-window authorization (staff path) --------
+
+    @Test
+    fun `staff of the home club can validate within the window`() {
+        val code = UUID.randomUUID()
+        val t = ticket(status = TicketStatus.PAID)
+        whenever(ticketRepository.findByCode(code)).thenReturn(t)
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1)))
+        doReturn(t).whenever(ticketRepository).save(any())
+
+        val v = service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+
+        assertEquals(TicketStatus.VALIDATED, v.status)
+        verify(publisher).publishTicketValidated(v)
+    }
+
+    @Test
+    fun `staff of another club cannot validate`() {
+        val code = UUID.randomUUID()
+        whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1)))
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(7L))
+        }
+    }
+
+    @Test
+    fun `validation before the window opens is denied`() {
+        val code = UUID.randomUUID()
+        whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(5)))
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+        }
+    }
+
+    @Test
+    fun `validation after the window closes is denied`() {
+        val code = UUID.randomUUID()
+        whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().minusHours(5)))
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+        }
+    }
+
+    @Test
+    fun `validation of a cancelled match is denied`() {
+        val code = UUID.randomUUID()
+        whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
+        whenever(matchLookup.find(99L))
+            .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1), status = "CANCELLED"))
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+        }
+    }
+
+    @Test
+    fun `a platform-admin can validate outside the window and any club`() {
+        val code = UUID.randomUUID()
+        val t = ticket(status = TicketStatus.PAID)
+        whenever(ticketRepository.findByCode(code)).thenReturn(t)
+        doReturn(t).whenever(ticketRepository).save(any())
+
+        // No matchLookup stubbing needed — admins skip the club/window check.
+        val v = service.validate(code, "admin-sub", isPlatformAdmin = true, staffClubIds = emptySet())
+
+        assertEquals(TicketStatus.VALIDATED, v.status)
+        verify(matchLookup, never()).find(any())
+    }
+
+    @Test
+    fun `staff cannot validate a ticket with no match`() {
+        val code = UUID.randomUUID()
+        val noMatch = Ticket(
+            id = 8L,
+            event = Event(id = 2L, matchId = null, name = "Avulso"),
+            price = BigDecimal("10.00"),
+            status = TicketStatus.PAID,
+            ownerSub = "owner-sub",
+        )
+        whenever(ticketRepository.findByCode(code)).thenReturn(noMatch)
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+        }
     }
 
     @Test
@@ -183,4 +275,12 @@ class TicketServiceTest {
         status = status,
         ownerSub = "owner-sub",
     )
+
+    private fun matchView(homeClubId: Long, kickoff: OffsetDateTime, status: String = "SCHEDULED") =
+        MatchLookupClient.MatchView(
+            id = 99L,
+            homeClubId = homeClubId,
+            kickoffAt = kickoff.toString(),
+            status = status,
+        )
 }

@@ -1,10 +1,12 @@
 package com.tessera.ticket.ticket
 
 import com.tessera.ticket.event.EventRepository
+import com.tessera.ticket.event.MatchLookupClient
 import com.tessera.ticket.events.TicketEventPublisher
 import com.tessera.ticket.payments.MbwayGatewayClient
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
@@ -18,6 +20,7 @@ class TicketService(
     private val eventRepository: EventRepository,
     private val publisher: TicketEventPublisher,
     private val mbwayGateway: MbwayGatewayClient,
+    private val matchLookup: MatchLookupClient,
 ) {
 
     @Transactional
@@ -97,14 +100,29 @@ class TicketService(
     }
 
     /**
-     * Transition PAID → VALIDATED. The validator (staff/platform-admin) is identified
-     * by the Keycloak subject UUID from the JWT. Publishes
-     * `ticket.ticket.validated` once the surrounding transaction commits.
+     * Transition PAID → VALIDATED at the gate. Identified by the Keycloak
+     * subject UUID. Publishes `ticket.ticket.validated` once the transaction
+     * commits.
+     *
+     * Authorization (beyond the controller's staff/admin role gate):
+     *  - `platform-admin` may validate any ticket, any time.
+     *  - otherwise the caller must be STAFF of the match's **home** club and
+     *    act inside the activity window (2h before kickoff .. 3h after); the
+     *    match must not be CANCELLED.
      */
     @Transactional
-    fun validate(code: UUID, validatorSub: String): Ticket {
+    fun validate(
+        code: UUID,
+        validatorSub: String,
+        isPlatformAdmin: Boolean,
+        staffClubIds: Set<Long>,
+    ): Ticket {
         val ticket = ticketRepository.findByCode(code)
             ?: throw TicketNotFoundException("Ticket not found: $code")
+
+        if (!isPlatformAdmin) {
+            authorizeStaffValidation(ticket, staffClubIds)
+        }
 
         if (ticket.status != TicketStatus.PAID) {
             throw InvalidTicketStatusException(
@@ -121,6 +139,37 @@ class TicketService(
         return saved
     }
 
+    /**
+     * A non-admin validator must be staff of the match's home club and act
+     * within the activity window. Throws [AccessDeniedException] (→ 403) otherwise.
+     */
+    private fun authorizeStaffValidation(ticket: Ticket, staffClubIds: Set<Long>) {
+        val matchId = ticket.event?.matchId
+            ?: throw AccessDeniedException("Only platform admins can validate tickets not tied to a match.")
+        val match = matchLookup.find(matchId)
+            ?: throw AccessDeniedException("Could not resolve the match for this ticket.")
+
+        val homeClubId = match.homeClubId
+        if (homeClubId == null || homeClubId !in staffClubIds) {
+            throw AccessDeniedException("You can only validate tickets for your own club's home matches.")
+        }
+        if (match.status == "CANCELLED") {
+            throw AccessDeniedException("This match has been cancelled.")
+        }
+
+        val kickoff = match.kickoffAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
+            ?: throw AccessDeniedException("This match has no usable kickoff time.")
+        val now = OffsetDateTime.now()
+        if (now.isBefore(kickoff.minusHours(VALIDATION_OPENS_HOURS_BEFORE)) ||
+            now.isAfter(kickoff.plusHours(VALIDATION_CLOSES_HOURS_AFTER))
+        ) {
+            throw AccessDeniedException(
+                "Tickets can only be validated from ${VALIDATION_OPENS_HOURS_BEFORE}h before kickoff " +
+                    "until ${VALIDATION_CLOSES_HOURS_AFTER}h after.",
+            )
+        }
+    }
+
     private fun publishOnCommit(action: () -> Unit) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(
@@ -135,6 +184,10 @@ class TicketService(
 
     companion object {
         val ALLOWED_PAYMENT_METHODS = setOf("MBWAY", "CARD", "CASH")
+
+        /** Validation window relative to kickoff (staff only; admins are exempt). */
+        const val VALIDATION_OPENS_HOURS_BEFORE = 2L
+        const val VALIDATION_CLOSES_HOURS_AFTER = 3L
     }
 }
 

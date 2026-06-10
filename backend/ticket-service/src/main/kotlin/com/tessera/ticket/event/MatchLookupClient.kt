@@ -21,16 +21,26 @@ class MatchLookupClient(
     private val rest = RestTemplate()
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class MatchView(val id: Long? = null, val homeClubId: Long? = null, val awayClubId: Long? = null)
+    data class MatchView(
+        val id: Long? = null,
+        val homeClubId: Long? = null,
+        val awayClubId: Long? = null,
+        /** ISO-8601 kickoff instant, e.g. "2026-05-01T20:00:00Z". */
+        val kickoffAt: String? = null,
+        val status: String? = null,
+    )
 
-    /** Club id of the match's home team, or null if it can't be resolved. */
-    fun homeClubId(matchId: Long): Long? =
+    /** Full match view from match-service, or null if it can't be resolved (e.g. deleted). */
+    fun find(matchId: Long): MatchView? =
         try {
-            rest.getForObject("$baseUrl/api/v1/matches/$matchId", MatchView::class.java)?.homeClubId
+            rest.getForObject("$baseUrl/api/v1/matches/$matchId", MatchView::class.java)
         } catch (e: Exception) {
-            log.warn("Failed to resolve home club for match {}: {}", matchId, e.message)
+            log.warn("Failed to resolve match {}: {}", matchId, e.message)
             null
         }
+
+    /** Club id of the match's home team, or null if it can't be resolved. */
+    fun homeClubId(matchId: Long): Long? = find(matchId)?.homeClubId
 }
 
 /** Realm roles carried by the token (the custom `roles` claim, with fallback). */
@@ -46,10 +56,18 @@ fun Jwt.isPlatformAdmin(): Boolean = "platform-admin" in realmRoles()
  * Club ids for which the token holder is a MANAGER, parsed from the `groups`
  * claim (`/clubs/<id>/managers`). Mirrors match-service's ClubMembershipExtractor.
  */
-fun Jwt.managedClubIds(): Set<Long> =
+fun Jwt.managedClubIds(): Set<Long> = clubIdsForGroup("managers")
+
+/**
+ * Club ids for which the token holder is STAFF, parsed from the `groups`
+ * claim (`/clubs/<id>/staff`). Used to scope ticket validation at the gate.
+ */
+fun Jwt.staffClubIds(): Set<Long> = clubIdsForGroup("staff")
+
+private fun Jwt.clubIdsForGroup(role: String): Set<Long> =
     (getClaimAsStringList("groups") ?: emptyList()).mapNotNull { path ->
         val parts = path.trim('/').split('/')
-        if (parts.size == 3 && parts[0] == "clubs" && parts[2].lowercase() == "managers") {
+        if (parts.size == 3 && parts[0] == "clubs" && parts[2].lowercase() == role) {
             parts[1].toLongOrNull()
         } else {
             null

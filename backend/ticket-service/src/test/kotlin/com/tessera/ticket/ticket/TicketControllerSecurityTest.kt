@@ -92,7 +92,7 @@ class TicketControllerSecurityTest {
 
     @Test
     fun `validate succeeds for staff`() {
-        doReturn(ticket(ownerSub = "user")).whenever(ticketService).validate(any(), any())
+        doReturn(ticket(ownerSub = "user")).whenever(ticketService).validate(any(), any(), any(), any())
         mvc.perform(
             post("/api/v1/tickets/validate").with(staff())
                 .contentType(MediaType.APPLICATION_JSON).content("""{"code":"${UUID.randomUUID()}"}"""),
@@ -101,7 +101,7 @@ class TicketControllerSecurityTest {
 
     @Test
     fun `validate succeeds for a platform-admin`() {
-        doReturn(ticket(ownerSub = "user")).whenever(ticketService).validate(any(), any())
+        doReturn(ticket(ownerSub = "user")).whenever(ticketService).validate(any(), any(), any(), any())
         mvc.perform(
             post("/api/v1/tickets/validate").with(platformAdmin())
                 .contentType(MediaType.APPLICATION_JSON).content("""{"code":"${UUID.randomUUID()}"}"""),

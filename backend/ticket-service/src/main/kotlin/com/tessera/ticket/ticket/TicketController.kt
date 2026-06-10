@@ -1,6 +1,8 @@
 package com.tessera.ticket.ticket
 
 import com.tessera.ticket.common.PageEnvelope
+import com.tessera.ticket.event.isPlatformAdmin
+import com.tessera.ticket.event.staffClubIds
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import org.slf4j.LoggerFactory
@@ -106,7 +108,8 @@ class TicketController(
             catch (_: IllegalArgumentException) {
                 throw IllegalArgumentException("Invalid UUID format: $raw")
             }
-        val validated = ticketService.validate(uuid, userIdOf(jwt))
+        val validated =
+            ticketService.validate(uuid, userIdOf(jwt), jwt.isPlatformAdmin(), jwt.staffClubIds())
         log.info("Validated ticket id={} by validator={}", validated.id, userIdOf(jwt))
         return toResponse(validated)
     }
