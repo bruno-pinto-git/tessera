@@ -4,7 +4,7 @@ import { getEvent, type Event } from "@/features/events/api/eventsApi";
 import { getMatch, type Match } from "@/features/matches/api/matchesApi";
 import { getClub, type Club } from "@/features/clubs/api/clubsApi";
 import { getVenue, type Venue } from "@/features/venues/api/venuesApi";
-import { crestForClub, type CrestInfo } from "../ticketViews";
+import { crestForClub, crestFromName, splitFixture, type CrestInfo } from "../ticketViews";
 
 /**
  * Unified view model for a ticket on "Os meus bilhetes". Enriched with the
@@ -143,14 +143,24 @@ export function useMyTickets(): UseMyTicketsResult {
 
           // The match id is known but couldn't be resolved -> it was deleted.
           const matchRemoved = matchId != null && match === undefined;
-          const home = crestForClub(homeClub);
-          const away = crestForClub(awayClub);
-          // When the match is gone, fall back to the fixture snapshot captured
-          // on the event when the box office opened (so we keep the teams,
-          // not "?"); only show "Jogo cancelado" if no snapshot exists.
-          const title = matchRemoved
-            ? event?.matchLabel?.trim() || "Jogo cancelado"
-            : `${home.short} vs ${away.short}`;
+          let home = crestForClub(homeClub);
+          let away = crestForClub(awayClub);
+          let title: string;
+          if (matchRemoved) {
+            // Rebuild the teams (names + crests) from the fixture snapshot
+            // captured on the event when the box office opened, so a cancelled
+            // match still shows proper crests instead of "?".
+            const fixture = event?.matchLabel ? splitFixture(event.matchLabel) : null;
+            if (fixture) {
+              home = crestFromName(fixture.home);
+              away = crestFromName(fixture.away);
+              title = `${fixture.home} vs ${fixture.away}`;
+            } else {
+              title = event?.matchLabel?.trim() || "Jogo cancelado";
+            }
+          } else {
+            title = `${home.short} vs ${away.short}`;
+          }
 
           const supporter =
             event?.priceSupporter != null && Number(t.price) === Number(event.priceSupporter);
