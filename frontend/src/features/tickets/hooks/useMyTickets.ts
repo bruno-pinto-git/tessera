@@ -145,7 +145,12 @@ export function useMyTickets(): UseMyTicketsResult {
           const matchRemoved = matchId != null && match === undefined;
           const home = crestForClub(homeClub);
           const away = crestForClub(awayClub);
-          const title = matchRemoved ? "Jogo cancelado" : `${home.short} vs ${away.short}`;
+          // When the match is gone, fall back to the fixture snapshot captured
+          // on the event when the box office opened (so we keep the teams,
+          // not "?"); only show "Jogo cancelado" if no snapshot exists.
+          const title = matchRemoved
+            ? event?.matchLabel?.trim() || "Jogo cancelado"
+            : `${home.short} vs ${away.short}`;
 
           const supporter =
             event?.priceSupporter != null && Number(t.price) === Number(event.priceSupporter);

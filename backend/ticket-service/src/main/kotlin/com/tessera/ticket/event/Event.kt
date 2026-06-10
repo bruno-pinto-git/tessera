@@ -16,6 +16,14 @@ class Event(
 
     val name: String? = null,
 
+    /**
+     * Snapshot of the fixture ("Home vs Away") captured when the box office is
+     * opened. Persists on the event so tickets keep showing the teams even if
+     * the match is later deleted in match-service.
+     */
+    @Column(name = "match_label", length = 255)
+    val matchLabel: String? = null,
+
     @Column(name = "price_normal", nullable = false)
     val priceNormal: BigDecimal = BigDecimal.ZERO,
 

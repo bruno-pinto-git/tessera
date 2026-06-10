@@ -14,6 +14,12 @@ properties:
     format: int64
   name:
     type: [string, "null"]
+  matchLabel:
+    type: [string, "null"]
+    description: |
+      Snapshot of the fixture ("Home vs Away") taken when the box office was
+      opened. Lets tickets keep showing the teams even if the match is later
+      deleted in match-service.
   matchId:
     type: [integer, "null"]
     format: int64

@@ -19,6 +19,8 @@ import java.time.OffsetDateTime
 
 data class CreateEventRequest(
     @field:NotBlank val name: String?,
+    /** Snapshot of the fixture ("Home vs Away") so tickets survive a match deletion. */
+    val matchLabel: String? = null,
     val matchId: Long? = null,
     @field:NotNull @field:DecimalMin("0.00") val priceNormal: BigDecimal?,
     @field:NotNull @field:DecimalMin("0.00") val priceSupporter: BigDecimal?,
@@ -29,6 +31,7 @@ data class CreateEventRequest(
 data class EventResponse(
     val id: Long,
     val name: String?,
+    val matchLabel: String?,
     val matchId: Long?,
     val priceNormal: BigDecimal,
     val priceSupporter: BigDecimal,
@@ -57,6 +60,7 @@ class EventService(
         }
         val entity = Event(
             name           = req.name,
+            matchLabel     = req.matchLabel,
             matchId        = req.matchId,
             priceNormal    = req.priceNormal ?: BigDecimal.ZERO,
             priceSupporter = req.priceSupporter ?: BigDecimal.ZERO,
@@ -116,6 +120,7 @@ class EventController(
     private fun toResponse(e: Event) = EventResponse(
         id              = e.id,
         name            = e.name,
+        matchLabel      = e.matchLabel,
         matchId         = e.matchId,
         priceNormal     = e.priceNormal,
         priceSupporter  = e.priceSupporter,

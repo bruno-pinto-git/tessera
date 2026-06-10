@@ -4,3985 +4,4072 @@
  */
 
 export interface paths {
-  "/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get the authenticated user's profile
-     * @description Returns the profile of the currently authenticated user, projected
-     *     from the bearer token. Useful for the SPA and Android apps to
-     *     discover the user's role and decide which screens to render.
-     */
-    get: operations["getMe"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/users": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Search users in Keycloak
-     * @description Returns Keycloak users matching the optional `search` term. The
-     *     search is performed by Keycloak across username, email, first name
-     *     and last name. Used by the admin UI to find existing users for
-     *     attaching to clubs.
-     */
-    get: operations["searchUsers"];
-    put?: never;
-    /**
-     * Create a new Keycloak user
-     * @description Creates a user in the Tessera realm, sets their initial password, and
-     *     assigns the chosen realm role. Does **not** bind the user to any club
-     *     — that's a separate step via `POST /clubs/{id}/members`.
-     */
-    post: operations["createUser"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/users/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Keycloak user id. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    /**
-     * Get a user
-     * @description Returns the Keycloak user with the given id.
-     */
-    get: operations["getUserById"];
-    put?: never;
-    post?: never;
-    /**
-     * Delete a user
-     * @description Permanently removes the user from Keycloak. Any club memberships are
-     *     revoked at the same time (the user falls out of the corresponding
-     *     groups). This is **not** reversible — for a temporary lock, disable
-     *     the user from the Keycloak admin console instead.
-     */
-    delete: operations["deleteUser"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/clubs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List clubs
-     * @description Returns a paginated list of clubs. Soft-deleted clubs are excluded.
-     *     Public endpoint — no role required.
-     */
-    get: operations["listClubs"];
-    put?: never;
-    /**
-     * Create a new club
-     * @description Creates a new club. Requires the `admin` role.
-     */
-    post: operations["createClub"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/clubs/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
-         * @description Stable numeric identifier of the club.
-         * @example 1
+         * Get the authenticated user's profile
+         * @description Returns the profile of the currently authenticated user, projected
+         *     from the bearer token. Useful for the SPA and Android apps to
+         *     discover the user's role and decide which screens to render.
          */
-        id: number;
-      };
-      cookie?: never;
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get a club by id
-     * @description Returns the club with the given id. Public endpoint.
-     */
-    get: operations["getClubById"];
-    put?: never;
-    post?: never;
-    /**
-     * Soft-delete a club
-     * @description Marks the club as deleted (sets `deletedAt`). Existing matches and
-     *     historical references remain intact. Requires the `admin` role.
-     */
-    delete: operations["deleteClub"];
-    options?: never;
-    head?: never;
-    /**
-     * Partially update a club
-     * @description Updates fields of an existing club. Omitted fields are left unchanged.
-     *     Requires the `admin` role.
-     */
-    patch: operations["updateClub"];
-    trace?: never;
-  };
-  "/clubs/{clubId}/members": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Tessera club id. */
-        clubId: number;
-      };
-      cookie?: never;
+    "/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search users in Keycloak
+         * @description Returns Keycloak users matching the optional `search` term. The
+         *     search is performed by Keycloak across username, email, first name
+         *     and last name. Used by the admin UI to find existing users for
+         *     attaching to clubs.
+         */
+        get: operations["searchUsers"];
+        put?: never;
+        /**
+         * Create a new Keycloak user
+         * @description Creates a user in the Tessera realm, sets their initial password, and
+         *     assigns the chosen realm role. Does **not** bind the user to any club
+         *     — that's a separate step via `POST /clubs/{id}/members`.
+         */
+        post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List a club's managers and staff
-     * @description Returns the union of users in the Keycloak groups
-     *     `/clubs/<clubId>/managers` and `/clubs/<clubId>/staff`, grouped by
-     *     role. Empty arrays are returned if no members of a given role exist.
-     */
-    get: operations["listClubMembers"];
-    put?: never;
-    /**
-     * Attach an existing user to the club
-     * @description Adds the given user to the Keycloak group corresponding to `role`.
-     *     If they are already a member, the operation is a no-op (idempotent).
-     *     The user must already exist in Keycloak — create one first via
-     *     `POST /users` if needed.
-     */
-    post: operations["addClubMember"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/clubs/{clubId}/members/{userId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Tessera club id. */
-        clubId: number;
-        /** @description Keycloak user id of the member being removed. */
-        userId: string;
-      };
-      cookie?: never;
+    "/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Keycloak user id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a user
+         * @description Returns the Keycloak user with the given id.
+         */
+        get: operations["getUserById"];
+        /**
+         * Update a user
+         * @description Updates a user's profile and account state. Only the fields present in
+         *     the body are changed. The role, when supplied, reassigns the
+         *     *manageable* role (`club-manager`/`staff`) — the previous one is removed
+         *     and the new one added; `platform-admin` and `fan` are left untouched.
+         *     `forcePasswordReset` adds the `UPDATE_PASSWORD` required action so the
+         *     user must choose a new password on their next login.
+         */
+        put: operations["updateUser"];
+        post?: never;
+        /**
+         * Delete a user
+         * @description Permanently removes the user from Keycloak. Any club memberships are
+         *     revoked at the same time (the user falls out of the corresponding
+         *     groups). This is **not** reversible — for a temporary lock, disable the
+         *     user instead (`PUT /users/{id}` with `enabled: false`). Note: users who
+         *     sign in via a social identity provider (Google) are re-provisioned on
+         *     their next login, so deleting them is not a permanent ban — disable them.
+         */
+        delete: operations["deleteUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Revoke a club membership
-     * @description Removes the user from the Keycloak group corresponding to `role`.
-     *     The user itself is preserved — only the membership goes away. If the
-     *     user wasn't actually in the group, the operation is a no-op.
-     */
-    delete: operations["removeClubMember"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/venues": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/clubs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List clubs
+         * @description Returns a paginated list of clubs. Soft-deleted clubs are excluded.
+         *     Public endpoint — no role required.
+         */
+        get: operations["listClubs"];
+        put?: never;
+        /**
+         * Create a new club
+         * @description Creates a new club. Requires the `admin` role.
+         */
+        post: operations["createClub"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List venues
-     * @description Returns a paginated list of venues. Soft-deleted venues are excluded.
-     *     Public endpoint.
-     */
-    get: operations["listVenues"];
-    put?: never;
-    /**
-     * Create a new venue
-     * @description Creates a new venue. Requires the `admin` role.
-     */
-    post: operations["createVenue"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/venues/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the venue. */
-        id: number;
-      };
-      cookie?: never;
+    "/clubs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Stable numeric identifier of the club.
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a club by id
+         * @description Returns the club with the given id. Public endpoint.
+         */
+        get: operations["getClubById"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a club
+         * @description Marks the club as deleted (sets `deletedAt`). Existing matches and
+         *     historical references remain intact. Requires the `admin` role.
+         */
+        delete: operations["deleteClub"];
+        options?: never;
+        head?: never;
+        /**
+         * Partially update a club
+         * @description Updates fields of an existing club. Omitted fields are left unchanged.
+         *     Requires the `admin` role.
+         */
+        patch: operations["updateClub"];
+        trace?: never;
     };
-    /**
-     * Get a venue by id
-     * @description Returns the venue with the given id. Public endpoint.
-     */
-    get: operations["getVenueById"];
-    put?: never;
-    post?: never;
-    /**
-     * Soft-delete a venue
-     * @description Marks the venue as deleted (sets `deletedAt`). Existing match references
-     *     remain intact. Requires the `admin` role.
-     */
-    delete: operations["deleteVenue"];
-    options?: never;
-    head?: never;
-    /**
-     * Partially update a venue
-     * @description Updates fields of an existing venue. Omitted fields are left unchanged.
-     *     Requires the `admin` role.
-     */
-    patch: operations["updateVenue"];
-    trace?: never;
-  };
-  "/clubs/{clubId}/teams": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the parent club. */
-        clubId: number;
-      };
-      cookie?: never;
+    "/clubs/{clubId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * List a club's managers and staff
+         * @description Returns the union of users in the Keycloak groups
+         *     `/clubs/<clubId>/managers` and `/clubs/<clubId>/staff`, grouped by
+         *     role. Empty arrays are returned if no members of a given role exist.
+         */
+        get: operations["listClubMembers"];
+        put?: never;
+        /**
+         * Attach an existing user to the club
+         * @description Adds the given user to the Keycloak group corresponding to `role`.
+         *     If they are already a member, the operation is a no-op (idempotent).
+         *     The user must already exist in Keycloak — create one first via
+         *     `POST /users` if needed.
+         */
+        post: operations["addClubMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List teams of a club
-     * @description Returns all active teams belonging to the club, ordered by category.
-     *     Public endpoint.
-     */
-    get: operations["listTeamsOfClub"];
-    put?: never;
-    /**
-     * Create a team in a club
-     * @description Creates a new team in the club. A club may have at most one active team
-     *     per category — duplicate categories are rejected with 409. Requires the
-     *     `admin` role.
-     */
-    post: operations["createTeam"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/teams/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the team. */
-        id: number;
-      };
-      cookie?: never;
+    "/clubs/{clubId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+                /** @description Keycloak user id of the member being removed. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a club membership
+         * @description Removes the user from the Keycloak group corresponding to `role`.
+         *     The user itself is preserved — only the membership goes away. If the
+         *     user wasn't actually in the group, the operation is a no-op.
+         */
+        delete: operations["removeClubMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get a team by id
-     * @description Returns the team with the given id. Public endpoint.
-     */
-    get: operations["getTeamById"];
-    put?: never;
-    post?: never;
-    /**
-     * Soft-delete a team
-     * @description Marks the team as deleted (sets `deletedAt`). Requires the `admin` role.
-     */
-    delete: operations["deleteTeam"];
-    options?: never;
-    head?: never;
-    /**
-     * Partially update a team
-     * @description Updates fields of an existing team. Currently only `category` is updatable.
-     *     Changing the category to one that already exists for the same club is
-     *     rejected with 409. Requires the `admin` role.
-     */
-    patch: operations["updateTeam"];
-    trace?: never;
-  };
-  "/teams/{teamId}/players": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the parent team. */
-        teamId: number;
-      };
-      cookie?: never;
+    "/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List venues
+         * @description Returns a paginated list of venues. Soft-deleted venues are excluded.
+         *     Public endpoint.
+         */
+        get: operations["listVenues"];
+        put?: never;
+        /**
+         * Create a new venue
+         * @description Creates a new venue. Requires the `admin` role.
+         */
+        post: operations["createVenue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List players of a team
-     * @description Returns the active players belonging to the team, ordered by shirt number
-     *     (nulls last) then by last name. Public endpoint.
-     */
-    get: operations["listPlayersOfTeam"];
-    put?: never;
-    /**
-     * Create a player in a team
-     * @description Creates a new player in the team. If `shirtNumber` is provided, it must
-     *     not collide with another active player in the same team — duplicates
-     *     are rejected with 409. Requires the `admin` role.
-     */
-    post: operations["createPlayer"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/clubs/{clubId}/players": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the club. */
-        clubId: number;
-      };
-      cookie?: never;
+    "/venues/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the venue. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a venue by id
+         * @description Returns the venue with the given id. Public endpoint.
+         */
+        get: operations["getVenueById"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a venue
+         * @description Marks the venue as deleted (sets `deletedAt`). Existing match references
+         *     remain intact. Requires the `admin` role.
+         */
+        delete: operations["deleteVenue"];
+        options?: never;
+        head?: never;
+        /**
+         * Partially update a venue
+         * @description Updates fields of an existing venue. Omitted fields are left unchanged.
+         *     Requires the `admin` role.
+         */
+        patch: operations["updateVenue"];
+        trace?: never;
     };
-    /**
-     * List all players of a club
-     * @description Returns a paginated list of active players belonging to **any** active
-     *     team of the club. Useful when you want the entire roster of a club
-     *     without iterating each team. Public endpoint.
-     *
-     *     Sort order: by last name then first name (alphabetical).
-     */
-    get: operations["listPlayersOfClub"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/players/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the player. */
-        id: number;
-      };
-      cookie?: never;
+    "/clubs/{clubId}/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the parent club. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * List teams of a club
+         * @description Returns all active teams belonging to the club, ordered by category.
+         *     Public endpoint.
+         */
+        get: operations["listTeamsOfClub"];
+        put?: never;
+        /**
+         * Create a team in a club
+         * @description Creates a new team in the club. A club may have at most one active team
+         *     per category — duplicate categories are rejected with 409. Requires the
+         *     `admin` role.
+         */
+        post: operations["createTeam"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get a player by id
-     * @description Returns the player with the given id. Public endpoint.
-     */
-    get: operations["getPlayerById"];
-    put?: never;
-    post?: never;
-    /**
-     * Soft-delete a player
-     * @description Marks the player as deleted (sets `deletedAt`). Existing match-sheet
-     *     references remain intact. Requires the `admin` role.
-     */
-    delete: operations["deletePlayer"];
-    options?: never;
-    head?: never;
-    /**
-     * Partially update a player
-     * @description Updates fields of an existing player. Omitted fields are left unchanged.
-     *     Changing `shirtNumber` to one already in use within the same team is
-     *     rejected with 409. Requires the `admin` role.
-     */
-    patch: operations["updatePlayer"];
-    trace?: never;
-  };
-  "/matches": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/teams/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the team. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a team by id
+         * @description Returns the team with the given id. Public endpoint.
+         */
+        get: operations["getTeamById"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a team
+         * @description Marks the team as deleted (sets `deletedAt`). Requires the `admin` role.
+         */
+        delete: operations["deleteTeam"];
+        options?: never;
+        head?: never;
+        /**
+         * Partially update a team
+         * @description Updates fields of an existing team. Currently only `category` is updatable.
+         *     Changing the category to one that already exists for the same club is
+         *     rejected with 409. Requires the `admin` role.
+         */
+        patch: operations["updateTeam"];
+        trace?: never;
     };
-    /**
-     * List matches
-     * @description Returns a paginated list of matches. Soft-deleted matches are excluded.
-     *     Public endpoint.
-     *
-     *     Filters can be combined; results are ordered by `kickoffAt` ascending.
-     */
-    get: operations["listMatches"];
-    put?: never;
-    /**
-     * Create a new match
-     * @description Creates a new match in SCHEDULED status. Requires the `admin` role.
-     */
-    post: operations["createMatch"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/matches/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
+    "/teams/{teamId}/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the parent team. */
+                teamId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * List players of a team
+         * @description Returns the active players belonging to the team, ordered by shirt number
+         *     (nulls last) then by last name. Public endpoint.
+         */
+        get: operations["listPlayersOfTeam"];
+        put?: never;
+        /**
+         * Create a player in a team
+         * @description Creates a new player in the team. If `shirtNumber` is provided, it must
+         *     not collide with another active player in the same team — duplicates
+         *     are rejected with 409. Requires the `admin` role.
+         */
+        post: operations["createPlayer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get a match by id
-     * @description Returns the match with the given id. Public endpoint.
-     *     The BFF aggregates the linked Event (if any) when serving this endpoint
-     *     to fans.
-     */
-    get: operations["getMatchById"];
-    put?: never;
-    post?: never;
-    /**
-     * Soft-delete a match
-     * @description Marks the match as deleted. Match-sheet and ticket references remain
-     *     intact. Requires the `admin` role.
-     */
-    delete: operations["deleteMatch"];
-    options?: never;
-    head?: never;
-    /**
-     * Partially update a match
-     * @description Updates fields of an existing match. Status transitions are validated
-     *     server-side; invalid transitions return 409.
-     *     Requires the `admin` role.
-     */
-    patch: operations["updateMatch"];
-    trace?: never;
-  };
-  "/matches/{id}/sheet": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
+    "/clubs/{clubId}/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the club. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * List all players of a club
+         * @description Returns a paginated list of active players belonging to **any** active
+         *     team of the club. Useful when you want the entire roster of a club
+         *     without iterating each team. Public endpoint.
+         *
+         *     Sort order: by last name then first name (alphabetical).
+         */
+        get: operations["listPlayersOfClub"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get the match sheet
-     * @description Returns the match sheet (lineups + occurrences). If the sheet does not
-     *     exist yet, it is created lazily and returned empty. Public endpoint.
-     */
-    get: operations["getMatchSheet"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/matches/{id}/sheet/lineup": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
+    "/players/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the player. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a player by id
+         * @description Returns the player with the given id. Public endpoint.
+         */
+        get: operations["getPlayerById"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a player
+         * @description Marks the player as deleted (sets `deletedAt`). Existing match-sheet
+         *     references remain intact. Requires the `admin` role.
+         */
+        delete: operations["deletePlayer"];
+        options?: never;
+        head?: never;
+        /**
+         * Partially update a player
+         * @description Updates fields of an existing player. Omitted fields are left unchanged.
+         *     Changing `shirtNumber` to one already in use within the same team is
+         *     rejected with 409. Requires the `admin` role.
+         */
+        patch: operations["updatePlayer"];
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Add a player to the lineup
-     * @description Adds a player to the match-sheet lineup. The player's `teamId` is derived
-     *     from the player record and must equal the match's homeTeamId or awayTeamId.
-     *     Editing is rejected with 409 if the sheet is locked or the match is in a
-     *     terminal status. Requires `staff` or `admin`.
-     */
-    post: operations["addLineupEntry"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/matches/{id}/sheet/lineup/{playerId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-        /** @description Identifier of the player whose lineup entry is being targeted. */
-        playerId: number;
-      };
-      cookie?: never;
+    "/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List matches
+         * @description Returns a paginated list of matches. Soft-deleted matches are excluded.
+         *     Public endpoint.
+         *
+         *     Filters can be combined; results are ordered by `kickoffAt` ascending.
+         */
+        get: operations["listMatches"];
+        put?: never;
+        /**
+         * Create a new match
+         * @description Creates a new match in SCHEDULED status. Requires the `admin` role.
+         */
+        post: operations["createMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove a player from the lineup
-     * @description Removes the player from the match-sheet lineup. Hard delete (the lineup
-     *     is rebuilt freely while unlocked). Requires `staff` or `admin`.
-     *     Rejected with 409 if the sheet is locked or the match is in a terminal
-     *     status.
-     */
-    delete: operations["removeLineupEntry"];
-    options?: never;
-    head?: never;
-    /**
-     * Update a lineup entry
-     * @description Changes the role and/or shirt number of an existing lineup entry.
-     *     Requires `staff` or `admin`. Rejected with 409 if the sheet is locked
-     *     or the match is in a terminal status.
-     */
-    patch: operations["updateLineupEntry"];
-    trace?: never;
-  };
-  "/stats/match-sheets": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/matches/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a match by id
+         * @description Returns the match with the given id. Public endpoint.
+         *     The BFF aggregates the linked Event (if any) when serving this endpoint
+         *     to fans.
+         */
+        get: operations["getMatchById"];
+        put?: never;
+        post?: never;
+        /**
+         * Soft-delete a match
+         * @description Marks the match as deleted. Match-sheet and ticket references remain
+         *     intact. Requires the `admin` role.
+         */
+        delete: operations["deleteMatch"];
+        options?: never;
+        head?: never;
+        /**
+         * Partially update a match
+         * @description Updates fields of an existing match. Status transitions are validated
+         *     server-side; invalid transitions return 409.
+         *     Requires the `admin` role.
+         */
+        patch: operations["updateMatch"];
+        trace?: never;
     };
-    /**
-     * List historical match-sheet snapshots
-     * @description Returns matches whose match-sheet has been closed and snapshotted by the
-     *     statistics-service. Filters can be combined; results are ordered by
-     *     `kickoffAt` ascending (configurable via the `sort` parameter).
-     *
-     *     Public endpoint — fans can browse the historical archive.
-     */
-    get: operations["listMatchSheetHistory"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/stats/match-sheets/{matchId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        matchId: number;
-      };
-      cookie?: never;
+    "/matches/{id}/sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the match sheet
+         * @description Returns the match sheet (lineups + occurrences). If the sheet does not
+         *     exist yet, it is created lazily and returned empty. Public endpoint.
+         */
+        get: operations["getMatchSheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get a historical match-sheet snapshot
-     * @description Returns the full snapshot for the given match: summary, lineup, and
-     *     occurrences as recorded by the statistics-service when the match-sheet
-     *     was closed. Public endpoint.
-     */
-    get: operations["getMatchSheetHistory"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/stats/sales/summary": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/matches/{id}/sheet/lineup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a player to the lineup
+         * @description Adds a player to the match-sheet lineup. The player's `teamId` is derived
+         *     from the player record and must equal the match's homeTeamId or awayTeamId.
+         *     Editing is rejected with 409 if the sheet is locked or the match is in a
+         *     terminal status. Requires `staff` or `admin`.
+         */
+        post: operations["addLineupEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Total ticket sales summary
-     * @description Aggregated counts and revenue across all matches. Requires the `admin`
-     *     role.
-     */
-    get: operations["getSalesSummary"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/stats/sales/by-match/{matchId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        matchId: number;
-      };
-      cookie?: never;
+    "/matches/{id}/sheet/lineup/{playerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+                /** @description Identifier of the player whose lineup entry is being targeted. */
+                playerId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a player from the lineup
+         * @description Removes the player from the match-sheet lineup. Hard delete (the lineup
+         *     is rebuilt freely while unlocked). Requires `staff` or `admin`.
+         *     Rejected with 409 if the sheet is locked or the match is in a terminal
+         *     status.
+         */
+        delete: operations["removeLineupEntry"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a lineup entry
+         * @description Changes the role and/or shirt number of an existing lineup entry.
+         *     Requires `staff` or `admin`. Rejected with 409 if the sheet is locked
+         *     or the match is in a terminal status.
+         */
+        patch: operations["updateLineupEntry"];
+        trace?: never;
     };
-    /** Ticket sales for a single match */
-    get: operations["getSalesByMatch"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/stats/sales/range": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/stats/match-sheets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List historical match-sheet snapshots
+         * @description Returns matches whose match-sheet has been closed and snapshotted by the
+         *     statistics-service. Filters can be combined; results are ordered by
+         *     `kickoffAt` ascending (configurable via the `sort` parameter).
+         *
+         *     Public endpoint — fans can browse the historical archive.
+         */
+        get: operations["listMatchSheetHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Ticket sales aggregated over a time range
-     * @description Aggregates `paidAt` between `from` (inclusive) and `to` (exclusive).
-     *     `validationRate` is always 0 in this view because validation lags
-     *     payment and would skew the rate.
-     */
-    get: operations["getSalesInRange"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/matches/{id}/sheet/occurrences": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
+    "/stats/match-sheets/{matchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a historical match-sheet snapshot
+         * @description Returns the full snapshot for the given match: summary, lineup, and
+         *     occurrences as recorded by the statistics-service when the match-sheet
+         *     was closed. Public endpoint.
+         */
+        get: operations["getMatchSheetHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Add an occurrence to the match sheet
-     * @description Appends a new occurrence (goal, card, substitution) to the match sheet.
-     *     Validates that:
-     *       - sheet is not locked AND match status ∈ {SCHEDULED, LIVE}
-     *       - player is in the lineup
-     *       - SUBSTITUTION requires `replacedPlayerId` and both players in same team
-     *       - non-SUBSTITUTION must NOT include `replacedPlayerId`
-     *     Requires `staff` or `admin`.
-     */
-    post: operations["addOccurrence"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/matches/{id}/sheet/occurrences/{occId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-        /** @description Identifier of the occurrence to remove. */
-        occId: number;
-      };
-      cookie?: never;
+    "/stats/sales/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Total ticket sales summary
+         * @description Aggregated counts and revenue across all matches. Requires the `admin`
+         *     role.
+         */
+        get: operations["getSalesSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /**
-     * Remove an occurrence from the match sheet
-     * @description Hard-deletes the occurrence. Allowed only while the sheet is unlocked and
-     *     the match status allows edits. Requires `staff` or `admin`.
-     */
-    delete: operations["removeOccurrence"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/matches/{id}/sheet/lock": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
+    "/stats/sales/by-match/{matchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: number;
+            };
+            cookie?: never;
+        };
+        /** Ticket sales for a single match */
+        get: operations["getSalesByMatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Lock the match sheet
-     * @description Marks the match sheet as locked, preventing further edits to the lineup
-     *     or occurrences. Idempotent — locking an already-locked sheet is a no-op.
-     *     Requires `staff` or `admin`.
-     */
-    post: operations["lockMatchSheet"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/matches/{id}/sheet/unlock": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
+    "/stats/sales/range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ticket sales aggregated over a time range
+         * @description Aggregates `paidAt` between `from` (inclusive) and `to` (exclusive).
+         *     `validationRate` is always 0 in this view because validation lags
+         *     payment and would skew the rate.
+         */
+        get: operations["getSalesInRange"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Unlock the match sheet (admin override)
-     * @description Re-opens a locked sheet for editing. Note: even if the sheet is unlocked,
-     *     edits are still blocked when the parent match status is terminal
-     *     (FINISHED / ABANDONED / POSTPONED) — the admin must first PATCH the match
-     *     status. Requires `admin`.
-     */
-    post: operations["unlockMatchSheet"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/events": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/matches/{id}/sheet/occurrences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add an occurrence to the match sheet
+         * @description Appends a new occurrence (goal, card, substitution) to the match sheet.
+         *     Validates that:
+         *       - sheet is not locked AND match status ∈ {SCHEDULED, LIVE}
+         *       - player is in the lineup
+         *       - SUBSTITUTION requires `replacedPlayerId` and both players in same team
+         *       - non-SUBSTITUTION must NOT include `replacedPlayerId`
+         *     Requires `staff` or `admin`.
+         */
+        post: operations["addOccurrence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List sellable events
-     * @description Public catalog of events for which tickets can be purchased.
-     */
-    get: operations["listEvents"];
-    put?: never;
-    /** Create a sellable event */
-    post: operations["createEvent"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/events/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
+    "/matches/{id}/sheet/occurrences/{occId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+                /** @description Identifier of the occurrence to remove. */
+                occId: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove an occurrence from the match sheet
+         * @description Hard-deletes the occurrence. Allowed only while the sheet is unlocked and
+         *     the match status allows edits. Requires `staff` or `admin`.
+         */
+        delete: operations["removeOccurrence"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get an event by id */
-    get: operations["getEvent"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/tickets": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/matches/{id}/sheet/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lock the match sheet
+         * @description Marks the match sheet as locked, preventing further edits to the lineup
+         *     or occurrences. Idempotent — locking an already-locked sheet is a no-op.
+         *     Requires `staff` or `admin`.
+         */
+        post: operations["lockMatchSheet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List tickets for an event
-     * @description Staff/admin view. Use `?eventId=` to filter by the parent event; results
-     *     are paginated. To list the **caller's** own tickets, use `/tickets/mine`.
-     */
-    get: operations["listTicketsByEvent"];
-    put?: never;
-    /**
-     * Create a digital ticket
-     * @description Creates a ticket in `PENDING` status owned by the authenticated user.
-     *     The `code` field returned in the response is the UUID that the client
-     *     renders as a QR code.
-     */
-    post: operations["createTicket"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/tickets/mine": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/matches/{id}/sheet/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Unlock the match sheet (admin override)
+         * @description Re-opens a locked sheet for editing. Note: even if the sheet is unlocked,
+         *     edits are still blocked when the parent match status is terminal
+         *     (FINISHED / ABANDONED / POSTPONED) — the admin must first PATCH the match
+         *     status. Requires `admin`.
+         */
+        post: operations["unlockMatchSheet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * List tickets owned by the caller
-     * @description Returns the tickets whose `ownerSub` matches the JWT subject UUID of
-     *     the caller. Used by the Android and SPA "My tickets" screens.
-     */
-    get: operations["listMyTickets"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/tickets/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
+    "/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List sellable events
+         * @description Public catalog of events for which tickets can be purchased.
+         */
+        get: operations["listEvents"];
+        put?: never;
+        /** Create a sellable event */
+        post: operations["createEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get a ticket by id
-     * @description Visible to the ticket owner or to staff/admin. Other authenticated
-     *     callers receive 403.
-     */
-    get: operations["getTicket"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/tickets/{id}/pay": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
+    "/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /** Get an event by id */
+        get: operations["getEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Confirm payment of a ticket (PENDING → PAID)
-     * @description Transitions the ticket to `PAID`, stamps `paymentDate`, persists the
-     *     chosen `paymentMethod` (and `mbwayReference` when applicable), and
-     *     publishes `ticket.ticket.paid` so the statistics-service can record
-     *     the sale.
-     *
-     *     Authorisation: the ticket owner, or staff/admin (over-the-counter
-     *     cash payment).
-     */
-    post: operations["payTicket"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/tickets/validate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tickets for an event
+         * @description Staff/admin view. Use `?eventId=` to filter by the parent event; results
+         *     are paginated. To list the **caller's** own tickets, use `/tickets/mine`.
+         */
+        get: operations["listTicketsByEvent"];
+        put?: never;
+        /**
+         * Create a digital ticket
+         * @description Creates a ticket in `PENDING` status owned by the authenticated user.
+         *     The `code` field returned in the response is the UUID that the client
+         *     renders as a QR code.
+         */
+        post: operations["createTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Validate a ticket at the gate (PAID → VALIDATED)
-     * @description Looks up the ticket by its QR `code` (a UUID), transitions it to
-     *     `VALIDATED`, stamps `validationDate` and `validatorSub` (the JWT
-     *     subject of the staff member), and publishes
-     *     `ticket.ticket.validated`.
-     */
-    post: operations["validateTicket"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/tickets/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List tickets owned by the caller
+         * @description Returns the tickets whose `ownerSub` matches the JWT subject UUID of
+         *     the caller. Used by the Android and SPA "My tickets" screens.
+         */
+        get: operations["listMyTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tickets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a ticket by id
+         * @description Visible to the ticket owner or to staff/admin. Other authenticated
+         *     callers receive 403.
+         */
+        get: operations["getTicket"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tickets/{id}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm payment of a ticket (PENDING → PAID)
+         * @description Transitions the ticket to `PAID`, stamps `paymentDate`, persists the
+         *     chosen `paymentMethod` (and `mbwayReference` when applicable), and
+         *     publishes `ticket.ticket.paid` so the statistics-service can record
+         *     the sale.
+         *
+         *     Authorisation: the ticket owner, or staff/admin (over-the-counter
+         *     cash payment).
+         */
+        post: operations["payTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tickets/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate a ticket at the gate (PAID → VALIDATED)
+         * @description Looks up the ticket by its QR `code` (a UUID), transitions it to
+         *     `VALIDATED`, stamps `validationDate` and `validatorSub` (the JWT
+         *     subject of the staff member), and publishes
+         *     `ticket.ticket.validated`.
+         */
+        post: operations["validateTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    Problem: components["schemas"]["problem"];
-    PageEnvelope: components["schemas"]["pageEnvelope"];
-    Me: components["schemas"]["me"];
-    ClubMembership: components["schemas"]["clubMembership"];
-    UserSummary: components["schemas"]["userSummary"];
-    CreateUserRequest: components["schemas"]["createUserRequest"];
-    ClubMember: components["schemas"]["clubMember"];
-    ClubMembers: components["schemas"]["clubMembers"];
-    AddMemberRequest: components["schemas"]["addMemberRequest"];
-    Club: components["schemas"]["club"];
-    ClubCreateRequest: components["schemas"]["clubCreateRequest"];
-    ClubUpdateRequest: components["schemas"]["clubUpdateRequest"];
-    Venue: components["schemas"]["venue"];
-    VenueCreateRequest: components["schemas"]["venueCreateRequest"];
-    VenueUpdateRequest: components["schemas"]["venueUpdateRequest"];
-    TeamCategory: components["schemas"]["teamCategory"];
-    Team: components["schemas"]["team"];
-    TeamCreateRequest: components["schemas"]["teamCreateRequest"];
-    TeamUpdateRequest: components["schemas"]["teamUpdateRequest"];
-    PlayerPosition: components["schemas"]["playerPosition"];
-    DominantFoot: components["schemas"]["dominantFoot"];
-    PlayerStatus: components["schemas"]["playerStatus"];
-    Player: components["schemas"]["player"];
-    PlayerCreateRequest: components["schemas"]["playerCreateRequest"];
-    PlayerUpdateRequest: components["schemas"]["playerUpdateRequest"];
-    MatchStatus: components["schemas"]["matchStatus"];
-    Match: components["schemas"]["match"];
-    MatchCreateRequest: components["schemas"]["matchCreateRequest"];
-    MatchUpdateRequest: components["schemas"]["matchUpdateRequest"];
-    MatchSheet: components["schemas"]["matchSheet"];
-    LineupRole: components["schemas"]["lineupRole"];
-    LineupEntry: components["schemas"]["lineupEntry"];
-    LineupCreateRequest: components["schemas"]["lineupCreateRequest"];
-    LineupUpdateRequest: components["schemas"]["lineupUpdateRequest"];
-    OccurrenceType: components["schemas"]["occurrenceType"];
-    Occurrence: components["schemas"]["occurrence"];
-    OccurrenceCreateRequest: components["schemas"]["occurrenceCreateRequest"];
-    MatchSummary: components["schemas"]["matchSummary"];
-    MatchSheetHistory: components["schemas"]["matchSheetHistory"];
-    SalesSummary: components["schemas"]["salesSummary"];
-    SalesByMatch: components["schemas"]["salesByMatch"];
-    Event: components["schemas"]["event"];
-    EventCreateRequest: components["schemas"]["eventCreateRequest"];
-    TicketStatus: components["schemas"]["ticketStatus"];
-    Ticket: components["schemas"]["ticket"];
-    TicketCreateRequest: components["schemas"]["ticketCreateRequest"];
-    TicketPayRequest: components["schemas"]["ticketPayRequest"];
-    TicketValidateRequest: components["schemas"]["ticketValidateRequest"];
-    /**
-     * @description Membership of a user in a specific club, derived from Keycloak group
-     *     paths. `clubId` references the `id` of an active club. `role` is
-     *     `MANAGER` (full CRUD on the club's data) or `STAFF` (operational tasks
-     *     only — ticket validation, match sheet entry).
-     */
-    clubMembership: {
-      /**
-       * Format: int64
-       * @example 1
-       */
-      clubId: number;
-      /**
-       * @example MANAGER
-       * @enum {string}
-       */
-      role: "MANAGER" | "STAFF";
-    };
-    /** @description Profile information about the currently authenticated user, derived from the bearer token. */
-    me: {
-      /**
-       * @description Stable Keycloak user id (`sub` claim).
-       * @example 5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e
-       */
-      sub?: string;
-      /**
-       * @description Keycloak `preferred_username` claim.
-       * @example gestor
-       */
-      username: string;
-      /**
-       * Format: email
-       * @description Keycloak `email` claim. Absent when the token lacks the email scope.
-       * @example gestor@tessera.pt
-       */
-      email?: string;
-      /** @example Gestor */
-      firstName?: string;
-      /** @example Clube */
-      lastName?: string;
-      /**
-       * @description Realm roles relevant to Tessera. Filtered to known values.
-       * @example [
-       *       "club-manager"
-       *     ]
-       */
-      roles: ("platform-admin" | "club-manager" | "staff" | "fan")[];
-      /**
-       * @description Clubs this user is bound to, derived from the `groups` claim
-       *     (`/clubs/<id>/managers` and `/clubs/<id>/staff` paths). Empty for
-       *     platform admins, fans, and users without any club assignment.
-       * @example [
-       *       {
-       *         "clubId": 1,
-       *         "role": "MANAGER"
-       *       }
-       *     ]
-       */
-      clubMemberships: components["schemas"]["clubMembership"][];
-    };
-    /**
-     * @description RFC 7807 Problem Details for HTTP APIs. Returned with media type
-     *     `application/problem+json` for all error responses.
-     */
-    problem: {
-      /**
-       * Format: uri
-       * @description A URI reference identifying the problem type.
-       * @example https://tessera/api/errors/validation
-       */
-      type: string;
-      /**
-       * @description Short, human-readable summary of the problem type.
-       * @example Validation failed
-       */
-      title: string;
-      /**
-       * Format: int32
-       * @description HTTP status code generated by the origin server.
-       * @example 400
-       */
-      status: number;
-      /**
-       * @description Human-readable explanation specific to this occurrence.
-       * @example Field 'kickoffAt' must be in the future.
-       */
-      detail?: string;
-      /**
-       * Format: uri
-       * @description URI reference identifying the specific occurrence.
-       * @example /api/v1/matches/42
-       */
-      instance?: string;
-      /** @description Field-level errors when `type` is a validation problem. */
-      errors?: {
+    schemas: {
+        Problem: components["schemas"]["problem"];
+        PageEnvelope: components["schemas"]["pageEnvelope"];
+        Me: components["schemas"]["me"];
+        ClubMembership: components["schemas"]["clubMembership"];
+        UserSummary: components["schemas"]["userSummary"];
+        CreateUserRequest: components["schemas"]["createUserRequest"];
+        UpdateUserRequest: components["schemas"]["updateUserRequest"];
+        ClubMember: components["schemas"]["clubMember"];
+        ClubMembers: components["schemas"]["clubMembers"];
+        AddMemberRequest: components["schemas"]["addMemberRequest"];
+        Club: components["schemas"]["club"];
+        ClubCreateRequest: components["schemas"]["clubCreateRequest"];
+        ClubUpdateRequest: components["schemas"]["clubUpdateRequest"];
+        Venue: components["schemas"]["venue"];
+        VenueCreateRequest: components["schemas"]["venueCreateRequest"];
+        VenueUpdateRequest: components["schemas"]["venueUpdateRequest"];
+        TeamCategory: components["schemas"]["teamCategory"];
+        Team: components["schemas"]["team"];
+        TeamCreateRequest: components["schemas"]["teamCreateRequest"];
+        TeamUpdateRequest: components["schemas"]["teamUpdateRequest"];
+        PlayerPosition: components["schemas"]["playerPosition"];
+        DominantFoot: components["schemas"]["dominantFoot"];
+        PlayerStatus: components["schemas"]["playerStatus"];
+        Player: components["schemas"]["player"];
+        PlayerCreateRequest: components["schemas"]["playerCreateRequest"];
+        PlayerUpdateRequest: components["schemas"]["playerUpdateRequest"];
+        MatchStatus: components["schemas"]["matchStatus"];
+        Match: components["schemas"]["match"];
+        MatchCreateRequest: components["schemas"]["matchCreateRequest"];
+        MatchUpdateRequest: components["schemas"]["matchUpdateRequest"];
+        MatchSheet: components["schemas"]["matchSheet"];
+        LineupRole: components["schemas"]["lineupRole"];
+        LineupEntry: components["schemas"]["lineupEntry"];
+        LineupCreateRequest: components["schemas"]["lineupCreateRequest"];
+        LineupUpdateRequest: components["schemas"]["lineupUpdateRequest"];
+        OccurrenceType: components["schemas"]["occurrenceType"];
+        Occurrence: components["schemas"]["occurrence"];
+        OccurrenceCreateRequest: components["schemas"]["occurrenceCreateRequest"];
+        MatchSummary: components["schemas"]["matchSummary"];
+        MatchSheetHistory: components["schemas"]["matchSheetHistory"];
+        SalesSummary: components["schemas"]["salesSummary"];
+        SalesByMatch: components["schemas"]["salesByMatch"];
+        Event: components["schemas"]["event"];
+        EventCreateRequest: components["schemas"]["eventCreateRequest"];
+        TicketStatus: components["schemas"]["ticketStatus"];
+        Ticket: components["schemas"]["ticket"];
+        TicketCreateRequest: components["schemas"]["ticketCreateRequest"];
+        TicketPayRequest: components["schemas"]["ticketPayRequest"];
+        TicketValidateRequest: components["schemas"]["ticketValidateRequest"];
         /**
-         * @description Dotted path to the offending field.
-         * @example kickoffAt
+         * @description Membership of a user in a specific club, derived from Keycloak group
+         *     paths. `clubId` references the `id` of an active club. `role` is
+         *     `MANAGER` (full CRUD on the club's data) or `STAFF` (operational tasks
+         *     only — ticket validation, match sheet entry).
          */
-        field: string;
-        /** @example must be in the future */
-        message: string;
-      }[];
-    };
-    /**
-     * @description Summary of a Keycloak user as exposed by the admin endpoints. The `id`
-     *     is the Keycloak UUID — used as the path parameter in user-scoped routes
-     *     and as the `userId` when adding/removing club memberships.
-     */
-    userSummary: {
-      /**
-       * Format: uuid
-       * @description Keycloak user id.
-       * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
-       */
-      id: string;
-      /** @example gestor */
-      username?: string;
-      /**
-       * Format: email
-       * @example gestor@tessera.pt
-       */
-      email?: string;
-      /** @example Gestor */
-      firstName?: string;
-      /** @example Clube */
-      lastName?: string;
-      /**
-       * @description Whether the user can log in. Disabled users keep their data but cannot authenticate.
-       * @example true
-       */
-      enabled?: boolean;
-    };
-    /**
-     * @description Payload for creating a new Keycloak user. The realm role is set at the
-     *     same time as the user — the API restricts it to `club-manager` or
-     *     `staff` (platform-admins are bootstrapped via realm-export and fans
-     *     inherit the realm's default role).
-     */
-    createUserRequest: {
-      /** @example gestor2 */
-      username: string;
-      /**
-       * Format: email
-       * @example gestor2@tessera.pt
-       */
-      email?: string;
-      /** @example Gestor */
-      firstName: string;
-      /** @example Dois */
-      lastName: string;
-      /**
-       * @description Initial password. The user can change it later.
-       * @example gestor12345
-       */
-      password: string;
-      /**
-       * @description Realm role to assign. Restricted to operational roles.
-       * @example club-manager
-       * @enum {string}
-       */
-      role: "club-manager" | "staff";
-    };
-    /**
-     * @description Standard pagination envelope for list endpoints. The `content` array
-     *     carries the page items; concrete endpoints document its element type.
-     */
-    pageEnvelope: {
-      /** @description Items on this page. */
-      content: unknown[];
-      /**
-       * @description Zero-based page index.
-       * @example 0
-       */
-      page: number;
-      /**
-       * @description Page size requested.
-       * @example 20
-       */
-      size: number;
-      /**
-       * @description Total number of items across all pages.
-       * @example 137
-       */
-      totalElements: number;
-      /**
-       * @description Total number of pages.
-       * @example 7
-       */
-      totalPages: number;
-    };
-    /**
-     * @description A football club. Owns one or more teams (senior, youth, female, etc.).
-     *     Identified by a stable numeric `id`; clubs are soft-deleted to preserve
-     *     historical match records.
-     */
-    club: {
-      /**
-       * Format: int64
-       * @description Stable numeric identifier assigned by the server.
-       * @example 1
-       */
-      readonly id: number;
-      /**
-       * @description Official name of the club.
-       * @example SU 1.º Dezembro
-       */
-      name: string;
-      /**
-       * Format: int32
-       * @description Year the club was founded.
-       * @example 1953
-       */
-      foundedYear?: number | null;
-      /**
-       * Format: uri
-       * @description URL to the club crest / logo image.
-       * @example https://tessera.example/clubs/1/crest.png
-       */
-      crestUrl?: string | null;
-      /**
-       * Format: date-time
-       * @description Server-assigned creation timestamp.
-       * @example 2026-04-28T10:00:00Z
-       */
-      readonly createdAt: string;
-    };
-    /** @description Payload to create a new club. `id` and `createdAt` are server-assigned. */
-    clubCreateRequest: {
-      /** @example SU 1.º Dezembro */
-      name: string;
-      /**
-       * Format: int32
-       * @example 1953
-       */
-      foundedYear?: number | null;
-      /**
-       * Format: uri
-       * @example https://tessera.example/clubs/1/crest.png
-       */
-      crestUrl?: string | null;
-    };
-    /**
-     * @description Partial update payload (PATCH). Omitted fields are left unchanged.
-     *     At least one field must be provided.
-     */
-    clubUpdateRequest: {
-      name?: string;
-      /** Format: int32 */
-      foundedYear?: number | null;
-      /** Format: uri */
-      crestUrl?: string | null;
-    };
-    /**
-     * @description A user attached to a club via the `/clubs/<id>/managers` or
-     *     `/clubs/<id>/staff` Keycloak group, projected with the role they hold
-     *     within the club.
-     */
-    clubMember: {
-      /**
-       * Format: uuid
-       * @description Keycloak user id.
-       * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
-       */
-      userId: string;
-      /** @example gestor */
-      username?: string;
-      /**
-       * Format: email
-       * @example gestor@tessera.pt
-       */
-      email?: string;
-      /** @example Gestor */
-      firstName?: string;
-      /** @example Clube */
-      lastName?: string;
-      /**
-       * @description Membership role within this club.
-       * @example MANAGER
-       * @enum {string}
-       */
-      role: "MANAGER" | "STAFF";
-    };
-    /**
-     * @description All members of a club, split by role. `managers` may edit the club's
-     *     teams and players; `staff` operate the match-day flows (ticket
-     *     validation, match sheet entry).
-     */
-    clubMembers: {
-      managers: components["schemas"]["clubMember"][];
-      staff: components["schemas"]["clubMember"][];
-    };
-    /**
-     * @description Payload to attach an existing user to a club as a manager or staff
-     *     member. The user must already exist in Keycloak — to create one in the
-     *     same flow, use `POST /users` first.
-     */
-    addMemberRequest: {
-      /**
-       * Format: uuid
-       * @description Keycloak user id of the user being added.
-       * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
-       */
-      userId: string;
-      /**
-       * @description Role to grant within this club.
-       * @example MANAGER
-       * @enum {string}
-       */
-      role: "MANAGER" | "STAFF";
-    };
-    /**
-     * @description A stadium or ground where matches are played. Soft-deleted to preserve
-     *     historical match references.
-     */
-    venue: {
-      /**
-       * Format: int64
-       * @example 1
-       */
-      readonly id: number;
-      /**
-       * @description Name of the venue.
-       * @example Estádio do SU 1.º Dezembro
-       */
-      name: string;
-      /**
-       * Format: int32
-       * @description Total capacity (seated + standing).
-       * @example 1500
-       */
-      capacity: number;
-      /**
-       * @description Postal address of the venue.
-       * @example Rua do Estádio, 2670-001 Loures
-       */
-      address?: string | null;
-      /**
-       * Format: date-time
-       * @example 2026-05-01T10:00:00Z
-       */
-      readonly createdAt: string;
-    };
-    /** @description Payload to create a new venue. `id` and `createdAt` are server-assigned. */
-    venueCreateRequest: {
-      /** @example Estádio do SU 1.º Dezembro */
-      name: string;
-      /**
-       * Format: int32
-       * @example 1500
-       */
-      capacity: number;
-      /** @example Rua do Estádio, 2670-001 Loures */
-      address?: string | null;
-    };
-    /**
-     * @description Partial update payload (PATCH). Omitted fields are left unchanged.
-     *     At least one field must be provided.
-     */
-    venueUpdateRequest: {
-      name?: string;
-      /** Format: int32 */
-      capacity?: number;
-      address?: string | null;
-    };
-    /**
-     * @description Team category — combines age group and gender. A club may have at most
-     *     one active team per category.
-     * @example SENIOR_M
-     * @enum {string}
-     */
-    teamCategory:
-      | "SENIOR_M"
-      | "SENIOR_F"
-      | "SUB_23"
-      | "SUB_19"
-      | "SUB_17"
-      | "SUB_15"
-      | "SUB_13"
-      | "SUB_11"
-      | "SUB_9"
-      | "SUB_7"
-      | "VETERANS"
-      | "OTHER";
-    /**
-     * @description A team within a club, identified by its `category` (age group + gender).
-     *     A club has at most one active team per category.
-     */
-    team: {
-      /**
-       * Format: int64
-       * @example 1
-       */
-      readonly id: number;
-      /**
-       * Format: int64
-       * @description Identifier of the parent club.
-       * @example 1
-       */
-      clubId: number;
-      category: components["schemas"]["teamCategory"];
-      /**
-       * Format: date-time
-       * @example 2026-05-02T10:00:00Z
-       */
-      readonly createdAt: string;
-    };
-    /**
-     * @description Payload to create a team in a club. The `clubId` comes from the path;
-     *     only `category` is needed in the body.
-     */
-    teamCreateRequest: {
-      category: components["schemas"]["teamCategory"];
-    };
-    /**
-     * @description Partial update payload (PATCH). Currently only `category` is updatable.
-     *     At least one field must be provided.
-     */
-    teamUpdateRequest: {
-      category?: components["schemas"]["teamCategory"];
-    };
-    /**
-     * @description Player's primary position on the pitch. Coarse-grained enum aligned with
-     *     match-sheet conventions:
-     *       - GK: goalkeeper
-     *       - DF: defender
-     *       - MF: midfielder
-     *       - FW: forward
-     * @example FW
-     * @enum {string}
-     */
-    playerPosition: "GK" | "DF" | "MF" | "FW";
-    /**
-     * @description Player's dominant foot.
-     * @example RIGHT
-     * @enum {string}
-     */
-    dominantFoot: "LEFT" | "RIGHT" | "BOTH";
-    /**
-     * @description Player's current availability status.
-     *       - ACTIVE: available for selection
-     *       - INJURED: out due to injury
-     *       - SUSPENDED: serving a suspension
-     * @example ACTIVE
-     * @enum {string}
-     */
-    playerStatus: "ACTIVE" | "INJURED" | "SUSPENDED";
-    /**
-     * @description A player belonging to a team. Soft-deleted to preserve historical
-     *     match-sheet references.
-     */
-    player: {
-      /**
-       * Format: int64
-       * @example 1
-       */
-      readonly id: number;
-      /**
-       * Format: int64
-       * @description Identifier of the team the player belongs to.
-       * @example 1
-       */
-      teamId: number;
-      /** @example João */
-      firstName: string;
-      /** @example Silva */
-      lastName: string;
-      /**
-       * Format: date
-       * @description Date of birth (ISO 8601 date).
-       * @example 1998-03-12
-       */
-      birthdate?: string | null;
-      /**
-       * @description ISO 3166-1 alpha-3 country code.
-       * @example PRT
-       */
-      nationality?: string | null;
-      position: components["schemas"]["playerPosition"];
-      /**
-       * Format: int32
-       * @description Shirt number. Unique among active players within the same team.
-       * @example 9
-       */
-      shirtNumber?: number | null;
-      /**
-       * Format: uri
-       * @example https://tessera.example/players/1.jpg
-       */
-      photoUrl?: string | null;
-      dominantFoot?: components["schemas"]["dominantFoot"] | null;
-      /**
-       * Format: int32
-       * @description Height in centimeters.
-       * @example 178
-       */
-      height?: number | null;
-      /**
-       * Format: int32
-       * @description Weight in kilograms.
-       * @example 72
-       */
-      weight?: number | null;
-      status: components["schemas"]["playerStatus"];
-      /** Format: date-time */
-      readonly createdAt: string;
-    };
-    /**
-     * @description Payload to create a player in a team. The `teamId` comes from the path.
-     *     `status` defaults to ACTIVE if omitted.
-     */
-    playerCreateRequest: {
-      firstName: string;
-      lastName: string;
-      /** Format: date */
-      birthdate?: string | null;
-      nationality?: string | null;
-      position: components["schemas"]["playerPosition"];
-      /** Format: int32 */
-      shirtNumber?: number | null;
-      /** Format: uri */
-      photoUrl?: string | null;
-      dominantFoot?: components["schemas"]["dominantFoot"] | null;
-      /** Format: int32 */
-      height?: number | null;
-      /** Format: int32 */
-      weight?: number | null;
-      status?: components["schemas"]["playerStatus"];
-    };
-    /**
-     * @description Partial update payload (PATCH). Omitted fields are left unchanged.
-     *     At least one field must be provided.
-     */
-    playerUpdateRequest: {
-      firstName?: string;
-      lastName?: string;
-      /** Format: date */
-      birthdate?: string | null;
-      nationality?: string | null;
-      position?: components["schemas"]["playerPosition"];
-      /** Format: int32 */
-      shirtNumber?: number | null;
-      /** Format: uri */
-      photoUrl?: string | null;
-      dominantFoot?: components["schemas"]["dominantFoot"] | null;
-      /** Format: int32 */
-      height?: number | null;
-      /** Format: int32 */
-      weight?: number | null;
-      status?: components["schemas"]["playerStatus"];
-    };
-    /**
-     * @description Lifecycle of a match. Allowed transitions (server-enforced):
-     *       - SCHEDULED → LIVE | POSTPONED | ABANDONED | CANCELLED
-     *       - LIVE → FINISHED | ABANDONED
-     *       - POSTPONED → SCHEDULED  (rescheduled)
-     *       - FINISHED, ABANDONED, CANCELLED — terminal
-     *
-     *     Distinction between terminal states:
-     *       - FINISHED: completed normally, scores recorded.
-     *       - ABANDONED: started but had to be stopped (weather, safety).
-     *       - CANCELLED: called off before kickoff, no intent to reschedule.
-     * @example SCHEDULED
-     * @enum {string}
-     */
-    matchStatus: "SCHEDULED" | "LIVE" | "FINISHED" | "POSTPONED" | "ABANDONED" | "CANCELLED";
-    /**
-     * @description A scheduled, live or finished football match between two teams. Soft-deleted
-     *     to preserve historical records (match sheets, ticket sales).
-     */
-    match: {
-      /**
-       * Format: int64
-       * @example 1
-       */
-      readonly id: number;
-      /**
-       * Format: int64
-       * @example 1
-       */
-      homeTeamId: number;
-      /**
-       * Format: int64
-       * @example 2
-       */
-      awayTeamId: number;
-      /**
-       * Format: int64
-       * @description Identifier of the venue. May be null while the match is being scheduled
-       *     and the venue is yet to be confirmed.
-       * @example 1
-       */
-      venueId?: number | null;
-      /**
-       * Format: date-time
-       * @description Scheduled (or actual) kickoff date-time, ISO 8601 with offset.
-       * @example 2026-09-15T20:30:00Z
-       */
-      kickoffAt: string;
-      status: components["schemas"]["matchStatus"];
-      /**
-       * Format: int32
-       * @description Home team's goals. Required once status reaches FINISHED.
-       * @example 2
-       */
-      homeScore?: number | null;
-      /**
-       * Format: int32
-       * @description Away team's goals. Required once status reaches FINISHED.
-       * @example 1
-       */
-      awayScore?: number | null;
-      /**
-       * @description Free-text referee name (no separate referee resource for v1).
-       * @example Maria Santos
-       */
-      refereeName?: string | null;
-      /** Format: date-time */
-      readonly createdAt: string;
-    };
-    /**
-     * @description Payload to create a match. The match always starts in SCHEDULED status.
-     *     Constraints validated by the server:
-     *       - `homeTeamId` ≠ `awayTeamId`
-     *       - both teams must exist and be active
-     *       - `venueId`, if provided, must exist and be active
-     */
-    matchCreateRequest: {
-      /** Format: int64 */
-      homeTeamId: number;
-      /** Format: int64 */
-      awayTeamId: number;
-      /** Format: int64 */
-      venueId?: number | null;
-      /** Format: date-time */
-      kickoffAt: string;
-      refereeName?: string | null;
-    };
-    /**
-     * @description Partial update payload (PATCH). Omitted fields are left unchanged.
-     *     At least one field must be provided. Status transitions are validated
-     *     server-side; invalid transitions are rejected with 409.
-     */
-    matchUpdateRequest: {
-      /** Format: int64 */
-      venueId?: number | null;
-      /** Format: date-time */
-      kickoffAt?: string;
-      status?: components["schemas"]["matchStatus"];
-      /** Format: int32 */
-      homeScore?: number | null;
-      /** Format: int32 */
-      awayScore?: number | null;
-      refereeName?: string | null;
-    };
-    /**
-     * @description Role of a player in the match-day lineup:
-     *       - STARTER: starts the match on the pitch
-     *       - SUBSTITUTE: on the bench, eligible to come on
-     * @example STARTER
-     * @enum {string}
-     */
-    lineupRole: "STARTER" | "SUBSTITUTE";
-    /** @description A single player listed on the match-day lineup of one team. */
-    lineupEntry: {
-      /**
-       * Format: int64
-       * @example 1
-       */
-      playerId: number;
-      /**
-       * Format: int64
-       * @description Must equal the match's homeTeamId or awayTeamId.
-       * @example 1
-       */
-      teamId: number;
-      /**
-       * Format: int32
-       * @description Shirt worn for this match. Defaults to the player's current shirtNumber
-       *     but can be overridden per match (e.g. number changes, special editions).
-       */
-      shirtNumber?: number | null;
-      role: components["schemas"]["lineupRole"];
-    };
-    /**
-     * @description Type of in-game occurrence:
-     *       - GOAL: scored a goal for own team
-     *       - OWN_GOAL: scored an own goal (counts for the opposing team)
-     *       - YELLOW_CARD: yellow card shown
-     *       - RED_CARD: red card shown (direct, or second yellow)
-     *       - SUBSTITUTION: tactical substitution; replacedPlayerId is required
-     *       - FOUL: foul committed (single tactical event; does not imply a card)
-     * @example GOAL
-     * @enum {string}
-     */
-    occurrenceType: "GOAL" | "OWN_GOAL" | "YELLOW_CARD" | "RED_CARD" | "SUBSTITUTION" | "FOUL";
-    /**
-     * @description A single in-game event recorded in the match sheet (goal, card, substitution).
-     *     Append-only while the match is live; can be deleted only while the sheet is
-     *     unlocked and the match status allows edits.
-     */
-    occurrence: {
-      /** Format: int64 */
-      readonly id: number;
-      /**
-       * Format: int32
-       * @description Match minute (0–200 to cover regulation time, stoppage and extra time).
-       * @example 34
-       */
-      minute: number;
-      type: components["schemas"]["occurrenceType"];
-      /**
-       * Format: int64
-       * @description Team to which the player belongs.
-       */
-      teamId: number;
-      /**
-       * Format: int64
-       * @description Player who scored / received the card / went off (for substitution).
-       */
-      playerId: number;
-      /**
-       * Format: int64
-       * @description Required for SUBSTITUTION — id of the player coming on. Must be null
-       *     for any other occurrence type.
-       */
-      replacedPlayerId?: number | null;
-      /** Format: date-time */
-      readonly createdAt: string;
-    };
-    /**
-     * @description The technical match record (lineups + occurrences). Created lazily on the
-     *     first GET. Edits require:
-     *       - `locked = false`, AND
-     *       - parent match's status ∈ {SCHEDULED, LIVE}.
-     *     When the match transitions to FINISHED/ABANDONED/POSTPONED, the sheet is
-     *     locked automatically. An admin can unlock it via `POST /unlock`.
-     */
-    matchSheet: {
-      /** Format: int64 */
-      matchId: number;
-      locked: boolean;
-      /** Format: date-time */
-      lockedAt?: string | null;
-      /** @description All lineup entries (both teams), ordered by team then shirt number. */
-      lineup: components["schemas"]["lineupEntry"][];
-      /** @description Match events ordered by minute ascending, then by id. */
-      occurrences: components["schemas"]["occurrence"][];
-    };
-    /** @description Add a player to the match-sheet lineup. */
-    lineupCreateRequest: {
-      /** Format: int64 */
-      playerId: number;
-      /**
-       * Format: int32
-       * @description Optional override; defaults to the player's current shirt.
-       */
-      shirtNumber?: number | null;
-      role: components["schemas"]["lineupRole"];
-    };
-    /** @description Partial update of an existing lineup entry. At least one field required. */
-    lineupUpdateRequest: {
-      /** Format: int32 */
-      shirtNumber?: number | null;
-      role?: components["schemas"]["lineupRole"];
-    };
-    /**
-     * @description Snapshot of a match captured by the statistics-service when the match-sheet
-     *     was closed. Read-only view, fed by the `match.sheet.closed` event.
-     */
-    matchSummary: {
-      /** Format: int64 */
-      matchId: number;
-      /**
-       * @description Season label in `YYYY-YY` format.
-       * @example 2026-27
-       */
-      season: string;
-      /**
-       * @description Match status at the time the sheet was closed.
-       * @enum {string}
-       */
-      matchStatus: "SCHEDULED" | "LIVE" | "FINISHED" | "POSTPONED" | "ABANDONED" | "CANCELLED";
-      /** Format: date-time */
-      kickoffAt: string;
-      /** Format: int64 */
-      homeTeamId: number;
-      /** Format: int64 */
-      awayTeamId: number;
-      /** Format: int64 */
-      homeClubId: number;
-      /** Format: int64 */
-      awayClubId: number;
-      /** Format: int64 */
-      venueId?: number | null;
-      /** Format: int32 */
-      homeScore?: number | null;
-      /** Format: int32 */
-      awayScore?: number | null;
-      refereeName?: string | null;
-    };
-    /**
-     * @description Full snapshot of a match: summary + lineup + occurrences as recorded at
-     *     the moment the sheet was closed. Returned by
-     *     `GET /stats/match-sheets/{matchId}`.
-     */
-    matchSheetHistory: {
-      /** Format: int64 */
-      matchId: number;
-      summary: components["schemas"]["matchSummary"];
-      lineup: components["schemas"]["lineupEntry"][];
-      occurrences: components["schemas"]["occurrence"][];
-    };
-    /** @description Aggregated ticket sales for a period or for the whole system. */
-    salesSummary: {
-      /**
-       * Format: int64
-       * @description Number of tickets paid (PENDING → PAID).
-       * @example 1234
-       */
-      sold: number;
-      /**
-       * Format: int64
-       * @description Number of those tickets that were validated at the gate.
-       * @example 1100
-       */
-      validated: number;
-      /**
-       * @description Total revenue, as decimal string to preserve precision.
-       * @example 12345.50
-       */
-      revenue: string;
-      /**
-       * @description `validated / sold` (0.000 .. 1.000). Always 0 in the date-range
-       *     summary because validation happens later than payment and would
-       *     skew the metric.
-       * @example 0.892
-       */
-      validationRate: string;
-    };
-    /** @description Ticket sales aggregated for a single match. */
-    salesByMatch: {
-      /** Format: int64 */
-      matchId: number;
-      /** Format: int64 */
-      sold: number;
-      /** Format: int64 */
-      validated: number;
-      /** @description Total revenue for this match, decimal string. */
-      revenue: string;
-    };
-    /** @description Append a new occurrence to the match sheet. */
-    occurrenceCreateRequest: {
-      /** Format: int32 */
-      minute: number;
-      type: components["schemas"]["occurrenceType"];
-      /** Format: int64 */
-      playerId: number;
-      /**
-       * Format: int64
-       * @description Required for SUBSTITUTION (player coming on). Must be null otherwise.
-       */
-      replacedPlayerId?: number | null;
-    };
-    /**
-     * @description A sellable event — typically attached to a match — bundling the normal
-     *     and supporter prices for that occasion.
-     */
-    event: {
-      /** Format: int64 */
-      id: number;
-      name?: string | null;
-      /**
-       * Format: int64
-       * @description Optional link to a match in match-service.
-       */
-      matchId?: number | null;
-      /** @description Decimal string. */
-      priceNormal: string;
-      /** @description Decimal string. */
-      priceSupporter: string;
-      /** @enum {string} */
-      status: "DRAFT" | "PUBLISHED" | "SALES_CLOSED" | "CANCELLED";
-      /** Format: date-time */
-      createdAt: string;
-    };
-    eventCreateRequest: {
-      name: string;
-      /** Format: int64 */
-      matchId?: number | null;
-      /** @description Decimal string, e.g. "10.00". */
-      priceNormal: string;
-      /** @description Decimal string. */
-      priceSupporter: string;
-      /**
-       * @description Optional. Defaults to `PUBLISHED` so tickets are immediately
-       *     purchasable.
-       * @default PUBLISHED
-       * @enum {string}
-       */
-      status: "DRAFT" | "PUBLISHED" | "SALES_CLOSED" | "CANCELLED";
-    };
-    /**
-     * @description Lifecycle of a digital ticket.
-     *
-     *     * `PENDING`    — created but not yet paid
-     *     * `PAID`       — payment confirmed (`POST /tickets/{id}/pay`)
-     *     * `VALIDATED`  — scanned at the gate (`POST /tickets/validate`)
-     * @enum {string}
-     */
-    ticketStatus: "PENDING" | "PAID" | "VALIDATED";
-    /**
-     * @description A digital ticket. `code` is the UUID the fan renders as a QR code in
-     *     the SPA / Android app; staff scan it at the gate to validate the ticket.
-     */
-    ticket: {
-      /**
-       * Format: int64
-       * @example 12345
-       */
-      id: number;
-      /**
-       * Format: uuid
-       * @description Unique UUID payload of the QR code. Generated server-side.
-       */
-      code: string;
-      /** Format: int64 */
-      eventId: number;
-      /**
-       * Format: int64
-       * @description Match the parent event is attached to, if any. Mirrored here so the
-       *     Android validator can show context without an extra call.
-       */
-      matchId?: number | null;
-      /** @description Keycloak subject UUID of the buyer. */
-      ownerSub?: string | null;
-      /** @description Decimal string, e.g. "10.00". */
-      price: string;
-      status: components["schemas"]["ticketStatus"];
-      /** @enum {string|null} */
-      paymentMethod?: "MBWAY" | "CARD" | "CASH" | null;
-      /** Format: date-time */
-      createdAt: string;
-      /** Format: date-time */
-      paymentDate?: string | null;
-      /** Format: date-time */
-      validationDate?: string | null;
-      /** @description Keycloak subject UUID of the staff member who scanned the ticket. */
-      validatorSub?: string | null;
-    };
-    ticketCreateRequest: {
-      /** Format: int64 */
-      eventId: number;
-      /**
-       * @description If `true`, applies the event's supporter price (typically discounted
-       *     for season-pass holders); otherwise the normal price is used.
-       * @default false
-       */
-      supporter: boolean;
-    };
-    ticketPayRequest: {
-      /** @enum {string} */
-      paymentMethod: "MBWAY" | "CARD" | "CASH";
-      /**
-       * @description Optional. Reference returned by the MB WAY provider (only meaningful
-       *     when `paymentMethod = MBWAY`).
-       */
-      mbwayReference?: string | null;
-    };
-    ticketValidateRequest: {
-      /**
-       * Format: uuid
-       * @description The UUID payload extracted from the scanned QR code.
-       */
-      code: string;
-    };
-  };
-  responses: {
-    /** @description Request was malformed or failed validation. */
-    BadRequest: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        clubMembership: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            clubId: number;
+            /**
+             * @example MANAGER
+             * @enum {string}
+             */
+            role: "MANAGER" | "STAFF";
+        };
+        /** @description Profile information about the currently authenticated user, derived from the bearer token. */
+        me: {
+            /**
+             * @description Stable Keycloak user id (`sub` claim).
+             * @example 5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e
+             */
+            sub?: string;
+            /**
+             * @description Keycloak `preferred_username` claim.
+             * @example gestor
+             */
+            username: string;
+            /**
+             * Format: email
+             * @description Keycloak `email` claim. Absent when the token lacks the email scope.
+             * @example gestor@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName?: string;
+            /** @example Clube */
+            lastName?: string;
+            /**
+             * @description Realm roles relevant to Tessera. Filtered to known values.
+             * @example [
+             *       "club-manager"
+             *     ]
+             */
+            roles: ("platform-admin" | "club-manager" | "staff" | "fan")[];
+            /**
+             * @description Clubs this user is bound to, derived from the `groups` claim
+             *     (`/clubs/<id>/managers` and `/clubs/<id>/staff` paths). Empty for
+             *     platform admins, fans, and users without any club assignment.
+             * @example [
+             *       {
+             *         "clubId": 1,
+             *         "role": "MANAGER"
+             *       }
+             *     ]
+             */
+            clubMemberships: components["schemas"]["clubMembership"][];
+        };
         /**
-         * @example {
-         *       "type": "https://tessera/api/errors/validation",
-         *       "title": "Validation failed",
-         *       "status": 400,
-         *       "detail": "One or more fields are invalid.",
-         *       "errors": [
-         *         {
-         *           "field": "kickoffAt",
-         *           "message": "must be in the future"
-         *         }
-         *       ]
-         *     }
+         * @description RFC 7807 Problem Details for HTTP APIs. Returned with media type
+         *     `application/problem+json` for all error responses.
          */
-        "application/problem+json": components["schemas"]["problem"];
-      };
-    };
-    /** @description Missing or invalid bearer token. */
-    Unauthorized: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        problem: {
+            /**
+             * Format: uri
+             * @description A URI reference identifying the problem type.
+             * @example https://tessera/api/errors/validation
+             */
+            type: string;
+            /**
+             * @description Short, human-readable summary of the problem type.
+             * @example Validation failed
+             */
+            title: string;
+            /**
+             * Format: int32
+             * @description HTTP status code generated by the origin server.
+             * @example 400
+             */
+            status: number;
+            /**
+             * @description Human-readable explanation specific to this occurrence.
+             * @example Field 'kickoffAt' must be in the future.
+             */
+            detail?: string;
+            /**
+             * Format: uri
+             * @description URI reference identifying the specific occurrence.
+             * @example /api/v1/matches/42
+             */
+            instance?: string;
+            /** @description Field-level errors when `type` is a validation problem. */
+            errors?: {
+                /**
+                 * @description Dotted path to the offending field.
+                 * @example kickoffAt
+                 */
+                field: string;
+                /** @example must be in the future */
+                message: string;
+            }[];
+        };
         /**
-         * @example {
-         *       "type": "https://tessera/api/errors/unauthorized",
-         *       "title": "Unauthorized",
-         *       "status": 401,
-         *       "detail": "Bearer token is missing or expired."
-         *     }
+         * @description Summary of a Keycloak user as exposed by the admin endpoints. The `id`
+         *     is the Keycloak UUID — used as the path parameter in user-scoped routes
+         *     and as the `userId` when adding/removing club memberships.
          */
-        "application/problem+json": components["schemas"]["problem"];
-      };
-    };
-    /** @description Authenticated, but the user lacks the required role. */
-    Forbidden: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        userSummary: {
+            /**
+             * Format: uuid
+             * @description Keycloak user id.
+             * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
+             */
+            id: string;
+            /** @example gestor */
+            username?: string;
+            /**
+             * Format: email
+             * @example gestor@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName?: string;
+            /** @example Clube */
+            lastName?: string;
+            /**
+             * @description Whether the user can log in. Disabled users keep their data but cannot authenticate.
+             * @example true
+             */
+            enabled?: boolean;
+            /**
+             * @description Effective realm roles assigned to the user (direct assignments plus
+             *     those inherited through composites, e.g. `fan` granted via the
+             *     `default-roles-tessera` default role). Filtered to the app roles.
+             * @example [
+             *       "club-manager"
+             *     ]
+             */
+            roles?: ("platform-admin" | "club-manager" | "staff" | "fan")[];
+        };
         /**
-         * @example {
-         *       "type": "https://tessera/api/errors/forbidden",
-         *       "title": "Forbidden",
-         *       "status": 403,
-         *       "detail": "Role 'admin' is required for this operation."
-         *     }
+         * @description Payload for creating a new Keycloak user. The realm role is set at the
+         *     same time as the user — the API restricts it to `club-manager` or
+         *     `staff` (platform-admins are bootstrapped via realm-export and fans
+         *     inherit the realm's default role).
          */
-        "application/problem+json": components["schemas"]["problem"];
-      };
-    };
-    /** @description The requested resource does not exist (or is soft-deleted). */
-    NotFound: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        createUserRequest: {
+            /** @example gestor2 */
+            username: string;
+            /**
+             * Format: email
+             * @example gestor2@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName: string;
+            /** @example Dois */
+            lastName: string;
+            /**
+             * @description Initial password. Set as **temporary** in Keycloak — the user is
+             *     forced to choose a new password on their first login.
+             * @example gestor12345
+             */
+            password: string;
+            /**
+             * @description Realm role to assign. Restricted to operational roles.
+             * @example club-manager
+             * @enum {string}
+             */
+            role: "club-manager" | "staff";
+        };
         /**
-         * @example {
-         *       "type": "https://tessera/api/errors/not-found",
-         *       "title": "Not found",
-         *       "status": 404,
-         *       "detail": "Match 42 does not exist."
-         *     }
+         * @description Payload for updating a Keycloak user. All fields are optional — only the
+         *     ones present are applied. `role` reassigns the manageable role
+         *     (`club-manager`/`staff`); `forcePasswordReset` makes the user choose a new
+         *     password on next login. Passwords are not set here (create a user with a
+         *     temporary password, or force a reset).
          */
-        "application/problem+json": components["schemas"]["problem"];
-      };
-    };
-    /** @description Request conflicts with the current state of the resource. */
-    Conflict: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        updateUserRequest: {
+            /**
+             * Format: email
+             * @example gestor2@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName?: string;
+            /** @example Dois */
+            lastName?: string;
+            /**
+             * @description Enable or disable the account. Disabled users cannot authenticate.
+             * @example false
+             */
+            enabled?: boolean;
+            /**
+             * @description Reassign the manageable realm role. Leaves platform-admin/fan untouched.
+             * @example staff
+             * @enum {string}
+             */
+            role?: "club-manager" | "staff";
+            /**
+             * @description When true, adds the UPDATE_PASSWORD required action (change on next login).
+             * @example true
+             */
+            forcePasswordReset?: boolean;
+        };
         /**
-         * @example {
-         *       "type": "https://tessera/api/errors/conflict",
-         *       "title": "Conflict",
-         *       "status": 409,
-         *       "detail": "Match sheet is locked and cannot be modified."
-         *     }
+         * @description Standard pagination envelope for list endpoints. The `content` array
+         *     carries the page items; concrete endpoints document its element type.
          */
-        "application/problem+json": components["schemas"]["problem"];
-      };
-    };
-    /** @description Unexpected error on the server side. */
-    InternalServerError: {
-      headers: {
-        [name: string]: unknown;
-      };
-      content: {
+        pageEnvelope: {
+            /** @description Items on this page. */
+            content: unknown[];
+            /**
+             * @description Zero-based page index.
+             * @example 0
+             */
+            page: number;
+            /**
+             * @description Page size requested.
+             * @example 20
+             */
+            size: number;
+            /**
+             * @description Total number of items across all pages.
+             * @example 137
+             */
+            totalElements: number;
+            /**
+             * @description Total number of pages.
+             * @example 7
+             */
+            totalPages: number;
+        };
         /**
-         * @example {
-         *       "type": "https://tessera/api/errors/internal",
-         *       "title": "Internal Server Error",
-         *       "status": 500,
-         *       "detail": "An unexpected error occurred. Please retry."
-         *     }
+         * @description A football club. Owns one or more teams (senior, youth, female, etc.).
+         *     Identified by a stable numeric `id`; clubs are soft-deleted to preserve
+         *     historical match records.
          */
-        "application/problem+json": components["schemas"]["problem"];
-      };
+        club: {
+            /**
+             * Format: int64
+             * @description Stable numeric identifier assigned by the server.
+             * @example 1
+             */
+            readonly id: number;
+            /**
+             * @description Official name of the club.
+             * @example SU 1.º Dezembro
+             */
+            name: string;
+            /**
+             * Format: int32
+             * @description Year the club was founded.
+             * @example 1953
+             */
+            foundedYear?: number | null;
+            /**
+             * Format: uri
+             * @description URL to the club crest / logo image.
+             * @example https://tessera.example/clubs/1/crest.png
+             */
+            crestUrl?: string | null;
+            /**
+             * Format: date-time
+             * @description Server-assigned creation timestamp.
+             * @example 2026-04-28T10:00:00Z
+             */
+            readonly createdAt: string;
+        };
+        /** @description Payload to create a new club. `id` and `createdAt` are server-assigned. */
+        clubCreateRequest: {
+            /** @example SU 1.º Dezembro */
+            name: string;
+            /**
+             * Format: int32
+             * @example 1953
+             */
+            foundedYear?: number | null;
+            /**
+             * Format: uri
+             * @example https://tessera.example/clubs/1/crest.png
+             */
+            crestUrl?: string | null;
+        };
+        /**
+         * @description Partial update payload (PATCH). Omitted fields are left unchanged.
+         *     At least one field must be provided.
+         */
+        clubUpdateRequest: {
+            name?: string;
+            /** Format: int32 */
+            foundedYear?: number | null;
+            /** Format: uri */
+            crestUrl?: string | null;
+        };
+        /**
+         * @description A user attached to a club via the `/clubs/<id>/managers` or
+         *     `/clubs/<id>/staff` Keycloak group, projected with the role they hold
+         *     within the club.
+         */
+        clubMember: {
+            /**
+             * Format: uuid
+             * @description Keycloak user id.
+             * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
+             */
+            userId: string;
+            /** @example gestor */
+            username?: string;
+            /**
+             * Format: email
+             * @example gestor@tessera.pt
+             */
+            email?: string;
+            /** @example Gestor */
+            firstName?: string;
+            /** @example Clube */
+            lastName?: string;
+            /**
+             * @description Membership role within this club.
+             * @example MANAGER
+             * @enum {string}
+             */
+            role: "MANAGER" | "STAFF";
+        };
+        /**
+         * @description All members of a club, split by role. `managers` may edit the club's
+         *     teams and players; `staff` operate the match-day flows (ticket
+         *     validation, match sheet entry).
+         */
+        clubMembers: {
+            managers: components["schemas"]["clubMember"][];
+            staff: components["schemas"]["clubMember"][];
+        };
+        /**
+         * @description Payload to attach an existing user to a club as a manager or staff
+         *     member. The user must already exist in Keycloak — to create one in the
+         *     same flow, use `POST /users` first.
+         */
+        addMemberRequest: {
+            /**
+             * Format: uuid
+             * @description Keycloak user id of the user being added.
+             * @example c03c87a1-eb23-4e5b-be4e-ed172797d08c
+             */
+            userId: string;
+            /**
+             * @description Role to grant within this club.
+             * @example MANAGER
+             * @enum {string}
+             */
+            role: "MANAGER" | "STAFF";
+        };
+        /**
+         * @description A stadium or ground where matches are played. Soft-deleted to preserve
+         *     historical match references.
+         */
+        venue: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            readonly id: number;
+            /**
+             * @description Name of the venue.
+             * @example Estádio do SU 1.º Dezembro
+             */
+            name: string;
+            /**
+             * Format: int32
+             * @description Total capacity (seated + standing).
+             * @example 1500
+             */
+            capacity: number;
+            /**
+             * @description Postal address of the venue.
+             * @example Rua do Estádio, 2670-001 Loures
+             */
+            address?: string | null;
+            /**
+             * Format: date-time
+             * @example 2026-05-01T10:00:00Z
+             */
+            readonly createdAt: string;
+        };
+        /** @description Payload to create a new venue. `id` and `createdAt` are server-assigned. */
+        venueCreateRequest: {
+            /** @example Estádio do SU 1.º Dezembro */
+            name: string;
+            /**
+             * Format: int32
+             * @example 1500
+             */
+            capacity: number;
+            /** @example Rua do Estádio, 2670-001 Loures */
+            address?: string | null;
+        };
+        /**
+         * @description Partial update payload (PATCH). Omitted fields are left unchanged.
+         *     At least one field must be provided.
+         */
+        venueUpdateRequest: {
+            name?: string;
+            /** Format: int32 */
+            capacity?: number;
+            address?: string | null;
+        };
+        /**
+         * @description Team category — combines age group and gender. A club may have at most
+         *     one active team per category.
+         * @example SENIOR_M
+         * @enum {string}
+         */
+        teamCategory: "SENIOR_M" | "SENIOR_F" | "SUB_23" | "SUB_19" | "SUB_17" | "SUB_15" | "SUB_13" | "SUB_11" | "SUB_9" | "SUB_7" | "VETERANS" | "OTHER";
+        /**
+         * @description A team within a club, identified by its `category` (age group + gender).
+         *     A club has at most one active team per category.
+         */
+        team: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            readonly id: number;
+            /**
+             * Format: int64
+             * @description Identifier of the parent club.
+             * @example 1
+             */
+            clubId: number;
+            category: components["schemas"]["teamCategory"];
+            /**
+             * Format: date-time
+             * @example 2026-05-02T10:00:00Z
+             */
+            readonly createdAt: string;
+        };
+        /**
+         * @description Payload to create a team in a club. The `clubId` comes from the path;
+         *     only `category` is needed in the body.
+         */
+        teamCreateRequest: {
+            category: components["schemas"]["teamCategory"];
+        };
+        /**
+         * @description Partial update payload (PATCH). Currently only `category` is updatable.
+         *     At least one field must be provided.
+         */
+        teamUpdateRequest: {
+            category?: components["schemas"]["teamCategory"];
+        };
+        /**
+         * @description Player's primary position on the pitch. Coarse-grained enum aligned with
+         *     match-sheet conventions:
+         *       - GK: goalkeeper
+         *       - DF: defender
+         *       - MF: midfielder
+         *       - FW: forward
+         * @example FW
+         * @enum {string}
+         */
+        playerPosition: "GK" | "DF" | "MF" | "FW";
+        /**
+         * @description Player's dominant foot.
+         * @example RIGHT
+         * @enum {string}
+         */
+        dominantFoot: "LEFT" | "RIGHT" | "BOTH";
+        /**
+         * @description Player's current availability status.
+         *       - ACTIVE: available for selection
+         *       - INJURED: out due to injury
+         *       - SUSPENDED: serving a suspension
+         * @example ACTIVE
+         * @enum {string}
+         */
+        playerStatus: "ACTIVE" | "INJURED" | "SUSPENDED";
+        /**
+         * @description A player belonging to a team. Soft-deleted to preserve historical
+         *     match-sheet references.
+         */
+        player: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            readonly id: number;
+            /**
+             * Format: int64
+             * @description Identifier of the team the player belongs to.
+             * @example 1
+             */
+            teamId: number;
+            /** @example João */
+            firstName: string;
+            /** @example Silva */
+            lastName: string;
+            /**
+             * Format: date
+             * @description Date of birth (ISO 8601 date).
+             * @example 1998-03-12
+             */
+            birthdate?: string | null;
+            /**
+             * @description ISO 3166-1 alpha-3 country code.
+             * @example PRT
+             */
+            nationality?: string | null;
+            position: components["schemas"]["playerPosition"];
+            /**
+             * Format: int32
+             * @description Shirt number. Unique among active players within the same team.
+             * @example 9
+             */
+            shirtNumber?: number | null;
+            /**
+             * Format: uri
+             * @example https://tessera.example/players/1.jpg
+             */
+            photoUrl?: string | null;
+            dominantFoot?: components["schemas"]["dominantFoot"] | null;
+            /**
+             * Format: int32
+             * @description Height in centimeters.
+             * @example 178
+             */
+            height?: number | null;
+            /**
+             * Format: int32
+             * @description Weight in kilograms.
+             * @example 72
+             */
+            weight?: number | null;
+            status: components["schemas"]["playerStatus"];
+            /** Format: date-time */
+            readonly createdAt: string;
+        };
+        /**
+         * @description Payload to create a player in a team. The `teamId` comes from the path.
+         *     `status` defaults to ACTIVE if omitted.
+         */
+        playerCreateRequest: {
+            firstName: string;
+            lastName: string;
+            /** Format: date */
+            birthdate?: string | null;
+            nationality?: string | null;
+            position: components["schemas"]["playerPosition"];
+            /** Format: int32 */
+            shirtNumber?: number | null;
+            /** Format: uri */
+            photoUrl?: string | null;
+            dominantFoot?: components["schemas"]["dominantFoot"] | null;
+            /** Format: int32 */
+            height?: number | null;
+            /** Format: int32 */
+            weight?: number | null;
+            status?: components["schemas"]["playerStatus"];
+        };
+        /**
+         * @description Partial update payload (PATCH). Omitted fields are left unchanged.
+         *     At least one field must be provided.
+         */
+        playerUpdateRequest: {
+            firstName?: string;
+            lastName?: string;
+            /** Format: date */
+            birthdate?: string | null;
+            nationality?: string | null;
+            position?: components["schemas"]["playerPosition"];
+            /** Format: int32 */
+            shirtNumber?: number | null;
+            /** Format: uri */
+            photoUrl?: string | null;
+            dominantFoot?: components["schemas"]["dominantFoot"] | null;
+            /** Format: int32 */
+            height?: number | null;
+            /** Format: int32 */
+            weight?: number | null;
+            status?: components["schemas"]["playerStatus"];
+        };
+        /**
+         * @description Lifecycle of a match. Allowed transitions (server-enforced):
+         *       - SCHEDULED → LIVE | POSTPONED | ABANDONED | CANCELLED
+         *       - LIVE → FINISHED | ABANDONED
+         *       - POSTPONED → SCHEDULED  (rescheduled)
+         *       - FINISHED, ABANDONED, CANCELLED — terminal
+         *
+         *     Distinction between terminal states:
+         *       - FINISHED: completed normally, scores recorded.
+         *       - ABANDONED: started but had to be stopped (weather, safety).
+         *       - CANCELLED: called off before kickoff, no intent to reschedule.
+         * @example SCHEDULED
+         * @enum {string}
+         */
+        matchStatus: "SCHEDULED" | "LIVE" | "FINISHED" | "POSTPONED" | "ABANDONED" | "CANCELLED";
+        /**
+         * @description A scheduled, live or finished football match between two teams. Soft-deleted
+         *     to preserve historical records (match sheets, ticket sales).
+         */
+        match: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            readonly id: number;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            homeTeamId: number;
+            /**
+             * Format: int64
+             * @example 2
+             */
+            awayTeamId: number;
+            /**
+             * Format: int64
+             * @description Identifier of the venue. May be null while the match is being scheduled
+             *     and the venue is yet to be confirmed.
+             * @example 1
+             */
+            venueId?: number | null;
+            /**
+             * Format: date-time
+             * @description Scheduled (or actual) kickoff date-time, ISO 8601 with offset.
+             * @example 2026-09-15T20:30:00Z
+             */
+            kickoffAt: string;
+            status: components["schemas"]["matchStatus"];
+            /**
+             * Format: int32
+             * @description Home team's goals. Required once status reaches FINISHED.
+             * @example 2
+             */
+            homeScore?: number | null;
+            /**
+             * Format: int32
+             * @description Away team's goals. Required once status reaches FINISHED.
+             * @example 1
+             */
+            awayScore?: number | null;
+            /**
+             * @description Free-text referee name (no separate referee resource for v1).
+             * @example Maria Santos
+             */
+            refereeName?: string | null;
+            /** Format: date-time */
+            readonly createdAt: string;
+        };
+        /**
+         * @description Payload to create a match. The match always starts in SCHEDULED status.
+         *     Constraints validated by the server:
+         *       - `homeTeamId` ≠ `awayTeamId`
+         *       - both teams must exist and be active
+         *       - `venueId`, if provided, must exist and be active
+         */
+        matchCreateRequest: {
+            /** Format: int64 */
+            homeTeamId: number;
+            /** Format: int64 */
+            awayTeamId: number;
+            /** Format: int64 */
+            venueId?: number | null;
+            /** Format: date-time */
+            kickoffAt: string;
+            refereeName?: string | null;
+        };
+        /**
+         * @description Partial update payload (PATCH). Omitted fields are left unchanged.
+         *     At least one field must be provided. Status transitions are validated
+         *     server-side; invalid transitions are rejected with 409.
+         */
+        matchUpdateRequest: {
+            /** Format: int64 */
+            venueId?: number | null;
+            /** Format: date-time */
+            kickoffAt?: string;
+            status?: components["schemas"]["matchStatus"];
+            /** Format: int32 */
+            homeScore?: number | null;
+            /** Format: int32 */
+            awayScore?: number | null;
+            refereeName?: string | null;
+        };
+        /**
+         * @description Role of a player in the match-day lineup:
+         *       - STARTER: starts the match on the pitch
+         *       - SUBSTITUTE: on the bench, eligible to come on
+         * @example STARTER
+         * @enum {string}
+         */
+        lineupRole: "STARTER" | "SUBSTITUTE";
+        /** @description A single player listed on the match-day lineup of one team. */
+        lineupEntry: {
+            /**
+             * Format: int64
+             * @example 1
+             */
+            playerId: number;
+            /**
+             * Format: int64
+             * @description Must equal the match's homeTeamId or awayTeamId.
+             * @example 1
+             */
+            teamId: number;
+            /**
+             * Format: int32
+             * @description Shirt worn for this match. Defaults to the player's current shirtNumber
+             *     but can be overridden per match (e.g. number changes, special editions).
+             */
+            shirtNumber?: number | null;
+            role: components["schemas"]["lineupRole"];
+        };
+        /**
+         * @description Type of in-game occurrence:
+         *       - GOAL: scored a goal for own team
+         *       - OWN_GOAL: scored an own goal (counts for the opposing team)
+         *       - YELLOW_CARD: yellow card shown
+         *       - RED_CARD: red card shown (direct, or second yellow)
+         *       - SUBSTITUTION: tactical substitution; replacedPlayerId is required
+         *       - FOUL: foul committed (single tactical event; does not imply a card)
+         * @example GOAL
+         * @enum {string}
+         */
+        occurrenceType: "GOAL" | "OWN_GOAL" | "YELLOW_CARD" | "RED_CARD" | "SUBSTITUTION" | "FOUL";
+        /**
+         * @description A single in-game event recorded in the match sheet (goal, card, substitution).
+         *     Append-only while the match is live; can be deleted only while the sheet is
+         *     unlocked and the match status allows edits.
+         */
+        occurrence: {
+            /** Format: int64 */
+            readonly id: number;
+            /**
+             * Format: int32
+             * @description Match minute (0–200 to cover regulation time, stoppage and extra time).
+             * @example 34
+             */
+            minute: number;
+            type: components["schemas"]["occurrenceType"];
+            /**
+             * Format: int64
+             * @description Team to which the player belongs.
+             */
+            teamId: number;
+            /**
+             * Format: int64
+             * @description Player who scored / received the card / went off (for substitution).
+             */
+            playerId: number;
+            /**
+             * Format: int64
+             * @description Required for SUBSTITUTION — id of the player coming on. Must be null
+             *     for any other occurrence type.
+             */
+            replacedPlayerId?: number | null;
+            /** Format: date-time */
+            readonly createdAt: string;
+        };
+        /**
+         * @description The technical match record (lineups + occurrences). Created lazily on the
+         *     first GET. Edits require:
+         *       - `locked = false`, AND
+         *       - parent match's status ∈ {SCHEDULED, LIVE}.
+         *     When the match transitions to FINISHED/ABANDONED/POSTPONED, the sheet is
+         *     locked automatically. An admin can unlock it via `POST /unlock`.
+         */
+        matchSheet: {
+            /** Format: int64 */
+            matchId: number;
+            locked: boolean;
+            /** Format: date-time */
+            lockedAt?: string | null;
+            /** @description All lineup entries (both teams), ordered by team then shirt number. */
+            lineup: components["schemas"]["lineupEntry"][];
+            /** @description Match events ordered by minute ascending, then by id. */
+            occurrences: components["schemas"]["occurrence"][];
+        };
+        /** @description Add a player to the match-sheet lineup. */
+        lineupCreateRequest: {
+            /** Format: int64 */
+            playerId: number;
+            /**
+             * Format: int32
+             * @description Optional override; defaults to the player's current shirt.
+             */
+            shirtNumber?: number | null;
+            role: components["schemas"]["lineupRole"];
+        };
+        /** @description Partial update of an existing lineup entry. At least one field required. */
+        lineupUpdateRequest: {
+            /** Format: int32 */
+            shirtNumber?: number | null;
+            role?: components["schemas"]["lineupRole"];
+        };
+        /**
+         * @description Snapshot of a match captured by the statistics-service when the match-sheet
+         *     was closed. Read-only view, fed by the `match.sheet.closed` event.
+         */
+        matchSummary: {
+            /** Format: int64 */
+            matchId: number;
+            /**
+             * @description Season label in `YYYY-YY` format.
+             * @example 2026-27
+             */
+            season: string;
+            /**
+             * @description Match status at the time the sheet was closed.
+             * @enum {string}
+             */
+            matchStatus: "SCHEDULED" | "LIVE" | "FINISHED" | "POSTPONED" | "ABANDONED" | "CANCELLED";
+            /** Format: date-time */
+            kickoffAt: string;
+            /** Format: int64 */
+            homeTeamId: number;
+            /** Format: int64 */
+            awayTeamId: number;
+            /** Format: int64 */
+            homeClubId: number;
+            /** Format: int64 */
+            awayClubId: number;
+            /** Format: int64 */
+            venueId?: number | null;
+            /** Format: int32 */
+            homeScore?: number | null;
+            /** Format: int32 */
+            awayScore?: number | null;
+            refereeName?: string | null;
+        };
+        /**
+         * @description Full snapshot of a match: summary + lineup + occurrences as recorded at
+         *     the moment the sheet was closed. Returned by
+         *     `GET /stats/match-sheets/{matchId}`.
+         */
+        matchSheetHistory: {
+            /** Format: int64 */
+            matchId: number;
+            summary: components["schemas"]["matchSummary"];
+            lineup: components["schemas"]["lineupEntry"][];
+            occurrences: components["schemas"]["occurrence"][];
+        };
+        /** @description Aggregated ticket sales for a period or for the whole system. */
+        salesSummary: {
+            /**
+             * Format: int64
+             * @description Number of tickets paid (PENDING → PAID).
+             * @example 1234
+             */
+            sold: number;
+            /**
+             * Format: int64
+             * @description Number of those tickets that were validated at the gate.
+             * @example 1100
+             */
+            validated: number;
+            /**
+             * @description Total revenue, as decimal string to preserve precision.
+             * @example 12345.50
+             */
+            revenue: string;
+            /**
+             * @description `validated / sold` (0.000 .. 1.000). Always 0 in the date-range
+             *     summary because validation happens later than payment and would
+             *     skew the metric.
+             * @example 0.892
+             */
+            validationRate: string;
+        };
+        /** @description Ticket sales aggregated for a single match. */
+        salesByMatch: {
+            /** Format: int64 */
+            matchId: number;
+            /** Format: int64 */
+            sold: number;
+            /** Format: int64 */
+            validated: number;
+            /** @description Total revenue for this match, decimal string. */
+            revenue: string;
+        };
+        /** @description Append a new occurrence to the match sheet. */
+        occurrenceCreateRequest: {
+            /** Format: int32 */
+            minute: number;
+            type: components["schemas"]["occurrenceType"];
+            /** Format: int64 */
+            playerId: number;
+            /**
+             * Format: int64
+             * @description Required for SUBSTITUTION (player coming on). Must be null otherwise.
+             */
+            replacedPlayerId?: number | null;
+        };
+        /**
+         * @description A sellable event — typically attached to a match — bundling the normal
+         *     and supporter prices for that occasion.
+         */
+        event: {
+            /** Format: int64 */
+            id: number;
+            name?: string | null;
+            /**
+             * @description Snapshot of the fixture ("Home vs Away") taken when the box office was
+             *     opened. Lets tickets keep showing the teams even if the match is later
+             *     deleted in match-service.
+             */
+            matchLabel?: string | null;
+            /**
+             * Format: int64
+             * @description Optional link to a match in match-service.
+             */
+            matchId?: number | null;
+            /** @description Decimal string. */
+            priceNormal: string;
+            /** @description Decimal string. */
+            priceSupporter: string;
+            /** @enum {string} */
+            status: "DRAFT" | "PUBLISHED" | "SALES_CLOSED" | "CANCELLED";
+            /** Format: date-time */
+            createdAt: string;
+        };
+        eventCreateRequest: {
+            name: string;
+            /**
+             * @description Snapshot of the fixture ("Home vs Away") at box-office creation, so
+             *     tickets survive a later match deletion.
+             */
+            matchLabel?: string | null;
+            /** Format: int64 */
+            matchId?: number | null;
+            /** @description Decimal string, e.g. "10.00". */
+            priceNormal: string;
+            /** @description Decimal string. */
+            priceSupporter: string;
+            /**
+             * @description Optional. Defaults to `PUBLISHED` so tickets are immediately
+             *     purchasable.
+             * @default PUBLISHED
+             * @enum {string}
+             */
+            status: "DRAFT" | "PUBLISHED" | "SALES_CLOSED" | "CANCELLED";
+        };
+        /**
+         * @description Lifecycle of a digital ticket.
+         *
+         *     * `PENDING`    — created but not yet paid
+         *     * `PAID`       — payment confirmed (`POST /tickets/{id}/pay`)
+         *     * `VALIDATED`  — scanned at the gate (`POST /tickets/validate`)
+         * @enum {string}
+         */
+        ticketStatus: "PENDING" | "PAID" | "VALIDATED";
+        /**
+         * @description A digital ticket. `code` is the UUID the fan renders as a QR code in
+         *     the SPA / Android app; staff scan it at the gate to validate the ticket.
+         */
+        ticket: {
+            /**
+             * Format: int64
+             * @example 12345
+             */
+            id: number;
+            /**
+             * Format: uuid
+             * @description Unique UUID payload of the QR code. Generated server-side.
+             */
+            code: string;
+            /** Format: int64 */
+            eventId: number;
+            /**
+             * Format: int64
+             * @description Match the parent event is attached to, if any. Mirrored here so the
+             *     Android validator can show context without an extra call.
+             */
+            matchId?: number | null;
+            /** @description Keycloak subject UUID of the buyer. */
+            ownerSub?: string | null;
+            /** @description Decimal string, e.g. "10.00". */
+            price: string;
+            status: components["schemas"]["ticketStatus"];
+            /** @enum {string|null} */
+            paymentMethod?: "MBWAY" | "CARD" | "CASH" | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            paymentDate?: string | null;
+            /** Format: date-time */
+            validationDate?: string | null;
+            /** @description Keycloak subject UUID of the staff member who scanned the ticket. */
+            validatorSub?: string | null;
+        };
+        ticketCreateRequest: {
+            /** Format: int64 */
+            eventId: number;
+            /**
+             * @description If `true`, applies the event's supporter price (typically discounted
+             *     for season-pass holders); otherwise the normal price is used.
+             * @default false
+             */
+            supporter: boolean;
+        };
+        ticketPayRequest: {
+            /** @enum {string} */
+            paymentMethod: "MBWAY" | "CARD" | "CASH";
+            /**
+             * @description Optional. Reference returned by the MB WAY provider (only meaningful
+             *     when `paymentMethod = MBWAY`).
+             */
+            mbwayReference?: string | null;
+        };
+        ticketValidateRequest: {
+            /**
+             * Format: uuid
+             * @description The UUID payload extracted from the scanned QR code.
+             */
+            code: string;
+        };
     };
-  };
-  parameters: {
-    /**
-     * @description Zero-based page index.
-     * @example 0
-     */
-    Page: number;
-    /**
-     * @description Number of items per page.
-     * @example 20
-     */
-    Size: number;
-    /**
-     * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
-     *     for multi-field sorting. Allowed fields are documented per endpoint.
-     * @example [
-     *       "kickoffAt,desc"
-     *     ]
-     */
-    Sort: string[];
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: {
+        /** @description Request was malformed or failed validation. */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://tessera/api/errors/validation",
+                 *       "title": "Validation failed",
+                 *       "status": 400,
+                 *       "detail": "One or more fields are invalid.",
+                 *       "errors": [
+                 *         {
+                 *           "field": "kickoffAt",
+                 *           "message": "must be in the future"
+                 *         }
+                 *       ]
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["problem"];
+            };
+        };
+        /** @description Missing or invalid bearer token. */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://tessera/api/errors/unauthorized",
+                 *       "title": "Unauthorized",
+                 *       "status": 401,
+                 *       "detail": "Bearer token is missing or expired."
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["problem"];
+            };
+        };
+        /** @description Authenticated, but the user lacks the required role. */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://tessera/api/errors/forbidden",
+                 *       "title": "Forbidden",
+                 *       "status": 403,
+                 *       "detail": "Role 'admin' is required for this operation."
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["problem"];
+            };
+        };
+        /** @description The requested resource does not exist (or is soft-deleted). */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://tessera/api/errors/not-found",
+                 *       "title": "Not found",
+                 *       "status": 404,
+                 *       "detail": "Match 42 does not exist."
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["problem"];
+            };
+        };
+        /** @description Request conflicts with the current state of the resource. */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://tessera/api/errors/conflict",
+                 *       "title": "Conflict",
+                 *       "status": 409,
+                 *       "detail": "Match sheet is locked and cannot be modified."
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["problem"];
+            };
+        };
+        /** @description Unexpected error on the server side. */
+        InternalServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "https://tessera/api/errors/internal",
+                 *       "title": "Internal Server Error",
+                 *       "status": 500,
+                 *       "detail": "An unexpected error occurred. Please retry."
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["problem"];
+            };
+        };
+    };
+    parameters: {
+        /**
+         * @description Zero-based page index.
+         * @example 0
+         */
+        Page: number;
+        /**
+         * @description Number of items per page.
+         * @example 20
+         */
+        Size: number;
+        /**
+         * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
+         *     for multi-field sorting. Allowed fields are documented per endpoint.
+         * @example [
+         *       "kickoffAt,desc"
+         *     ]
+         */
+        Sort: string[];
+    };
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getMe: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Profile of the authenticated user. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "sub": "5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e",
-           *       "username": "gestor",
-           *       "email": "gestor@tessera.pt",
-           *       "firstName": "Gestor",
-           *       "lastName": "Clube",
-           *       "roles": [
-           *         "club-manager"
-           *       ],
-           *       "clubMemberships": [
-           *         {
-           *           "clubId": 1,
-           *           "role": "MANAGER"
-           *         }
-           *       ]
-           *     }
-           */
-          "application/json": components["schemas"]["me"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  searchUsers: {
-    parameters: {
-      query?: {
-        /**
-         * @description Substring matched against username/email/name.
-         * @example gestor
-         */
-        search?: string;
-        /** @description Offset for pagination. */
-        first?: number;
-        /** @description Maximum results to return. */
-        max?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Matching users (may be empty). */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["userSummary"][];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "username": "gestor2",
-         *       "email": "gestor2@tessera.pt",
-         *       "firstName": "Gestor",
-         *       "lastName": "Dois",
-         *       "password": "gestor12345",
-         *       "role": "club-manager"
-         *     }
-         */
-        "application/json": components["schemas"]["createUserRequest"];
-      };
-    };
-    responses: {
-      /** @description User created. */
-      201: {
-        headers: {
-          /** @description URI of the created user. */
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["userSummary"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getUserById: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Keycloak user id. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description User. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["userSummary"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  deleteUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Keycloak user id. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description User deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listClubs: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-        /**
-         * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
-         *     for multi-field sorting. Allowed fields are documented per endpoint.
-         * @example [
-         *       "kickoffAt,desc"
-         *     ]
-         */
-        sort?: components["parameters"]["Sort"];
-        /**
-         * @description Case-insensitive substring match on club name.
-         * @example Dezembro
-         */
-        name?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of clubs. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "content": [
-           *         {
-           *           "id": 1,
-           *           "name": "SU 1.º Dezembro",
-           *           "foundedYear": 1953,
-           *           "crestUrl": null,
-           *           "createdAt": "2026-04-28T10:00:00Z"
-           *         }
-           *       ],
-           *       "page": 0,
-           *       "size": 20,
-           *       "totalElements": 1,
-           *       "totalPages": 1
-           *     }
-           */
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["club"][];
-          };
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createClub: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "name": "SU 1.º Dezembro",
-         *       "foundedYear": 1953
-         *     }
-         */
-        "application/json": components["schemas"]["clubCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Club created. */
-      201: {
-        headers: {
-          /** @description URI of the created club. */
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["club"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getClubById: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Stable numeric identifier of the club.
-         * @example 1
-         */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The club. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["club"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  deleteClub: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Stable numeric identifier of the club.
-         * @example 1
-         */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Club deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  updateClub: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /**
-         * @description Stable numeric identifier of the club.
-         * @example 1
-         */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "foundedYear": 1953,
-         *       "crestUrl": "https://tessera.example/clubs/1/crest.png"
-         *     }
-         */
-        "application/json": components["schemas"]["clubUpdateRequest"];
-      };
-    };
-    responses: {
-      /** @description Club updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["club"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listClubMembers: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Tessera club id. */
-        clubId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Members grouped by role. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "managers": [
-           *         {
-           *           "userId": "c03c87a1-eb23-4e5b-be4e-ed172797d08c",
-           *           "username": "gestor",
-           *           "email": "gestor@tessera.pt",
-           *           "firstName": "Gestor",
-           *           "lastName": "Clube",
-           *           "role": "MANAGER"
-           *         }
-           *       ],
-           *       "staff": []
-           *     }
-           */
-          "application/json": components["schemas"]["clubMembers"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  addClubMember: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Tessera club id. */
-        clubId: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "userId": "c03c87a1-eb23-4e5b-be4e-ed172797d08c",
-         *       "role": "MANAGER"
-         *     }
-         */
-        "application/json": components["schemas"]["addMemberRequest"];
-      };
-    };
-    responses: {
-      /** @description Membership granted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  removeClubMember: {
-    parameters: {
-      query: {
-        /**
-         * @description Which role to revoke.
-         * @example MANAGER
-         */
-        role: "MANAGER" | "STAFF";
-      };
-      header?: never;
-      path: {
-        /** @description Tessera club id. */
-        clubId: number;
-        /** @description Keycloak user id of the member being removed. */
-        userId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Membership revoked. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listVenues: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-        /**
-         * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
-         *     for multi-field sorting. Allowed fields are documented per endpoint.
-         * @example [
-         *       "kickoffAt,desc"
-         *     ]
-         */
-        sort?: components["parameters"]["Sort"];
-        /** @description Case-insensitive substring match on venue name. */
-        name?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of venues. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["venue"][];
-          };
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createVenue: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["venueCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Venue created. */
-      201: {
-        headers: {
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["venue"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getVenueById: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the venue. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The venue. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["venue"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  deleteVenue: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the venue. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Venue deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  updateVenue: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the venue. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["venueUpdateRequest"];
-      };
-    };
-    responses: {
-      /** @description Venue updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["venue"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listTeamsOfClub: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the parent club. */
-        clubId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description List of teams. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["team"][];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createTeam: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the parent club. */
-        clubId: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "category": "SENIOR_M"
-         *     }
-         */
-        "application/json": components["schemas"]["teamCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Team created. */
-      201: {
-        headers: {
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["team"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getTeamById: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the team. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The team. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["team"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  deleteTeam: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the team. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Team deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  updateTeam: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the team. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["teamUpdateRequest"];
-      };
-    };
-    responses: {
-      /** @description Team updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["team"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listPlayersOfTeam: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-      };
-      header?: never;
-      path: {
-        /** @description Identifier of the parent team. */
-        teamId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of players. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["player"][];
-          };
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createPlayer: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the parent team. */
-        teamId: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "firstName": "João",
-         *       "lastName": "Silva",
-         *       "position": "FW",
-         *       "shirtNumber": 9,
-         *       "nationality": "PRT",
-         *       "birthdate": "1998-03-12"
-         *     }
-         */
-        "application/json": components["schemas"]["playerCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Player created. */
-      201: {
-        headers: {
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["player"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listPlayersOfClub: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-      };
-      header?: never;
-      path: {
-        /** @description Identifier of the club. */
-        clubId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of players. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["player"][];
-          };
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getPlayerById: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the player. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The player. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["player"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  deletePlayer: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the player. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Player deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  updatePlayer: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the player. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["playerUpdateRequest"];
-      };
-    };
-    responses: {
-      /** @description Player updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["player"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listMatches: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-        /**
-         * @description Lower bound (inclusive) on `kickoffAt`.
-         * @example 2026-09-01T00:00:00Z
-         */
-        from?: string;
-        /**
-         * @description Upper bound (exclusive) on `kickoffAt`.
-         * @example 2026-10-01T00:00:00Z
-         */
-        to?: string;
-        /** @description Match must involve a team belonging to this club (home or away). */
-        clubId?: number;
-        status?: components["schemas"]["matchStatus"];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of matches. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["match"][];
-          };
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createMatch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "homeTeamId": 1,
-         *       "awayTeamId": 2,
-         *       "venueId": 1,
-         *       "kickoffAt": "2026-09-15T20:30:00Z",
-         *       "refereeName": "Maria Santos"
-         *     }
-         */
-        "application/json": components["schemas"]["matchCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Match created. */
-      201: {
-        headers: {
-          Location?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["match"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getMatchById: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The match. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["match"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  deleteMatch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Match deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  updateMatch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Stable numeric identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "status": "FINISHED",
-         *       "homeScore": 2,
-         *       "awayScore": 1
-         *     }
-         */
-        "application/json": components["schemas"]["matchUpdateRequest"];
-      };
-    };
-    responses: {
-      /** @description Match updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["match"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getMatchSheet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The match sheet. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["matchSheet"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  addLineupEntry: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "playerId": 1,
-         *       "role": "STARTER",
-         *       "shirtNumber": 9
-         *     }
-         */
-        "application/json": components["schemas"]["lineupCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Player added to the lineup. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["lineupEntry"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  removeLineupEntry: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-        /** @description Identifier of the player whose lineup entry is being targeted. */
-        playerId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Lineup entry removed. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  updateLineupEntry: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-        /** @description Identifier of the player whose lineup entry is being targeted. */
-        playerId: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["lineupUpdateRequest"];
-      };
-    };
-    responses: {
-      /** @description Updated lineup entry. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["lineupEntry"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listMatchSheetHistory: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-        /**
-         * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
-         *     for multi-field sorting. Allowed fields are documented per endpoint.
-         * @example [
-         *       "kickoffAt,desc"
-         *     ]
-         */
-        sort?: components["parameters"]["Sort"];
-        /** @description Only matches where the given club was home or away. */
-        clubId?: number;
-        /** @description Only matches where the player appeared in the lineup. */
-        playerId?: number;
-        /** @description Season label, e.g. `2026-27`. */
-        season?: string;
-        /** @description Match status at the time the sheet was closed. */
-        status?: "SCHEDULED" | "LIVE" | "FINISHED" | "POSTPONED" | "ABANDONED" | "CANCELLED";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of match summaries. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["matchSummary"][];
-          };
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getMatchSheetHistory: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        matchId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The snapshot. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["matchSheetHistory"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getSalesSummary: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Aggregated sales. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["salesSummary"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getSalesByMatch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        matchId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Aggregated sales for the match. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["salesByMatch"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getSalesInRange: {
-    parameters: {
-      query: {
-        from: string;
-        to: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Aggregated sales in the range. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["salesSummary"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  addOccurrence: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        /**
-         * @example {
-         *       "minute": 34,
-         *       "type": "GOAL",
-         *       "playerId": 2
-         *     }
-         */
-        "application/json": components["schemas"]["occurrenceCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Occurrence appended. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["occurrence"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  removeOccurrence: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-        /** @description Identifier of the occurrence to remove. */
-        occId: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Occurrence removed. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  lockMatchSheet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Sheet locked. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["matchSheet"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  unlockMatchSheet: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Identifier of the match. */
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Sheet unlocked. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["matchSheet"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listEvents: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-        /**
-         * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
-         *     for multi-field sorting. Allowed fields are documented per endpoint.
-         * @example [
-         *       "kickoffAt,desc"
-         *     ]
-         */
-        sort?: components["parameters"]["Sort"];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated list of events. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["event"][];
-          };
-        };
-      };
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createEvent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["eventCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Event created. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["event"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getEvent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Event. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["event"];
-        };
-      };
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listTicketsByEvent: {
-    parameters: {
-      query: {
-        eventId: number;
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-        /**
-         * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
-         *     for multi-field sorting. Allowed fields are documented per endpoint.
-         * @example [
-         *       "kickoffAt,desc"
-         *     ]
-         */
-        sort?: components["parameters"]["Sort"];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated list of tickets. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["ticket"][];
-          };
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  createTicket: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ticketCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Ticket created in PENDING status. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ticket"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  listMyTickets: {
-    parameters: {
-      query?: {
-        /**
-         * @description Zero-based page index.
-         * @example 0
-         */
-        page?: components["parameters"]["Page"];
-        /**
-         * @description Number of items per page.
-         * @example 20
-         */
-        size?: components["parameters"]["Size"];
-        /**
-         * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
-         *     for multi-field sorting. Allowed fields are documented per endpoint.
-         * @example [
-         *       "kickoffAt,desc"
-         *     ]
-         */
-        sort?: components["parameters"]["Sort"];
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated list of tickets. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["pageEnvelope"] & {
-            content?: components["schemas"]["ticket"][];
-          };
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  getTicket: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Ticket. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ticket"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  payTicket: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ticketPayRequest"];
-      };
-    };
-    responses: {
-      /** @description Ticket transitioned to PAID. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ticket"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      /** @description Ticket is not in PENDING status. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["problem"];
-        };
-      };
-      500: components["responses"]["InternalServerError"];
-    };
-  };
-  validateTicket: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ticketValidateRequest"];
-      };
-    };
-    responses: {
-      /** @description Ticket validated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ticket"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      /** @description Ticket is not in PAID status. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/problem+json": components["schemas"]["problem"];
-        };
-      };
-      500: components["responses"]["InternalServerError"];
-    };
-  };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profile of the authenticated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "sub": "5f8c8c5e-2b1f-4f3e-9d2a-7f5a0b1c2d3e",
+                     *       "username": "gestor",
+                     *       "email": "gestor@tessera.pt",
+                     *       "firstName": "Gestor",
+                     *       "lastName": "Clube",
+                     *       "roles": [
+                     *         "club-manager"
+                     *       ],
+                     *       "clubMemberships": [
+                     *         {
+                     *           "clubId": 1,
+                     *           "role": "MANAGER"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["me"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    searchUsers: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Substring matched against username/email/name.
+                 * @example gestor
+                 */
+                search?: string;
+                /** @description Offset for pagination. */
+                first?: number;
+                /** @description Maximum results to return. */
+                max?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching users (may be empty). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userSummary"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "username": "gestor2",
+                 *       "email": "gestor2@tessera.pt",
+                 *       "firstName": "Gestor",
+                 *       "lastName": "Dois",
+                 *       "password": "gestor12345",
+                 *       "role": "club-manager"
+                 *     }
+                 */
+                "application/json": components["schemas"]["createUserRequest"];
+            };
+        };
+        responses: {
+            /** @description User created. */
+            201: {
+                headers: {
+                    /** @description URI of the created user. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getUserById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Keycloak user id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Keycloak user id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["updateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["userSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Keycloak user id. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listClubs: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+                /**
+                 * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
+                 *     for multi-field sorting. Allowed fields are documented per endpoint.
+                 * @example [
+                 *       "kickoffAt,desc"
+                 *     ]
+                 */
+                sort?: components["parameters"]["Sort"];
+                /**
+                 * @description Case-insensitive substring match on club name.
+                 * @example Dezembro
+                 */
+                name?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of clubs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "content": [
+                     *         {
+                     *           "id": 1,
+                     *           "name": "SU 1.º Dezembro",
+                     *           "foundedYear": 1953,
+                     *           "crestUrl": null,
+                     *           "createdAt": "2026-04-28T10:00:00Z"
+                     *         }
+                     *       ],
+                     *       "page": 0,
+                     *       "size": 20,
+                     *       "totalElements": 1,
+                     *       "totalPages": 1
+                     *     }
+                     */
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["club"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createClub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "SU 1.º Dezembro",
+                 *       "foundedYear": 1953
+                 *     }
+                 */
+                "application/json": components["schemas"]["clubCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Club created. */
+            201: {
+                headers: {
+                    /** @description URI of the created club. */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["club"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getClubById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Stable numeric identifier of the club.
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The club. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["club"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteClub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Stable numeric identifier of the club.
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Club deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateClub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Stable numeric identifier of the club.
+                 * @example 1
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "foundedYear": 1953,
+                 *       "crestUrl": "https://tessera.example/clubs/1/crest.png"
+                 *     }
+                 */
+                "application/json": components["schemas"]["clubUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Club updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["club"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listClubMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Members grouped by role. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "managers": [
+                     *         {
+                     *           "userId": "c03c87a1-eb23-4e5b-be4e-ed172797d08c",
+                     *           "username": "gestor",
+                     *           "email": "gestor@tessera.pt",
+                     *           "firstName": "Gestor",
+                     *           "lastName": "Clube",
+                     *           "role": "MANAGER"
+                     *         }
+                     *       ],
+                     *       "staff": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["clubMembers"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    addClubMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "userId": "c03c87a1-eb23-4e5b-be4e-ed172797d08c",
+                 *       "role": "MANAGER"
+                 *     }
+                 */
+                "application/json": components["schemas"]["addMemberRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership granted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeClubMember: {
+        parameters: {
+            query: {
+                /**
+                 * @description Which role to revoke.
+                 * @example MANAGER
+                 */
+                role: "MANAGER" | "STAFF";
+            };
+            header?: never;
+            path: {
+                /** @description Tessera club id. */
+                clubId: number;
+                /** @description Keycloak user id of the member being removed. */
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listVenues: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+                /**
+                 * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
+                 *     for multi-field sorting. Allowed fields are documented per endpoint.
+                 * @example [
+                 *       "kickoffAt,desc"
+                 *     ]
+                 */
+                sort?: components["parameters"]["Sort"];
+                /** @description Case-insensitive substring match on venue name. */
+                name?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of venues. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["venue"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createVenue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["venueCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Venue created. */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["venue"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getVenueById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the venue. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The venue. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["venue"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteVenue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the venue. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Venue deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateVenue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the venue. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["venueUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Venue updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["venue"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listTeamsOfClub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the parent club. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of teams. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["team"][];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the parent club. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "category": "SENIOR_M"
+                 *     }
+                 */
+                "application/json": components["schemas"]["teamCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Team created. */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["team"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getTeamById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the team. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The team. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["team"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the team. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Team deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the team. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["teamUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Team updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["team"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listPlayersOfTeam: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+            };
+            header?: never;
+            path: {
+                /** @description Identifier of the parent team. */
+                teamId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of players. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["player"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createPlayer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the parent team. */
+                teamId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "firstName": "João",
+                 *       "lastName": "Silva",
+                 *       "position": "FW",
+                 *       "shirtNumber": 9,
+                 *       "nationality": "PRT",
+                 *       "birthdate": "1998-03-12"
+                 *     }
+                 */
+                "application/json": components["schemas"]["playerCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Player created. */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["player"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listPlayersOfClub: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+            };
+            header?: never;
+            path: {
+                /** @description Identifier of the club. */
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of players. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["player"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getPlayerById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the player. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The player. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["player"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deletePlayer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the player. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Player deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updatePlayer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the player. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["playerUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Player updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["player"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listMatches: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+                /**
+                 * @description Lower bound (inclusive) on `kickoffAt`.
+                 * @example 2026-09-01T00:00:00Z
+                 */
+                from?: string;
+                /**
+                 * @description Upper bound (exclusive) on `kickoffAt`.
+                 * @example 2026-10-01T00:00:00Z
+                 */
+                to?: string;
+                /** @description Match must involve a team belonging to this club (home or away). */
+                clubId?: number;
+                status?: components["schemas"]["matchStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of matches. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["match"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "homeTeamId": 1,
+                 *       "awayTeamId": 2,
+                 *       "venueId": 1,
+                 *       "kickoffAt": "2026-09-15T20:30:00Z",
+                 *       "refereeName": "Maria Santos"
+                 *     }
+                 */
+                "application/json": components["schemas"]["matchCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Match created. */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["match"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMatchById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The match. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["match"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deleteMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Match deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Stable numeric identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "status": "FINISHED",
+                 *       "homeScore": 2,
+                 *       "awayScore": 1
+                 *     }
+                 */
+                "application/json": components["schemas"]["matchUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Match updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["match"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMatchSheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The match sheet. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["matchSheet"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    addLineupEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "playerId": 1,
+                 *       "role": "STARTER",
+                 *       "shirtNumber": 9
+                 *     }
+                 */
+                "application/json": components["schemas"]["lineupCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Player added to the lineup. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["lineupEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeLineupEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+                /** @description Identifier of the player whose lineup entry is being targeted. */
+                playerId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lineup entry removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    updateLineupEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+                /** @description Identifier of the player whose lineup entry is being targeted. */
+                playerId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["lineupUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated lineup entry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["lineupEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listMatchSheetHistory: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+                /**
+                 * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
+                 *     for multi-field sorting. Allowed fields are documented per endpoint.
+                 * @example [
+                 *       "kickoffAt,desc"
+                 *     ]
+                 */
+                sort?: components["parameters"]["Sort"];
+                /** @description Only matches where the given club was home or away. */
+                clubId?: number;
+                /** @description Only matches where the player appeared in the lineup. */
+                playerId?: number;
+                /** @description Season label, e.g. `2026-27`. */
+                season?: string;
+                /** @description Match status at the time the sheet was closed. */
+                status?: "SCHEDULED" | "LIVE" | "FINISHED" | "POSTPONED" | "ABANDONED" | "CANCELLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of match summaries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["matchSummary"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getMatchSheetHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The snapshot. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["matchSheetHistory"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSalesSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated sales. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["salesSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSalesByMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated sales for the match. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["salesByMatch"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSalesInRange: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated sales in the range. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["salesSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    addOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "minute": 34,
+                 *       "type": "GOAL",
+                 *       "playerId": 2
+                 *     }
+                 */
+                "application/json": components["schemas"]["occurrenceCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Occurrence appended. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["occurrence"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    removeOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+                /** @description Identifier of the occurrence to remove. */
+                occId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Occurrence removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    lockMatchSheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sheet locked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["matchSheet"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    unlockMatchSheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Identifier of the match. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sheet unlocked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["matchSheet"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listEvents: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+                /**
+                 * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
+                 *     for multi-field sorting. Allowed fields are documented per endpoint.
+                 * @example [
+                 *       "kickoffAt,desc"
+                 *     ]
+                 */
+                sort?: components["parameters"]["Sort"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of events. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["event"][];
+                    };
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["eventCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Event created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["event"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["event"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listTicketsByEvent: {
+        parameters: {
+            query: {
+                eventId: number;
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+                /**
+                 * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
+                 *     for multi-field sorting. Allowed fields are documented per endpoint.
+                 * @example [
+                 *       "kickoffAt,desc"
+                 *     ]
+                 */
+                sort?: components["parameters"]["Sort"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of tickets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["ticket"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    createTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ticketCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Ticket created in PENDING status. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ticket"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listMyTickets: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Zero-based page index.
+                 * @example 0
+                 */
+                page?: components["parameters"]["Page"];
+                /**
+                 * @description Number of items per page.
+                 * @example 20
+                 */
+                size?: components["parameters"]["Size"];
+                /**
+                 * @description Sort directive in the form `field,asc` or `field,desc`. May be repeated
+                 *     for multi-field sorting. Allowed fields are documented per endpoint.
+                 * @example [
+                 *       "kickoffAt,desc"
+                 *     ]
+                 */
+                sort?: components["parameters"]["Sort"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of tickets. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["pageEnvelope"] & {
+                        content?: components["schemas"]["ticket"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ticket. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ticket"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    payTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ticketPayRequest"];
+            };
+        };
+        responses: {
+            /** @description Ticket transitioned to PAID. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ticket"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Ticket is not in PENDING status. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["problem"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    validateTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ticketValidateRequest"];
+            };
+        };
+        responses: {
+            /** @description Ticket validated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ticket"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Ticket is not in PAID status. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["problem"];
+                };
+            };
+            500: components["responses"]["InternalServerError"];
+        };
+    };
 }

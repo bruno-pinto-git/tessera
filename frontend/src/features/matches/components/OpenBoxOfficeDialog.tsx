@@ -67,6 +67,9 @@ export function OpenBoxOfficeDialog({
     try {
       await createEvent({
         name: name.trim() || defaultLabel,
+        // Snapshot the fixture so a ticket keeps showing the teams even if the
+        // match is later deleted (the live match would then 404).
+        matchLabel: defaultLabel,
         matchId,
         priceNormal: pn.toFixed(2),
         priceSupporter: ps.toFixed(2),

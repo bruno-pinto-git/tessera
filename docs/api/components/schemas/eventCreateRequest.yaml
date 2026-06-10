@@ -7,6 +7,11 @@ properties:
   name:
     type: string
     minLength: 1
+  matchLabel:
+    type: [string, "null"]
+    description: |
+      Snapshot of the fixture ("Home vs Away") at box-office creation, so
+      tickets survive a later match deletion.
   matchId:
     type: [integer, "null"]
     format: int64
