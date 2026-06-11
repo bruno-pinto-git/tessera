@@ -211,6 +211,7 @@ services:
       KC_HEALTH_ENABLED: true
     volumes:
       - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./infra/keycloak/themes:/opt/keycloak/themes:ro
     networks:
       - tessera-net
 

@@ -1,6 +1,7 @@
 {
   "realm": "tessera",
   "enabled": true,
+  "loginTheme": "tessera",
   "sslRequired": "external",
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,

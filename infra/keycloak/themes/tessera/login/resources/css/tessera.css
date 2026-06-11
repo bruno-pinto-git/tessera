@@ -1,0 +1,133 @@
+/*
+ * Tessera login theme overrides — mirror the SPA's dark palette + forest-green
+ * accent (frontend/src/index.css). Loaded after keycloak.v2's styles.css, so
+ * these win. Colours use oklch to match the app exactly (modern browsers).
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap");
+
+:root {
+  --t-bg: oklch(0.145 0 0);
+  --t-fg: oklch(0.985 0 0);
+  --t-card: oklch(0.205 0 0);
+  --t-primary: oklch(0.72 0.19 152);
+  --t-primary-hover: oklch(0.78 0.19 152);
+  --t-primary-fg: oklch(0.145 0 0);
+  --t-border: oklch(1 0 0 / 0.12);
+  --t-input-bg: oklch(0.205 0 0);
+  --t-input-border: oklch(1 0 0 / 0.18);
+  --t-muted: oklch(0.708 0 0);
+  --t-ring: oklch(0.72 0.19 152 / 0.5);
+  --t-radius: 0.75rem;
+  --t-gradient: linear-gradient(135deg, oklch(0.74 0.2 152), oklch(0.62 0.16 168));
+  --t-glow: 0 10px 30px oklch(0.7 0.19 152 / 0.35);
+  --t-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --t-font-display: "Oswald", "Inter", system-ui, sans-serif;
+}
+
+/* Page background: app background + a subtle brand glow at the top. */
+body#keycloak-bg,
+body.login-pf-page,
+.login-pf body {
+  background-color: var(--t-bg) !important;
+  background-image: radial-gradient(
+    50rem 28rem at 50% -10%,
+    oklch(0.72 0.19 152 / 0.12),
+    transparent 70%
+  ) !important;
+  background-repeat: no-repeat !important;
+  color: var(--t-fg);
+  font-family: var(--t-font);
+}
+
+/* Login card. */
+.pf-v5-c-login__main {
+  background: var(--t-card);
+  border: 1px solid var(--t-border);
+  border-radius: var(--t-radius);
+  box-shadow: 0 12px 32px oklch(0 0 0 / 0.45);
+}
+.pf-v5-c-login__main-header,
+.pf-v5-c-login__main-body,
+.pf-v5-c-login__main-footer {
+  background: transparent;
+}
+
+/* Titles, descriptions, labels. */
+.pf-v5-c-title,
+#kc-header-wrapper {
+  color: var(--t-fg) !important;
+  font-family: var(--t-font-display) !important;
+  letter-spacing: 0.04em;
+}
+.pf-v5-c-login__main-header-desc,
+.pf-v5-c-form__label,
+.pf-v5-c-form__label-text,
+label {
+  color: var(--t-fg) !important;
+  font-family: var(--t-font);
+}
+#kc-header-wrapper {
+  letter-spacing: 0.22em;
+  font-size: 1.6rem;
+}
+
+/* Inputs. */
+.pf-v5-c-form-control,
+input.pf-v5-c-form-control,
+#kc-form-login input,
+.pf-v5-c-form-control > input,
+.pf-v5-c-form-control > select {
+  background: var(--t-input-bg) !important;
+  color: var(--t-fg) !important;
+  border: 1px solid var(--t-input-border) !important;
+  border-radius: calc(var(--t-radius) - 2px) !important;
+}
+.pf-v5-c-form-control:hover {
+  border-color: var(--t-muted) !important;
+}
+.pf-v5-c-form-control:focus-within,
+.pf-v5-c-form-control:focus,
+#kc-form-login input:focus {
+  outline: none !important;
+  border-color: var(--t-primary) !important;
+  box-shadow: 0 0 0 3px var(--t-ring) !important;
+}
+
+/* Primary button -> Tessera green gradient with a glow + lift on hover. */
+.pf-v5-c-button.pf-m-primary {
+  background: var(--t-gradient) !important;
+  color: var(--t-primary-fg) !important;
+  border: none !important;
+  border-radius: calc(var(--t-radius) - 2px) !important;
+  font-weight: 700;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+.pf-v5-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-primary:focus {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: var(--t-glow) !important;
+}
+
+/* Links and link-buttons -> green. */
+a,
+.pf-v5-c-button.pf-m-link {
+  color: var(--t-primary) !important;
+}
+
+/* Secondary / control buttons (e.g. identity-provider, show-password). */
+.pf-v5-c-button.pf-m-control,
+#kc-social-providers a {
+  background: var(--t-input-bg) !important;
+  color: var(--t-fg) !important;
+  border: 1px solid var(--t-input-border) !important;
+  border-radius: calc(var(--t-radius) - 2px) !important;
+}
+
+/* Checkboxes (Remember me) accent. */
+.pf-v5-c-check__input {
+  accent-color: var(--t-primary);
+}
