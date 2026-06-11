@@ -44,8 +44,11 @@ export function EventDetailPage() {
           <div
             className="relative px-6 md:px-10 pt-10 pb-8"
             style={{
+              // Theme-aware hero: a subtle brand glow over the card colour, so
+              // it stays readable in both light and dark mode (was a hardcoded
+              // white gradient that broke dark mode).
               background:
-                "radial-gradient(1100px 360px at 50% -120%, oklch(0.45 0.13 152 / 0.18), transparent 60%), linear-gradient(180deg, oklch(0.99 0 0), oklch(0.97 0 0))",
+                "radial-gradient(1100px 360px at 50% -120%, oklch(0.72 0.19 152 / 0.20), transparent 60%), linear-gradient(180deg, color-mix(in oklch, var(--primary) 8%, var(--card)), var(--card))",
             }}
           >
             <div className="flex items-center justify-between gap-6 flex-wrap">
