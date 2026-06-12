@@ -25,6 +25,9 @@ class StatisticsProxyController(
     @GetMapping("/sales/by-match/{matchId}")
     fun salesByMatch(req: HttpServletRequest) = proxy.forward(req, statsUrl, null)
 
+    @GetMapping("/sales/by-club/{clubId}")
+    fun salesByClub(req: HttpServletRequest) = proxy.forward(req, statsUrl, null)
+
     @GetMapping("/sales/range")
     fun salesRange(req: HttpServletRequest): ResponseEntity<String> = proxy.forward(req, statsUrl, null)
 }

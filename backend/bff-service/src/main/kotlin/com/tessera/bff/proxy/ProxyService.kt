@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
+import java.net.URI
 
 /**
  * Forwards an incoming request to a downstream service while preserving:
@@ -37,6 +38,12 @@ class ProxyService(
             append(request.requestURI)
             request.queryString?.let { append('?').append(it) }
         }
+        // Wrap in a URI so RestTemplate treats it as already-encoded and does
+        // NOT re-encode it. Passing the raw String would double-encode any
+        // percent-escapes already present in the query (e.g. the `%3A` colons
+        // in ISO timestamps on /stats/sales/range), producing `%253A` and a
+        // 400 downstream.
+        val targetUri = URI.create(targetUrl)
 
         val headers = HttpHeaders().apply {
             // Forward Authorization (JWT) and Content-Type only. We
@@ -56,7 +63,7 @@ class ProxyService(
         val entity = HttpEntity(body, headers)
 
         return try {
-            val downstream = restTemplate.exchange(targetUrl, httpMethod, entity, String::class.java)
+            val downstream = restTemplate.exchange(targetUri, httpMethod, entity, String::class.java)
             // Filter downstream headers — copying them verbatim leaks
             // hop-by-hop headers like `Transfer-Encoding: chunked` which
             // Tomcat then duplicates on its own response, leading to an
