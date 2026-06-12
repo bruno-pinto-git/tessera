@@ -3,6 +3,7 @@ import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Ticket } from "lucide-react";
+import { StatsDashboard } from "@/features/stats/components/StatsDashboard";
 
 export function HomePage() {
   const { authenticated, username, login } = useAuth();
@@ -45,6 +46,8 @@ export function HomePage() {
           ctaLabel="Os meus bilhetes"
         />
       </section>
+
+      <StatsDashboard />
     </div>
   );
 }

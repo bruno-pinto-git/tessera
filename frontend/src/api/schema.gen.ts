@@ -663,6 +663,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stats/sales/by-club/{clubId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Ticket sales for a single club
+         * @description Aggregated sales for the matches a club hosts at home. Unlike the other
+         *     sales reports this is not platform-admin only: a club manager (or admin)
+         *     sees everything including revenue; club staff may see the sold/validated
+         *     counts but `revenue` is returned as null for them.
+         */
+        get: operations["getSalesByClub"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stats/sales/range": {
         parameters: {
             query?: never;
@@ -999,6 +1024,7 @@ export interface components {
         MatchSheetHistory: components["schemas"]["matchSheetHistory"];
         SalesSummary: components["schemas"]["salesSummary"];
         SalesByMatch: components["schemas"]["salesByMatch"];
+        SalesByClub: components["schemas"]["salesByClub"];
         Event: components["schemas"]["event"];
         EventCreateRequest: components["schemas"]["eventCreateRequest"];
         TicketStatus: components["schemas"]["ticketStatus"];
@@ -1888,6 +1914,31 @@ export interface components {
             validated: number;
             /** @description Total revenue for this match, decimal string. */
             revenue: string;
+        };
+        /** @description Ticket sales aggregated for a single club (matches it hosts at home). */
+        salesByClub: {
+            /** Format: int64 */
+            clubId: number;
+            /**
+             * Format: int64
+             * @description Number of tickets paid for the club's home matches.
+             */
+            sold: number;
+            /**
+             * Format: int64
+             * @description Number of those tickets that were validated at the gate.
+             */
+            validated: number;
+            /**
+             * @description Total revenue for the club's home matches, decimal string. Null when the
+             *     caller is staff (staff may see counts but not revenue).
+             */
+            revenue: string | null;
+            /**
+             * @description `validated / sold` (0.000 .. 1.000).
+             * @example 0.875
+             */
+            validationRate: string;
         };
         /** @description Append a new occurrence to the match sheet. */
         occurrenceCreateRequest: {
@@ -3602,6 +3653,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["salesByMatch"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    getSalesByClub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated sales for the club. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["salesByClub"];
                 };
             };
             401: components["responses"]["Unauthorized"];
