@@ -1,0 +1,30 @@
+type: object
+description: Ticket sales aggregated for a single club (matches it hosts at home).
+required:
+  - clubId
+  - sold
+  - validated
+  - revenue
+  - validationRate
+properties:
+  clubId:
+    type: integer
+    format: int64
+  sold:
+    type: integer
+    format: int64
+    description: Number of tickets paid for the club's home matches.
+  validated:
+    type: integer
+    format: int64
+    description: Number of those tickets that were validated at the gate.
+  revenue:
+    type: [string, "null"]
+    description: |
+      Total revenue for the club's home matches, decimal string. Null when the
+      caller is staff (staff may see counts but not revenue).
+  validationRate:
+    type: string
+    description: "`validated / sold` (0.000 .. 1.000)."
+    examples:
+      - "0.875"

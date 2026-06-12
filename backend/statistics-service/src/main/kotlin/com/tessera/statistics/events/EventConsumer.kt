@@ -86,6 +86,7 @@ class EventConsumer(
             ticketId       = event.ticketId,
             eventId        = event.eventId,
             matchId        = event.matchId,
+            homeClubId     = event.homeClubId,
             price          = event.price,
             paymentMethod  = event.paymentMethod,
             paidAt         = event.paidAt,

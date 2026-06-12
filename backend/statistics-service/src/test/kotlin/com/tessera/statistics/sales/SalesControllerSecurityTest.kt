@@ -14,7 +14,9 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.hamcrest.Matchers.nullValue
 import java.math.BigDecimal
 
 /**
@@ -59,5 +61,78 @@ class SalesControllerSecurityTest {
     fun `sales by-match as platform-admin is 200`() {
         doReturn(SalesByMatchResponse(5L, 0, 0, BigDecimal.ZERO)).whenever(service).byMatch(any())
         mvc.perform(get("/api/v1/stats/sales/by-match/5").with(admin())).andExpect(status().isOk)
+    }
+
+    // ---- by-club: admin OR the club's own manager ----
+
+    /** A token carrying the realm `roles` claim (consumed by isPlatformAdmin). */
+    private fun withRoles(vararg roles: String) =
+        jwt().jwt { it.claim("roles", roles.toList()) }
+
+    /** A token whose `groups` claim makes the holder a MANAGER of [clubId]. */
+    private fun managerOf(clubId: Long) =
+        jwt().jwt { it.claim("groups", listOf("/clubs/$clubId/managers")) }
+
+    /** A token whose `groups` claim makes the holder STAFF of [clubId]. */
+    private fun staffOf(clubId: Long) =
+        jwt().jwt { it.claim("groups", listOf("/clubs/$clubId/staff")) }
+
+    @Test
+    fun `sales by-club without a token is 401`() {
+        mvc.perform(get("/api/v1/stats/sales/by-club/5")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `sales by-club as platform-admin is 200`() {
+        doReturn(SalesByClubResponse(5L, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO))
+            .whenever(service).byClub(any())
+        mvc.perform(get("/api/v1/stats/sales/by-club/5").with(withRoles("platform-admin")))
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `sales by-club as the club's own manager is 200`() {
+        doReturn(SalesByClubResponse(5L, 0, 0, BigDecimal.ZERO, BigDecimal.ZERO))
+            .whenever(service).byClub(any())
+        mvc.perform(get("/api/v1/stats/sales/by-club/5").with(managerOf(5L)))
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `sales by-club as a manager of another club is 403`() {
+        mvc.perform(get("/api/v1/stats/sales/by-club/5").with(managerOf(8L)))
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `sales by-club as an authenticated fan with no club is 403`() {
+        mvc.perform(get("/api/v1/stats/sales/by-club/5").with(fan()))
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `sales by-club as the club's own staff is 200 with counts but no revenue`() {
+        doReturn(SalesByClubResponse(5L, 7, 4, BigDecimal("52.00"), BigDecimal("0.571")))
+            .whenever(service).byClub(any())
+        mvc.perform(get("/api/v1/stats/sales/by-club/5").with(staffOf(5L)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.sold").value(7))
+            .andExpect(jsonPath("$.validated").value(4))
+            .andExpect(jsonPath("$.revenue").value(nullValue()))   // hidden from staff
+    }
+
+    @Test
+    fun `sales by-club as staff of another club is 403`() {
+        mvc.perform(get("/api/v1/stats/sales/by-club/5").with(staffOf(8L)))
+            .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `sales by-club keeps revenue for managers`() {
+        doReturn(SalesByClubResponse(5L, 7, 4, BigDecimal("52.00"), BigDecimal("0.571")))
+            .whenever(service).byClub(any())
+        mvc.perform(get("/api/v1/stats/sales/by-club/5").with(managerOf(5L)))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.revenue").value(52.00))
     }
 }

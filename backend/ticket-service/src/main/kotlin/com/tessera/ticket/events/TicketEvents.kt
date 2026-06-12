@@ -18,6 +18,8 @@ data class TicketPaidEvent(
     val ticketId: Long,
     val eventId: Long,
     val matchId: Long?,
+    /** Home club of the match, so statistics can aggregate sales per club. */
+    val homeClubId: Long? = null,
     val price: BigDecimal,
     val paymentMethod: String?,
     val paidAt: OffsetDateTime,

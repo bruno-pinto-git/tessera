@@ -59,6 +59,33 @@ class SalesServiceTest {
     }
 
     @Test
+    fun `byClub aggregates per club and computes the validation rate`() {
+        whenever(repo.countSoldByClub(5L)).thenReturn(8L)
+        whenever(repo.countValidatedByClub(5L)).thenReturn(6L)
+        doReturn(BigDecimal("80.00")).whenever(repo).revenueByClub(5L)
+
+        val s = service.byClub(5L)
+
+        assertEquals(5L, s.clubId)
+        assertEquals(8L, s.sold)
+        assertEquals(6L, s.validated)
+        assertEquals(BigDecimal("80.00"), s.revenue)
+        assertEquals(BigDecimal("0.750"), s.validationRate)
+    }
+
+    @Test
+    fun `byClub guards against division by zero when the club sold nothing`() {
+        whenever(repo.countSoldByClub(7L)).thenReturn(0L)
+        whenever(repo.countValidatedByClub(7L)).thenReturn(0L)
+        doReturn(BigDecimal.ZERO).whenever(repo).revenueByClub(7L)
+
+        val s = service.byClub(7L)
+
+        assertEquals(0L, s.sold)
+        assertEquals(BigDecimal.ZERO, s.validationRate)
+    }
+
+    @Test
     fun `inRange returns sold and revenue and omits validation`() {
         val from = OffsetDateTime.parse("2026-01-01T00:00:00Z")
         val to = from.plusDays(7)

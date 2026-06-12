@@ -1,5 +1,6 @@
 package com.tessera.ticket.events
 
+import com.tessera.ticket.event.MatchLookupClient
 import com.tessera.ticket.ticket.Ticket
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
@@ -21,6 +22,7 @@ import java.time.ZoneOffset
 @Component
 class TicketEventPublisher(
     private val rabbit: RabbitTemplate,
+    private val matchLookup: MatchLookupClient,
     @Value("\${tessera.events.exchange}") private val exchange: String,
 ) {
 
@@ -36,6 +38,9 @@ class TicketEventPublisher(
             ticketId      = ticket.id,
             eventId       = ev.id,
             matchId       = ev.matchId,
+            // Snapshot the home club so statistics can aggregate sales per club
+            // (the read-side never calls back into match-service).
+            homeClubId    = ev.matchId?.let { matchLookup.homeClubId(it) },
             price         = ticket.price,
             paymentMethod = ticket.paymentMethod,
             paidAt        = ticket.paymentDate ?: OffsetDateTime.now(ZoneOffset.UTC),

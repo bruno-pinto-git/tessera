@@ -7,6 +7,7 @@ import com.tessera.statistics.sales.TicketSale
 import com.tessera.statistics.sales.TicketSaleRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -53,6 +54,15 @@ class EventConsumerTest {
 
         verify(saleRepo, never()).delete(any())
         verify(saleRepo).save(any())
+    }
+
+    @Test
+    fun `ticket paid stores the home club for per-club aggregation`() {
+        whenever(saleRepo.findById(7L)).thenReturn(Optional.empty())
+
+        consumer.onTicketPaid(ticketPaid())
+
+        verify(saleRepo).save(check<TicketSale> { assertEquals(10L, it.homeClubId) })
     }
 
     @Test
@@ -119,6 +129,7 @@ class EventConsumerTest {
         ticketId = 7L,
         eventId = 1L,
         matchId = 5L,
+        homeClubId = 10L,
         price = BigDecimal("10.00"),
         paymentMethod = "CARD",
         paidAt = OffsetDateTime.parse("2026-05-01T19:00:00Z"),

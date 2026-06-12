@@ -1,0 +1,32 @@
+parameters:
+  - in: path
+    name: clubId
+    required: true
+    schema:
+      type: integer
+      format: int64
+      minimum: 1
+
+get:
+  operationId: getSalesByClub
+  tags: [Statistics]
+  summary: Ticket sales for a single club
+  description: |
+    Aggregated sales for the matches a club hosts at home. Unlike the other
+    sales reports this is not platform-admin only: a club manager (or admin)
+    sees everything including revenue; club staff may see the sold/validated
+    counts but `revenue` is returned as null for them.
+  x-required-roles: [admin, manager, staff]
+  responses:
+    "200":
+      description: Aggregated sales for the club.
+      content:
+        application/json:
+          schema:
+            $ref: "../components/schemas/salesByClub.yaml"
+    "401":
+      $ref: "../components/responses/errors.yaml#/Unauthorized"
+    "403":
+      $ref: "../components/responses/errors.yaml#/Forbidden"
+    "500":
+      $ref: "../components/responses/errors.yaml#/InternalServerError"

@@ -57,6 +57,8 @@ data class TicketPaidEvent(
     val eventId: Long,
     /** Nullable: an event can sell tickets without being tied to a specific match. */
     val matchId: Long?,
+    /** Home club of the match (for per-club sales aggregation). */
+    val homeClubId: Long? = null,
     val price: BigDecimal,
     val paymentMethod: String?,
     val paidAt: OffsetDateTime,

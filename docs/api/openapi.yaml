@@ -107,6 +107,8 @@ paths:
     $ref: "./paths/stats_sales_summary.yaml"
   /stats/sales/by-match/{matchId}:
     $ref: "./paths/stats_sales_by_match.yaml"
+  /stats/sales/by-club/{clubId}:
+    $ref: "./paths/stats_sales_by_club.yaml"
   /stats/sales/range:
     $ref: "./paths/stats_sales_range.yaml"
   /matches/{id}/sheet/occurrences:
@@ -243,6 +245,8 @@ components:
       $ref: "./components/schemas/salesSummary.yaml"
     SalesByMatch:
       $ref: "./components/schemas/salesByMatch.yaml"
+    SalesByClub:
+      $ref: "./components/schemas/salesByClub.yaml"
     Event:
       $ref: "./components/schemas/event.yaml"
     EventCreateRequest:

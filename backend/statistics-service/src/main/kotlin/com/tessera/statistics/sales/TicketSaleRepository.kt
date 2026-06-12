@@ -26,6 +26,15 @@ interface TicketSaleRepository : JpaRepository<TicketSale, Long> {
     @Query("SELECT COALESCE(SUM(t.price), 0) FROM TicketSale t WHERE t.matchId = :matchId")
     fun revenueByMatch(@Param("matchId") matchId: Long): BigDecimal
 
+    @Query("SELECT COUNT(t) FROM TicketSale t WHERE t.homeClubId = :clubId")
+    fun countSoldByClub(@Param("clubId") clubId: Long): Long
+
+    @Query("SELECT COUNT(t) FROM TicketSale t WHERE t.homeClubId = :clubId AND t.validatedAt IS NOT NULL")
+    fun countValidatedByClub(@Param("clubId") clubId: Long): Long
+
+    @Query("SELECT COALESCE(SUM(t.price), 0) FROM TicketSale t WHERE t.homeClubId = :clubId")
+    fun revenueByClub(@Param("clubId") clubId: Long): BigDecimal
+
     @Query("""
         SELECT COUNT(t) FROM TicketSale t
          WHERE t.paidAt >= :from AND t.paidAt < :to
