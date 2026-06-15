@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ClipboardList } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
 import { useMe } from "@/auth/useMe";
@@ -79,44 +78,24 @@ export function ClubDetailPage() {
           gated by canManage. */}
       {!Number.isNaN(clubId) && <TeamsSection clubId={clubId} canManage={canManage} />}
 
-      {/* Jogos & Bilheteira - home matches for this club. */}
+      {/* Jogos & Bilheteira - home matches for this club. The match-sheet
+          editor is opened per match from the "Ficha técnica" action there. */}
       {!Number.isNaN(clubId) && <MatchesSection clubId={clubId} canManage={canManage} />}
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <SectionCard
-          icon={<ClipboardList className="size-5 text-primary" />}
-          title="Fichas técnicas"
-          description="Convocatórias e ocorrências dos jogos."
-        />
-      </section>
-    </div>
-  );
-}
-
-function SectionCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Card className="opacity-60">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <Card>
+        <CardHeader>
           <div className="flex items-center gap-2">
-            {icon}
-            <CardTitle className="text-base">{title}</CardTitle>
+            <ClipboardList className="size-5 text-primary" />
+            <CardTitle className="text-base">Fichas técnicas</CardTitle>
           </div>
-          <Badge variant="secondary">Em breve</Badge>
-        </div>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="text-xs text-muted-foreground">
-        UI em construção. Os endpoints já estão scoped a este clube.
-      </CardContent>
-    </Card>
+          <CardDescription>Convocatórias e lances dos jogos.</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          Abre a ficha técnica de cada jogo pelo botão{" "}
+          <ClipboardList className="inline size-4 align-text-bottom" /> na lista de{" "}
+          <span className="font-medium text-foreground">Jogos &amp; Bilheteira</span> acima.
+        </CardContent>
+      </Card>
+    </div>
   );
 }

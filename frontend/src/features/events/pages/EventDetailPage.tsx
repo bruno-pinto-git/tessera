@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Crest } from "@/components/Crest";
 import { useEventCatalog } from "../hooks/useEventsCatalog";
 import { PurchaseModal } from "../components/PurchaseModal";
+import { MatchSheetView } from "@/features/sheets/components/MatchSheetView";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import type { CatalogEntry } from "../lib/catalog";
 
@@ -106,6 +107,13 @@ export function EventDetailPage() {
           <section className="lg:col-span-2 space-y-6">
             <PriceTable entry={entry} />
             <Indications time={time} />
+            {entry.matchId != null && (
+              <MatchSheetView
+                matchId={entry.matchId}
+                homeName={entry.homeClubName}
+                awayName={entry.awayClubName}
+              />
+            )}
           </section>
 
           <aside>

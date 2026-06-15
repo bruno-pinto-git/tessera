@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Plus, Ticket, Trash2 } from "lucide-react";
+import { ClipboardList, Pencil, Plus, Ticket, Trash2 } from "lucide-react";
 import { useMatches } from "../hooks/useMatches";
 import { useMatchLookups } from "../hooks/useMatchLookups";
 import { MatchStatusBadge } from "./MatchStatusBadge";
@@ -115,7 +116,7 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                 <TableHead>Encontro</TableHead>
                 <TableHead className="w-32">Estádio</TableHead>
                 <TableHead className="w-28">Estado</TableHead>
-                <TableHead className="w-32 text-right">{canManage ? "Ações" : ""}</TableHead>
+                <TableHead className="w-40 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -149,35 +150,48 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                         <MatchStatusBadge status={m.status} />
                       </TableCell>
                       <TableCell>
-                        {canManage && (
-                          <div className="flex items-center justify-end">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setOpeningBoxOffice(m)}
-                              aria-label="Abrir bilheteira"
-                              title="Abrir bilheteira"
-                            >
-                              <Ticket className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setEditing(m)}
-                              aria-label="Editar jogo"
-                            >
-                              <Pencil className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleting(m)}
-                              aria-label="Eliminar jogo"
-                            >
-                              <Trash2 className="size-4 text-destructive" />
-                            </Button>
-                          </div>
-                        )}
+                        <div className="flex items-center justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            aria-label="Ficha técnica"
+                            title="Ficha técnica"
+                          >
+                            <Link to={`/matches/${m.id}/sheet`}>
+                              <ClipboardList className="size-4" />
+                            </Link>
+                          </Button>
+                          {canManage && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setOpeningBoxOffice(m)}
+                                aria-label="Abrir bilheteira"
+                                title="Abrir bilheteira"
+                              >
+                                <Ticket className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditing(m)}
+                                aria-label="Editar jogo"
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setDeleting(m)}
+                                aria-label="Eliminar jogo"
+                              >
+                                <Trash2 className="size-4 text-destructive" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

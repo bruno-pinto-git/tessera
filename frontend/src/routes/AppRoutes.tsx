@@ -18,6 +18,7 @@ import { VenuesAdminPage } from "@/features/venues/pages/VenuesAdminPage";
 import { MatchesAdminPage } from "@/features/matches/pages/MatchesAdminPage";
 import { PlayersAdminPage } from "@/features/players/pages/PlayersAdminPage";
 import { TeamsAdminPage } from "@/features/teams/pages/TeamsAdminPage";
+import { MatchSheetEditorPage } from "@/features/sheets/pages/MatchSheetEditorPage";
 
 export function AppRoutes() {
   return (
@@ -71,6 +72,14 @@ export function AppRoutes() {
           element={
             <ProtectedRoute roles={["club-manager", "platform-admin", "staff"]}>
               <TeamDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="matches/:matchId/sheet"
+          element={
+            <ProtectedRoute roles={["club-manager", "staff", "platform-admin"]}>
+              <MatchSheetEditorPage />
             </ProtectedRoute>
           }
         />
