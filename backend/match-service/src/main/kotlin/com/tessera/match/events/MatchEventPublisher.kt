@@ -97,8 +97,23 @@ class MatchEventPublisher(
         }
     }
 
+    /** Tells the read-side to drop its snapshot for a sheet that was reopened. */
+    fun publishMatchSheetReopened(matchId: Long) {
+        val event = MatchSheetReopenedEvent(
+            occurredAt = OffsetDateTime.now(ZoneOffset.UTC),
+            matchId    = matchId,
+        )
+        try {
+            rabbit.convertAndSend(exchange, ROUTING_SHEET_REOPENED, event)
+            log.info("Published match.sheet.reopened for matchId={}", matchId)
+        } catch (e: Exception) {
+            log.error("Failed to publish match.sheet.reopened for matchId={}", matchId, e)
+        }
+    }
+
     companion object {
         const val ROUTING_SHEET_CLOSED = "match.sheet.closed"
+        const val ROUTING_SHEET_REOPENED = "match.sheet.reopened"
 
         /**
          * European football season runs roughly July-June. A match in

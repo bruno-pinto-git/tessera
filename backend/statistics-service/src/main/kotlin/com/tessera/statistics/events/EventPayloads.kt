@@ -32,6 +32,13 @@ data class MatchSheetClosedEvent(
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class MatchSheetReopenedEvent(
+    val version: Int = 1,
+    val occurredAt: OffsetDateTime,
+    val matchId: Long,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class LineupEntryPayload(
     val playerId: Long,
     val teamId: Long,

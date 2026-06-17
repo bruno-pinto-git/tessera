@@ -1,6 +1,8 @@
 package com.tessera.statistics.events
 
 import com.tessera.statistics.matchhistory.*
+import com.tessera.statistics.sales.PendingValidation
+import com.tessera.statistics.sales.PendingValidationRepository
 import com.tessera.statistics.sales.TicketSale
 import com.tessera.statistics.sales.TicketSaleRepository
 import org.slf4j.LoggerFactory
@@ -21,6 +23,7 @@ class EventConsumer(
     private val lineupRepo: LineupSnapshotRepository,
     private val occurrenceRepo: OccurrenceSnapshotRepository,
     private val saleRepo: TicketSaleRepository,
+    private val pendingValidationRepo: PendingValidationRepository,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -74,11 +77,27 @@ class EventConsumer(
         }
     }
 
+    @RabbitListener(queues = ["\${tessera.events.match-sheet-reopened-queue}"])
+    @Transactional
+    fun onMatchSheetReopened(event: MatchSheetReopenedEvent) {
+        log.info("Received match.sheet.reopened matchId={}", event.matchId)
+        // The sheet is being edited again, so the published snapshot is no
+        // longer valid. Drop it; a later match.sheet.closed rebuilds it.
+        lineupRepo.deleteByIdMatchId(event.matchId)
+        occurrenceRepo.deleteByMatchId(event.matchId)
+        if (summaryRepo.existsById(event.matchId)) summaryRepo.deleteById(event.matchId)
+    }
+
     @RabbitListener(queues = ["\${tessera.events.ticket-paid-queue}"])
     @Transactional
     fun onTicketPaid(event: TicketPaidEvent) {
         log.info("Received ticket.ticket.paid ticketId={} matchId={}",
             event.ticketId, event.matchId)
+        // Carry over a validation that arrived before this paid event
+        // (out-of-order delivery), and preserve one already stamped on a row
+        // we're replacing, so we never lose a validation.
+        val pending = pendingValidationRepo.findById(event.ticketId).orElse(null)
+        val existingValidatedAt = saleRepo.findById(event.ticketId).orElse(null)?.validatedAt
         // Upsert via delete-or-merge: if a row already exists, replace.
         saleRepo.findById(event.ticketId).ifPresent { saleRepo.delete(it) }
         saleRepo.flush()
@@ -90,20 +109,22 @@ class EventConsumer(
             price          = event.price,
             paymentMethod  = event.paymentMethod,
             paidAt         = event.paidAt,
+            validatedAt    = existingValidatedAt ?: pending?.validatedAt,
         ))
+        if (pending != null) pendingValidationRepo.delete(pending)
     }
 
     @RabbitListener(queues = ["\${tessera.events.ticket-validated-queue}"])
     @Transactional
     fun onTicketValidated(event: TicketValidatedEvent) {
         log.info("Received ticket.ticket.validated ticketId={}", event.ticketId)
-        // We can only stamp a validated_at if we already saw the paid event.
-        // If not (out-of-order delivery), we log and drop — the consumer will
-        // pick it up next time the producer re-emits both events.
         val sale = saleRepo.findById(event.ticketId).orElse(null)
         if (sale == null) {
-            log.warn("ticket.ticket.validated received before ticket.paid for ticketId={}",
+            // Out-of-order delivery: the paid event hasn't landed yet. Park the
+            // validation so onTicketPaid can drain it instead of losing it.
+            log.warn("ticket.ticket.validated before ticket.paid for ticketId={}; parking it",
                 event.ticketId)
+            pendingValidationRepo.save(PendingValidation(event.ticketId, event.validatedAt))
             return
         }
         sale.validatedAt = event.validatedAt

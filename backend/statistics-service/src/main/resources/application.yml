@@ -32,5 +32,6 @@ tessera:
   events:
     exchange: tessera.events
     match-sheet-closed-queue: stats.match-sheet-closed
+    match-sheet-reopened-queue: stats.match-sheet-reopened
     ticket-paid-queue: stats.ticket-paid
     ticket-validated-queue: stats.ticket-validated

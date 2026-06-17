@@ -48,3 +48,15 @@ data class OccurrencePayload(
     val playerId: Long,
     val replacedPlayerId: Long?,
 )
+
+/**
+ * Event payload for `match.sheet.reopened`. Fired when an admin unlocks a
+ * previously-closed sheet: the statistics read-side drops its snapshot so the
+ * public history doesn't keep showing a now-editable sheet. A subsequent lock
+ * re-emits `match.sheet.closed` and rebuilds it.
+ */
+data class MatchSheetReopenedEvent(
+    val version: Int = 1,
+    val occurredAt: OffsetDateTime,
+    val matchId: Long,
+)

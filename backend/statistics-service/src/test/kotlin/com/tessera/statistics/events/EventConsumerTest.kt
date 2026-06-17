@@ -3,6 +3,8 @@ package com.tessera.statistics.events
 import com.tessera.statistics.matchhistory.LineupSnapshotRepository
 import com.tessera.statistics.matchhistory.MatchSummaryRepository
 import com.tessera.statistics.matchhistory.OccurrenceSnapshotRepository
+import com.tessera.statistics.sales.PendingValidation
+import com.tessera.statistics.sales.PendingValidationRepository
 import com.tessera.statistics.sales.TicketSale
 import com.tessera.statistics.sales.TicketSaleRepository
 import org.junit.jupiter.api.Test
@@ -29,8 +31,10 @@ class EventConsumerTest {
     private val lineupRepo: LineupSnapshotRepository = mock()
     private val occurrenceRepo: OccurrenceSnapshotRepository = mock()
     private val saleRepo: TicketSaleRepository = mock()
+    private val pendingRepo: PendingValidationRepository = mock()
 
-    private val consumer = EventConsumer(summaryRepo, lineupRepo, occurrenceRepo, saleRepo)
+    private val consumer =
+        EventConsumer(summaryRepo, lineupRepo, occurrenceRepo, saleRepo, pendingRepo)
 
     @Test
     fun `match sheet closed wipes prior snapshots then re-inserts`() {
@@ -89,12 +93,44 @@ class EventConsumerTest {
     }
 
     @Test
-    fun `ticket validated before paid is dropped (out-of-order)`() {
+    fun `ticket validated before paid is parked, not dropped (out-of-order)`() {
         whenever(saleRepo.findById(7L)).thenReturn(Optional.empty())
+        val at = OffsetDateTime.parse("2026-05-01T20:00:00Z")
 
-        consumer.onTicketValidated(ticketValidated(OffsetDateTime.parse("2026-05-01T20:00:00Z")))
+        consumer.onTicketValidated(ticketValidated(at))
 
         verify(saleRepo, never()).save(any())
+        verify(pendingRepo).save(check<PendingValidation> {
+            assertEquals(7L, it.ticketId)
+            assertEquals(at, it.validatedAt)
+        })
+    }
+
+    @Test
+    fun `ticket paid drains a parked validation onto the new sale`() {
+        whenever(saleRepo.findById(7L)).thenReturn(Optional.empty())
+        val at = OffsetDateTime.parse("2026-05-01T20:00:00Z")
+        val parked = PendingValidation(7L, at)
+        whenever(pendingRepo.findById(7L)).thenReturn(Optional.of(parked))
+
+        consumer.onTicketPaid(ticketPaid())
+
+        verify(saleRepo).save(check<TicketSale> { assertEquals(at, it.validatedAt) })
+        verify(pendingRepo).delete(parked)
+    }
+
+    @Test
+    fun `match sheet reopened drops the published snapshot`() {
+        whenever(summaryRepo.existsById(5L)).thenReturn(true)
+
+        consumer.onMatchSheetReopened(MatchSheetReopenedEvent(
+            occurredAt = OffsetDateTime.parse("2026-05-02T10:00:00Z"),
+            matchId = 5L,
+        ))
+
+        verify(lineupRepo).deleteByIdMatchId(5L)
+        verify(occurrenceRepo).deleteByMatchId(5L)
+        verify(summaryRepo).deleteById(5L)
     }
 
     // -------------------------------------------------------------------------

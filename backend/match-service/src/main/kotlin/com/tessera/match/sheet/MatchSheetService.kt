@@ -226,8 +226,25 @@ class MatchSheetService(
         if (sheet.locked) {
             sheet.locked = false
             sheet.lockedAt = null
+            // Reopening retracts the published snapshot from the read-side; a
+            // later lock re-publishes match.sheet.closed and rebuilds it.
+            publishReopenOnCommit(match.id)
         }
         return sheet
+    }
+
+    private fun publishReopenOnCommit(matchId: Long) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                object : TransactionSynchronization {
+                    override fun afterCommit() {
+                        publisher.publishMatchSheetReopened(matchId)
+                    }
+                }
+            )
+        } else {
+            publisher.publishMatchSheetReopened(matchId)
+        }
     }
 
     /**

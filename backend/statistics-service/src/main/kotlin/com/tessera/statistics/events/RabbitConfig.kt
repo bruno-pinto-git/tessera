@@ -48,6 +48,20 @@ class RabbitConfig {
         .with("match.sheet.closed")
 
     @Bean
+    fun matchSheetReopenedQueue(
+        @Value("\${tessera.events.match-sheet-reopened-queue}") name: String,
+    ): Queue = Queue(name, /* durable */ true)
+
+    @Bean
+    fun matchSheetReopenedBinding(
+        matchSheetReopenedQueue: Queue,
+        eventsExchange: TopicExchange,
+    ): Binding = BindingBuilder
+        .bind(matchSheetReopenedQueue)
+        .to(eventsExchange)
+        .with("match.sheet.reopened")
+
+    @Bean
     fun ticketPaidQueue(
         @Value("\${tessera.events.ticket-paid-queue}") name: String,
     ): Queue = Queue(name, /* durable */ true)
