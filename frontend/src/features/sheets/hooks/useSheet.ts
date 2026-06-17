@@ -48,11 +48,18 @@ export function useTeamRosters(homeTeamId?: number | null, awayTeamId?: number |
   return { players, loading, error };
 }
 
-/** Live (editable) sheet from match-service. */
+/**
+ * Live (editable) sheet from match-service. Distinguishes the two "expected"
+ * failures so the editor can show a friendly panel instead of raw error text:
+ *  - `forbidden` (403): the user isn't admin/staff/manager of this match's club;
+ *  - `notFound` (404): the match doesn't exist (deleted or bad id).
+ */
 export function useMatchSheet(matchId: number) {
   const [sheet, setSheet] = useState<MatchSheet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [forbidden, setForbidden] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   const refetch = useCallback(() => setReloadKey((k) => k + 1), []);
@@ -62,15 +69,26 @@ export function useMatchSheet(matchId: number) {
     let cancelled = false;
     void Promise.resolve().then(() => !cancelled && setLoading(true));
     getMatchSheet(matchId)
-      .then((s) => !cancelled && (setSheet(s), setError(null)))
-      .catch((e) => !cancelled && setError(errMsg(e)))
+      .then((s) => {
+        if (cancelled) return;
+        setSheet(s);
+        setError(null);
+        setForbidden(false);
+        setNotFound(false);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        if (e instanceof ApiError && e.status === 403) setForbidden(true);
+        else if (e instanceof ApiError && e.status === 404) setNotFound(true);
+        else setError(errMsg(e));
+      })
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
   }, [matchId, reloadKey]);
 
-  return { sheet, loading, error, refetch };
+  return { sheet, loading, error, forbidden, notFound, refetch };
 }
 
 /**

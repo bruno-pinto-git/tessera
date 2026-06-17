@@ -38,7 +38,7 @@ export function MatchSheetEditorPage() {
   const [match, setMatch] = useState<Match | null>(null);
   const [matchError, setMatchError] = useState<string | null>(null);
   const lookups = useMatchLookups();
-  const { sheet, loading, error, refetch } = useMatchSheet(matchId);
+  const { sheet, loading, error, forbidden, notFound, refetch } = useMatchSheet(matchId);
   const rosters = useTeamRosters(match?.homeTeamId, match?.awayTeamId);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -91,15 +91,33 @@ export function MatchSheetEditorPage() {
   const rosterOf = (teamId?: number) =>
     teamId == null ? [] : [...rosters.players.values()].filter((p) => p.teamId === teamId);
 
+  if (forbidden || notFound) {
+    return (
+      <div className="space-y-6">
+        <BackButton onBack={() => navigate(-1)} />
+        <Card>
+          <CardContent className="py-10 text-center space-y-2">
+            <h2 className="font-display text-xl font-semibold tracking-tight">
+              {forbidden ? "Sem acesso a esta ficha" : "Jogo não encontrado"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {forbidden
+                ? "A ficha técnica só pode ser gerida por administradores ou pelo staff/gestão do clube da casa deste jogo."
+                : "Este jogo não existe ou foi removido."}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+              Voltar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Voltar
-        </button>
+        <BackButton onBack={() => navigate(-1)} />
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold tracking-tight">
             {homeName} <span className="text-muted-foreground">vs</span> {awayName}
@@ -190,5 +208,16 @@ export function MatchSheetEditorPage() {
         </>
       )}
     </div>
+  );
+}
+
+function BackButton({ onBack }: { onBack: () => void }) {
+  return (
+    <button
+      onClick={onBack}
+      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+    >
+      ← Voltar
+    </button>
   );
 }
