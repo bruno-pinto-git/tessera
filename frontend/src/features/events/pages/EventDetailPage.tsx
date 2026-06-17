@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
+import { useAuth } from "@/auth/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -15,6 +16,7 @@ export function EventDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const { entry, loading, error, notFound } = useEventCatalog(id);
+  const { authenticated, login } = useAuth();
   const [open, setOpen] = useState(false);
 
   if (notFound) return <NotFoundPage />;
@@ -117,7 +119,11 @@ export function EventDetailPage() {
           </section>
 
           <aside>
-            <PurchaseSticky entry={entry} onBuy={() => setOpen(true)} />
+            <PurchaseSticky
+              entry={entry}
+              authenticated={authenticated}
+              onBuy={() => (authenticated ? setOpen(true) : login())}
+            />
           </aside>
         </div>
       </div>
@@ -249,14 +255,26 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
   );
 }
 
-function PurchaseSticky({ entry, onBuy }: { entry: CatalogEntry; onBuy: () => void }) {
+function PurchaseSticky({
+  entry,
+  authenticated,
+  onBuy,
+}: {
+  entry: CatalogEntry;
+  authenticated: boolean;
+  onBuy: () => void;
+}) {
   const ended = matchEnded(entry);
-  const disabled = entry.eventStatus !== "PUBLISHED" || ended;
+  const notPublished = entry.eventStatus !== "PUBLISHED";
+  // A logged-out user can still click — onBuy sends them to login first.
+  const disabled = notPublished || ended;
   const label = ended
     ? "Jogo terminado"
-    : entry.eventStatus !== "PUBLISHED"
+    : notPublished
       ? labelForStatus(entry.eventStatus)
-      : "Comprar bilhete";
+      : authenticated
+        ? "Comprar bilhete"
+        : "Entrar para comprar";
   return (
     <Card className="lg:sticky lg:top-6">
       <div className="px-6 pt-6 pb-4 border-b">
