@@ -38,9 +38,10 @@ class TicketEventPublisher(
             ticketId      = ticket.id,
             eventId       = ev.id,
             matchId       = ev.matchId,
-            // Snapshot the home club so statistics can aggregate sales per club
-            // (the read-side never calls back into match-service).
-            homeClubId    = ev.matchId?.let { matchLookup.homeClubId(it) },
+            // Prefer the home club snapshotted on the event when the box office
+            // was opened; only fall back to a match-service lookup for legacy
+            // events created before that snapshot existed.
+            homeClubId    = ev.homeClubId ?: ev.matchId?.let { matchLookup.homeClubId(it) },
             price         = ticket.price,
             paymentMethod = ticket.paymentMethod,
             paidAt        = ticket.paymentDate ?: OffsetDateTime.now(ZoneOffset.UTC),

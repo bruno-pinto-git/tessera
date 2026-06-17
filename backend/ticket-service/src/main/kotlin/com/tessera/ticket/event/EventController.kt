@@ -51,7 +51,7 @@ class EventService(
         .orElseThrow { EventNotFoundException("Event not found: $id") }
 
     @Transactional
-    fun create(req: CreateEventRequest): Event {
+    fun create(req: CreateEventRequest, homeClubId: Long? = null): Event {
         val status = (req.status ?: "PUBLISHED").uppercase()
         if (status !in ALLOWED_STATUS) {
             throw IllegalArgumentException(
@@ -62,6 +62,7 @@ class EventService(
             name           = req.name,
             matchLabel     = req.matchLabel,
             matchId        = req.matchId,
+            homeClubId     = homeClubId,
             priceNormal    = req.priceNormal ?: BigDecimal.ZERO,
             priceSupporter = req.priceSupporter ?: BigDecimal.ZERO,
             status         = status,
@@ -102,16 +103,22 @@ class EventController(
         @RequestBody request: CreateEventRequest,
         @AuthenticationPrincipal jwt: Jwt,
     ): EventResponse {
-        authorizeCreate(jwt, request)
-        return toResponse(service.create(request))
+        // Resolve the match's home club once: it both authorizes a club manager
+        // and is snapshotted on the event so paid-ticket events can aggregate
+        // sales per club without a match-service call at payment time.
+        val homeClubId = request.matchId?.let { matchLookup.homeClubId(it) }
+        authorizeCreate(jwt, request, homeClubId)
+        return toResponse(service.create(request, homeClubId))
     }
 
-    private fun authorizeCreate(jwt: Jwt, request: CreateEventRequest) {
+    private fun authorizeCreate(jwt: Jwt, request: CreateEventRequest, homeClubId: Long?) {
         if (jwt.isPlatformAdmin()) return
-        val matchId = request.matchId
-            ?: throw AccessDeniedException("Only platform admins can open a box office without a match.")
-        val homeClubId = matchLookup.homeClubId(matchId)
-            ?: throw AccessDeniedException("Could not resolve the match's home club.")
+        if (request.matchId == null) {
+            throw AccessDeniedException("Only platform admins can open a box office without a match.")
+        }
+        if (homeClubId == null) {
+            throw AccessDeniedException("Could not resolve the match's home club.")
+        }
         if (homeClubId !in jwt.managedClubIds()) {
             throw AccessDeniedException("You can only open a box office for your own club's home matches.")
         }

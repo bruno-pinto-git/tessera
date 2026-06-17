@@ -2,6 +2,7 @@ package com.tessera.ticket.event
 
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -54,24 +55,24 @@ class BoxOfficeAuthorizationTest {
 
     @Test
     fun `platform admin can open a box office for any match`() {
-        doReturn(event()).whenever(service).create(any())
+        doReturn(event()).whenever(service).create(any(), anyOrNull())
 
         controller.create(request(matchId = null), jwt(listOf("platform-admin"), emptyList()))
 
-        verify(service).create(any())
+        verify(service).create(any(), anyOrNull())
     }
 
     @Test
     fun `club manager can open a box office for their home match`() {
         whenever(matchLookup.homeClubId(99L)).thenReturn(5L)
-        doReturn(event()).whenever(service).create(any())
+        doReturn(event()).whenever(service).create(any(), anyOrNull())
 
         controller.create(
             request(matchId = 99L),
             jwt(listOf("club-manager"), listOf("/clubs/5/managers")),
         )
 
-        verify(service).create(any())
+        verify(service).create(any(), anyOrNull())
     }
 
     @Test
@@ -84,7 +85,7 @@ class BoxOfficeAuthorizationTest {
                 jwt(listOf("club-manager"), listOf("/clubs/5/managers")),
             )
         }
-        verify(service, never()).create(any())
+        verify(service, never()).create(any(), anyOrNull())
     }
 
     @Test
@@ -95,7 +96,7 @@ class BoxOfficeAuthorizationTest {
                 jwt(listOf("club-manager"), listOf("/clubs/5/managers")),
             )
         }
-        verify(service, never()).create(any())
+        verify(service, never()).create(any(), anyOrNull())
     }
 
     @Test
@@ -108,7 +109,7 @@ class BoxOfficeAuthorizationTest {
                 jwt(listOf("club-manager"), listOf("/clubs/5/managers")),
             )
         }
-        verify(service, never()).create(any())
+        verify(service, never()).create(any(), anyOrNull())
     }
 
     // -------------------------------------------------------------------------

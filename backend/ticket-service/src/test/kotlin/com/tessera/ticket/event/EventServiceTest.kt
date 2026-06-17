@@ -45,6 +45,16 @@ class EventServiceTest {
         assertEquals("DRAFT", captor.firstValue.status)
     }
 
+    @Test
+    fun `create snapshots the resolved home club on the event`() {
+        val captor = argumentCaptor<Event>()
+        doReturn(Event(id = 1L)).whenever(repo).save(captor.capture())
+
+        service.create(request(status = null), homeClubId = 7L)
+
+        assertEquals(7L, captor.firstValue.homeClubId)
+    }
+
     private fun request(status: String?) = CreateEventRequest(
         name = "Demo box office",
         matchId = 99L,
