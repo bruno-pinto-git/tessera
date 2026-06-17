@@ -2,6 +2,7 @@ package com.tessera.ticket.common
 
 import com.tessera.ticket.ticket.EventNotFoundException
 import com.tessera.ticket.ticket.InvalidTicketStatusException
+import com.tessera.ticket.ticket.SaleClosedException
 import com.tessera.ticket.ticket.TicketNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -36,8 +37,11 @@ class GlobalExceptionHandler {
             req,
         )
 
-    @ExceptionHandler(InvalidTicketStatusException::class)
-    fun handleConflict(ex: InvalidTicketStatusException, req: WebRequest): ResponseEntity<Problem> =
+    @ExceptionHandler(value = [
+        InvalidTicketStatusException::class,
+        SaleClosedException::class,
+    ])
+    fun handleConflict(ex: RuntimeException, req: WebRequest): ResponseEntity<Problem> =
         problem(
             HttpStatus.CONFLICT,
             "https://tessera/api/errors/conflict",

@@ -250,7 +250,13 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
 }
 
 function PurchaseSticky({ entry, onBuy }: { entry: CatalogEntry; onBuy: () => void }) {
-  const disabled = entry.eventStatus !== "PUBLISHED";
+  const ended = matchEnded(entry);
+  const disabled = entry.eventStatus !== "PUBLISHED" || ended;
+  const label = ended
+    ? "Jogo terminado"
+    : entry.eventStatus !== "PUBLISHED"
+      ? labelForStatus(entry.eventStatus)
+      : "Comprar bilhete";
   return (
     <Card className="lg:sticky lg:top-6">
       <div className="px-6 pt-6 pb-4 border-b">
@@ -263,7 +269,7 @@ function PurchaseSticky({ entry, onBuy }: { entry: CatalogEntry; onBuy: () => vo
       </div>
       <div className="px-6 py-5 space-y-3">
         <Button size="lg" className="w-full" onClick={onBuy} disabled={disabled}>
-          {disabled ? labelForStatus(entry.eventStatus) : "Comprar bilhete"}
+          {label}
         </Button>
       </div>
       <div className="border-t px-6 py-4 text-xs text-muted-foreground space-y-1">
@@ -274,6 +280,22 @@ function PurchaseSticky({ entry, onBuy }: { entry: CatalogEntry; onBuy: () => vo
       </div>
     </Card>
   );
+}
+
+/**
+ * Sales close once the match is over or off — mirrors the ticket-service rule
+ * (CLOSED_FOR_SALE_STATUSES + kickoff + ~2h match duration). The backend is
+ * the source of truth; this just stops the user clicking into a 409.
+ */
+function matchEnded(entry: CatalogEntry): boolean {
+  if (entry.matchStatus && ["CANCELLED", "FINISHED", "ABANDONED"].includes(entry.matchStatus)) {
+    return true;
+  }
+  if (!entry.kickoffAt) return false;
+  const k = new Date(entry.kickoffAt);
+  if (isNaN(k.getTime())) return false;
+  const MATCH_DURATION_MS = 2 * 60 * 60 * 1000;
+  return Date.now() > k.getTime() + MATCH_DURATION_MS;
 }
 
 function labelForStatus(s: CatalogEntry["eventStatus"]): string {

@@ -71,6 +71,50 @@ class TicketServiceTest {
         assertEquals(BigDecimal("5.00"), captor.firstValue.price)
     }
 
+    @Test
+    fun `create is blocked once the match has ended`() {
+        whenever(eventRepository.findById(1L)).thenReturn(Optional.of(event()))
+        whenever(matchLookup.find(99L))
+            .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().minusHours(5)))
+        assertFailsWith<SaleClosedException> { service.create(1L, supporter = false, ownerSub = "u") }
+        verify(ticketRepository, never()).save(any())
+    }
+
+    @Test
+    fun `create is blocked for a cancelled match`() {
+        whenever(eventRepository.findById(1L)).thenReturn(Optional.of(event()))
+        whenever(matchLookup.find(99L)).thenReturn(
+            matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1), status = "CANCELLED"),
+        )
+        assertFailsWith<SaleClosedException> { service.create(1L, supporter = false, ownerSub = "u") }
+    }
+
+    @Test
+    fun `create succeeds for an upcoming match`() {
+        whenever(eventRepository.findById(1L)).thenReturn(Optional.of(event()))
+        whenever(matchLookup.find(99L))
+            .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(2)))
+        doReturn(ticket()).whenever(ticketRepository).save(any())
+
+        val t = service.create(1L, supporter = false, ownerSub = "u")
+
+        assertEquals(TicketStatus.PENDING, t.status)
+    }
+
+    @Test
+    fun `create succeeds for a match-less event without touching match-service`() {
+        val e = Event(
+            id = 2L, matchId = null, name = "Avulso",
+            priceNormal = BigDecimal("10.00"), priceSupporter = BigDecimal("5.00"), status = "PUBLISHED",
+        )
+        whenever(eventRepository.findById(2L)).thenReturn(Optional.of(e))
+        doReturn(ticket()).whenever(ticketRepository).save(any())
+
+        service.create(2L, supporter = false, ownerSub = "u")
+
+        verify(matchLookup, never()).find(any())
+    }
+
     // ----- pay ----------------------------------------------------------------
 
     @Test
@@ -197,6 +241,30 @@ class TicketServiceTest {
         val code = UUID.randomUUID()
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
         whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().minusHours(5)))
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+        }
+    }
+
+    @Test
+    fun `validation more than 2h before kickoff is denied`() {
+        // 2h30 before kickoff — the window only opens 2h before.
+        val code = UUID.randomUUID()
+        whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
+        whenever(matchLookup.find(99L))
+            .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusMinutes(150)))
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+        }
+    }
+
+    @Test
+    fun `validation after the match has ended is denied`() {
+        // 2h30 after kickoff — past the end of the match (kickoff + 2h).
+        val code = UUID.randomUUID()
+        whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
+        whenever(matchLookup.find(99L))
+            .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().minusMinutes(150)))
         assertFailsWith<AccessDeniedException> {
             service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
         }

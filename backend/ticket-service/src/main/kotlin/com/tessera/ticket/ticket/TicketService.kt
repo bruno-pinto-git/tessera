@@ -1,5 +1,6 @@
 package com.tessera.ticket.ticket
 
+import com.tessera.ticket.event.Event
 import com.tessera.ticket.event.EventRepository
 import com.tessera.ticket.event.MatchLookupClient
 import com.tessera.ticket.events.TicketEventPublisher
@@ -27,6 +28,8 @@ class TicketService(
     fun create(eventId: Long, supporter: Boolean, ownerSub: String): Ticket {
         val event = eventRepository.findById(eventId)
             .orElseThrow { EventNotFoundException("Event not found: $eventId") }
+
+        assertSaleOpen(event)
 
         val price = if (supporter) event.priceSupporter else event.priceNormal
 
@@ -107,7 +110,7 @@ class TicketService(
      * Authorization (beyond the controller's staff/admin role gate):
      *  - `platform-admin` may validate any ticket, any time.
      *  - otherwise the caller must be STAFF of the match's **home** club and
-     *    act inside the activity window (2h before kickoff .. 3h after); the
+     *    act inside the activity window (2h before kickoff .. end of match); the
      *    match must not be CANCELLED.
      */
     @Transactional
@@ -161,12 +164,30 @@ class TicketService(
             ?: throw AccessDeniedException("This match has no usable kickoff time.")
         val now = OffsetDateTime.now()
         if (now.isBefore(kickoff.minusHours(VALIDATION_OPENS_HOURS_BEFORE)) ||
-            now.isAfter(kickoff.plusHours(VALIDATION_CLOSES_HOURS_AFTER))
+            now.isAfter(kickoff.plusHours(MATCH_DURATION_HOURS))
         ) {
             throw AccessDeniedException(
                 "Tickets can only be validated from ${VALIDATION_OPENS_HOURS_BEFORE}h before kickoff " +
-                    "until ${VALIDATION_CLOSES_HOURS_AFTER}h after.",
+                    "until the match ends.",
             )
+        }
+    }
+
+    /**
+     * Tickets can't be bought once the match is over or off. Match-less events
+     * (no `matchId`) have no time limit. If the match can't be resolved (deleted
+     * or match-service unreachable) we fail open and allow the sale — the
+     * validation gate stays the strict guard.
+     */
+    private fun assertSaleOpen(event: Event) {
+        val matchId = event.matchId ?: return
+        val match = matchLookup.find(matchId) ?: return
+        if (match.status in CLOSED_FOR_SALE_STATUSES) {
+            throw SaleClosedException("Tickets are no longer on sale for this match (${match.status}).")
+        }
+        val kickoff = match.kickoffAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
+        if (kickoff != null && OffsetDateTime.now().isAfter(kickoff.plusHours(MATCH_DURATION_HOURS))) {
+            throw SaleClosedException("This match has already ended; tickets are no longer on sale.")
         }
     }
 
@@ -185,12 +206,22 @@ class TicketService(
     companion object {
         val ALLOWED_PAYMENT_METHODS = setOf("MBWAY", "CARD", "CASH")
 
-        /** Validation window relative to kickoff (staff only; admins are exempt). */
+        /** Staff validation opens this many hours before kickoff (admins exempt). */
         const val VALIDATION_OPENS_HOURS_BEFORE = 2L
-        const val VALIDATION_CLOSES_HOURS_AFTER = 3L
+
+        /**
+         * A match (incl. half-time and stoppage) is treated as lasting at most
+         * this long. Used as both the validation close ("until the match ends")
+         * and the sales cut-off ("no tickets after the match is over").
+         */
+        const val MATCH_DURATION_HOURS = 2L
+
+        /** Match states in which a box office no longer sells tickets. */
+        val CLOSED_FOR_SALE_STATUSES = setOf("CANCELLED", "FINISHED", "ABANDONED")
     }
 }
 
 class TicketNotFoundException(message: String) : RuntimeException(message)
 class EventNotFoundException(message: String) : RuntimeException(message)
 class InvalidTicketStatusException(message: String) : RuntimeException(message)
+class SaleClosedException(message: String) : RuntimeException(message)
