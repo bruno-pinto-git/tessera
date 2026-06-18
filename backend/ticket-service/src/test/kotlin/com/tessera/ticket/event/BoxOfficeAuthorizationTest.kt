@@ -8,10 +8,12 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import com.tessera.ticket.ticket.SaleClosedException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.oauth2.jwt.Jwt
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -64,7 +66,7 @@ class BoxOfficeAuthorizationTest {
 
     @Test
     fun `club manager can open a box office for their home match`() {
-        whenever(matchLookup.homeClubId(99L)).thenReturn(5L)
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L))
         doReturn(event()).whenever(service).create(any(), anyOrNull())
 
         controller.create(
@@ -77,13 +79,23 @@ class BoxOfficeAuthorizationTest {
 
     @Test
     fun `club manager cannot open a box office for another club's match`() {
-        whenever(matchLookup.homeClubId(99L)).thenReturn(7L)
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 7L))
 
         assertFailsWith<AccessDeniedException> {
             controller.create(
                 request(matchId = 99L),
                 jwt(listOf("club-manager"), listOf("/clubs/5/managers")),
             )
+        }
+        verify(service, never()).create(any(), anyOrNull())
+    }
+
+    @Test
+    fun `cannot open a box office for a finished match`() {
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, status = "FINISHED"))
+
+        assertFailsWith<SaleClosedException> {
+            controller.create(request(matchId = 99L), jwt(listOf("platform-admin"), emptyList()))
         }
         verify(service, never()).create(any(), anyOrNull())
     }
@@ -101,7 +113,7 @@ class BoxOfficeAuthorizationTest {
 
     @Test
     fun `an unresolvable home club is denied`() {
-        whenever(matchLookup.homeClubId(99L)).thenReturn(null)
+        whenever(matchLookup.find(99L)).thenReturn(null)
 
         assertFailsWith<AccessDeniedException> {
             controller.create(
@@ -113,6 +125,14 @@ class BoxOfficeAuthorizationTest {
     }
 
     // -------------------------------------------------------------------------
+
+    private fun matchView(homeClubId: Long, status: String = "SCHEDULED") =
+        MatchLookupClient.MatchView(
+            id = 99L,
+            homeClubId = homeClubId,
+            kickoffAt = OffsetDateTime.now().plusHours(2).toString(),
+            status = status,
+        )
 
     private fun request(matchId: Long?) = CreateEventRequest(
         name = "Box office",

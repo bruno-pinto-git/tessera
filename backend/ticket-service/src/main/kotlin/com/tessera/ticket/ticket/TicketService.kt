@@ -2,6 +2,7 @@ package com.tessera.ticket.ticket
 
 import com.tessera.ticket.event.Event
 import com.tessera.ticket.event.EventRepository
+import com.tessera.ticket.event.MatchAvailability
 import com.tessera.ticket.event.MatchLookupClient
 import com.tessera.ticket.events.TicketEventPublisher
 import com.tessera.ticket.payments.MbwayGatewayClient
@@ -165,7 +166,7 @@ class TicketService(
             ?: throw AccessDeniedException("This match has no usable kickoff time.")
         val now = OffsetDateTime.now(ZoneOffset.UTC)
         if (now.isBefore(kickoff.minusHours(VALIDATION_OPENS_HOURS_BEFORE)) ||
-            now.isAfter(kickoff.plusHours(MATCH_DURATION_HOURS))
+            now.isAfter(kickoff.plusHours(MatchAvailability.MATCH_DURATION_HOURS))
         ) {
             throw AccessDeniedException(
                 "Tickets can only be validated from ${VALIDATION_OPENS_HOURS_BEFORE}h before kickoff " +
@@ -183,12 +184,8 @@ class TicketService(
     private fun assertSaleOpen(event: Event) {
         val matchId = event.matchId ?: return
         val match = matchLookup.find(matchId) ?: return
-        if (match.status in CLOSED_FOR_SALE_STATUSES) {
-            throw SaleClosedException("Tickets are no longer on sale for this match (${match.status}).")
-        }
-        val kickoff = match.kickoffAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
-        if (kickoff != null && OffsetDateTime.now(ZoneOffset.UTC).isAfter(kickoff.plusHours(MATCH_DURATION_HOURS))) {
-            throw SaleClosedException("This match has already ended; tickets are no longer on sale.")
+        MatchAvailability.closedReason(match)?.let {
+            throw SaleClosedException("Tickets are no longer on sale: $it.")
         }
     }
 
@@ -209,16 +206,6 @@ class TicketService(
 
         /** Staff validation opens this many hours before kickoff (admins exempt). */
         const val VALIDATION_OPENS_HOURS_BEFORE = 2L
-
-        /**
-         * A match (incl. half-time and stoppage) is treated as lasting at most
-         * this long. Used as both the validation close ("until the match ends")
-         * and the sales cut-off ("no tickets after the match is over").
-         */
-        const val MATCH_DURATION_HOURS = 2L
-
-        /** Match states in which a box office no longer sells tickets. */
-        val CLOSED_FOR_SALE_STATUSES = setOf("CANCELLED", "FINISHED", "ABANDONED")
     }
 }
 

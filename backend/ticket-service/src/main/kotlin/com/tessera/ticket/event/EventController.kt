@@ -2,6 +2,7 @@ package com.tessera.ticket.event
 
 import com.tessera.ticket.common.PageEnvelope
 import com.tessera.ticket.ticket.EventNotFoundException
+import com.tessera.ticket.ticket.SaleClosedException
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -103,11 +104,16 @@ class EventController(
         @RequestBody request: CreateEventRequest,
         @AuthenticationPrincipal jwt: Jwt,
     ): EventResponse {
-        // Resolve the match's home club once: it both authorizes a club manager
-        // and is snapshotted on the event so paid-ticket events can aggregate
-        // sales per club without a match-service call at payment time.
-        val homeClubId = request.matchId?.let { matchLookup.homeClubId(it) }
+        // Resolve the match once: its home club authorizes a club manager and is
+        // snapshotted on the event (so paid-ticket events can aggregate sales per
+        // club without a match-service call at payment time).
+        val match = request.matchId?.let { matchLookup.find(it) }
+        val homeClubId = match?.homeClubId
         authorizeCreate(jwt, request, homeClubId)
+        // No box office for a match that's over or off.
+        match?.let { MatchAvailability.closedReason(it) }?.let { reason ->
+            throw SaleClosedException("Cannot open a box office: $reason.")
+        }
         return toResponse(service.create(request, homeClubId))
     }
 
