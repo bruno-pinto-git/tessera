@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 /**
  * Processes MB WAY gateway callbacks.
@@ -66,7 +67,7 @@ class MbwayWebhookService(
             return
         }
         ticket.status = TicketStatus.PAID
-        ticket.paymentDate = OffsetDateTime.now()
+        ticket.paymentDate = OffsetDateTime.now(ZoneOffset.UTC)
         val saved = ticketRepository.save(ticket)
         publishOnCommit { publisher.publishTicketPaid(saved) }
         log.info("MB WAY webhook: ticket id={} → PAID", saved.id)

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 @Service
@@ -95,7 +96,7 @@ class TicketService(
             ticketRepository.save(ticket)
         } else {
             ticket.status = TicketStatus.PAID
-            ticket.paymentDate = OffsetDateTime.now()
+            ticket.paymentDate = OffsetDateTime.now(ZoneOffset.UTC)
             val saved = ticketRepository.save(ticket)
             publishOnCommit { publisher.publishTicketPaid(saved) }
             saved
@@ -134,7 +135,7 @@ class TicketService(
         }
 
         ticket.status = TicketStatus.VALIDATED
-        ticket.validationDate = OffsetDateTime.now()
+        ticket.validationDate = OffsetDateTime.now(ZoneOffset.UTC)
         ticket.validatorSub = validatorSub
 
         val saved = ticketRepository.save(ticket)
@@ -162,7 +163,7 @@ class TicketService(
 
         val kickoff = match.kickoffAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
             ?: throw AccessDeniedException("This match has no usable kickoff time.")
-        val now = OffsetDateTime.now()
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
         if (now.isBefore(kickoff.minusHours(VALIDATION_OPENS_HOURS_BEFORE)) ||
             now.isAfter(kickoff.plusHours(MATCH_DURATION_HOURS))
         ) {
@@ -186,7 +187,7 @@ class TicketService(
             throw SaleClosedException("Tickets are no longer on sale for this match (${match.status}).")
         }
         val kickoff = match.kickoffAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
-        if (kickoff != null && OffsetDateTime.now().isAfter(kickoff.plusHours(MATCH_DURATION_HOURS))) {
+        if (kickoff != null && OffsetDateTime.now(ZoneOffset.UTC).isAfter(kickoff.plusHours(MATCH_DURATION_HOURS))) {
             throw SaleClosedException("This match has already ended; tickets are no longer on sale.")
         }
     }

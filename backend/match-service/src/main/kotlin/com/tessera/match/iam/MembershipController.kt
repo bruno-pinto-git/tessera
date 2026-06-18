@@ -2,6 +2,9 @@ package com.tessera.match.iam
 
 import com.tessera.match.club.ClubNotFoundException
 import com.tessera.match.club.ClubRepository
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.access.prepost.PreAuthorize
@@ -47,12 +50,14 @@ class MembershipController(
     data class AddMemberRequest(
         val userId: String? = null,
         val role: ClubRole? = null,
-        // Inline new-user creation (used when userId is absent):
-        val username: String? = null,
-        val email: String? = null,
-        val firstName: String? = null,
-        val lastName: String? = null,
-        val password: String? = null,
+        // Inline new-user creation (used when userId is absent). Constraints are
+        // null-tolerant — they only bound the values when the inline path is used;
+        // the "required when creating" checks live in createInlineUser.
+        @field:Size(min = 3, max = 60) val username: String? = null,
+        @field:Email val email: String? = null,
+        @field:Size(max = 100) val firstName: String? = null,
+        @field:Size(max = 100) val lastName: String? = null,
+        @field:Size(min = 6, max = 200) val password: String? = null,
     )
 
     @GetMapping
@@ -67,7 +72,7 @@ class MembershipController(
     @PostMapping
     @PreAuthorize("@clubAuthz.canManageClub(authentication, #clubId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun add(@PathVariable clubId: Long, @RequestBody req: AddMemberRequest, authentication: Authentication) {
+    fun add(@PathVariable clubId: Long, @Valid @RequestBody req: AddMemberRequest, authentication: Authentication) {
         ensureClubExists(clubId)
         val role = req.role ?: ClubRole.STAFF
         // Non-admins (club-managers) may only manage staff.
