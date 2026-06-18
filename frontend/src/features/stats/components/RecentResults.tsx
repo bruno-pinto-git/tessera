@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useMatchLookups } from "@/features/matches/hooks/useMatchLookups";
+import { MatchResultCard } from "@/features/sheets/components/MatchResultCard";
 import { useMatchHistory } from "../hooks/useStats";
-import type { MatchSummary } from "../api/statsApi";
 
 /**
- * Recent closed-match results. Shown to fans on the homepage and reused inside
- * the manager dashboard scoped to a single club. Club names are resolved from
- * the (small) clubs catalogue.
+ * Recent closed-match results. Each match is a small card showing the
+ * scoreline plus its headline events (goals + cards with the player's name),
+ * read from the match-sheet snapshot. Shown to fans on the homepage and
+ * reused inside the manager/staff dashboard scoped to a single club.
  */
 export function RecentResults({ clubId, title = "Resultados recentes" }: { clubId?: number; title?: string }) {
   const { data, loading, error } = useMatchHistory({
-    size: 5,
+    size: 4,
     sort: "kickoffAt,desc",
     ...(clubId != null ? { clubId } : {}),
   });
@@ -21,46 +21,32 @@ export function RecentResults({ clubId, title = "Resultados recentes" }: { clubI
   const clubName = (id: number) => clubs.get(id)?.name ?? `Clube #${id}`;
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base">{title}</CardTitle>
+    <section className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold tracking-tight">{title}</h3>
         <Button variant="ghost" size="sm" asChild>
           <Link to="/events">Ver jogos →</Link>
         </Button>
-      </CardHeader>
-      <CardContent>
-        {error ? (
-          <p className="text-sm text-muted-foreground">Não foi possível carregar os resultados.</p>
-        ) : loading ? (
-          <p className="text-sm text-muted-foreground">A carregar…</p>
-        ) : !data || data.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Ainda não há resultados publicados.</p>
-        ) : (
-          <ul className="divide-y">
-            {data.map((m) => (
-              <ResultRow key={m.matchId} m={m} home={clubName(m.homeClubId)} away={clubName(m.awayClubId)} />
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+      </div>
 
-function ResultRow({ m, home, away }: { m: MatchSummary; home: string; away: string }) {
-  const hasScore = m.homeScore != null && m.awayScore != null;
-  const date = new Date(m.kickoffAt).toLocaleDateString("pt-PT", {
-    day: "2-digit",
-    month: "short",
-  });
-  return (
-    <li className="flex items-center gap-3 py-2.5 text-sm">
-      <span className="w-12 shrink-0 text-xs text-muted-foreground">{date}</span>
-      <span className="flex-1 truncate text-right font-medium">{home}</span>
-      <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 font-display font-bold tabular-nums">
-        {hasScore ? `${m.homeScore} - ${m.awayScore}` : "vs"}
-      </span>
-      <span className="flex-1 truncate font-medium">{away}</span>
-    </li>
+      {error ? (
+        <p className="text-sm text-muted-foreground">Não foi possível carregar os resultados.</p>
+      ) : loading ? (
+        <p className="text-sm text-muted-foreground">A carregar…</p>
+      ) : !data || data.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Ainda não há resultados publicados.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {data.map((m) => (
+            <MatchResultCard
+              key={m.matchId}
+              match={m}
+              homeName={clubName(m.homeClubId)}
+              awayName={clubName(m.awayClubId)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

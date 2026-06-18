@@ -42,6 +42,14 @@ export function occurrenceIcon(t: OccurrenceType): string {
 /** Occurrence types that count toward the scoreline. */
 export const SCORING_TYPES: OccurrenceType[] = ["GOAL", "OWN_GOAL"];
 
+/** The "headline" events shown in a recent-result summary card. */
+export const KEY_EVENT_TYPES: OccurrenceType[] = [
+  "GOAL",
+  "OWN_GOAL",
+  "YELLOW_CARD",
+  "RED_CARD",
+];
+
 export const OCCURRENCE_TYPES: OccurrenceType[] = [
   "GOAL",
   "OWN_GOAL",
