@@ -59,11 +59,22 @@ export function MatchCard({ entry }: MatchCardProps) {
 
       <div className="border-t px-5 py-3 flex items-center justify-between">
         <div className="text-sm">
-          <span className="text-muted-foreground text-xs">a partir de</span>
-          <div className="font-semibold">{entry.priceFrom.toFixed(2)} €</div>
+          {entry.homeScore != null && entry.awayScore != null ? (
+            <>
+              <span className="text-muted-foreground text-xs">Resultado</span>
+              <div className="font-display font-bold tabular-nums">
+                {entry.homeScore} – {entry.awayScore}
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-muted-foreground text-xs">a partir de</span>
+              <div className="font-semibold">{entry.priceFrom.toFixed(2)} €</div>
+            </>
+          )}
         </div>
         <Button size="sm" asChild>
-          <Link to={`/events/${entry.eventId}`}>Comprar bilhete →</Link>
+          <Link to={`/events/${entry.eventId}`}>Ver detalhes →</Link>
         </Button>
       </div>
     </Card>
