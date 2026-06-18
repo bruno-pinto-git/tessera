@@ -15,16 +15,6 @@ interface Filter {
 const FILTERS: Filter[] = [
   { key: "all", label: "Todos", match: () => true },
   {
-    key: "this-week",
-    label: "Esta semana",
-    match: (e) => {
-      if (!e.kickoffAt) return false;
-      const t = new Date(e.kickoffAt).getTime();
-      const now = Date.now();
-      return t - now < 7 * 24 * 3600 * 1000 && t > now;
-    },
-  },
-  {
     key: "upcoming",
     label: "Por jogar",
     match: (e) =>
@@ -32,6 +22,11 @@ const FILTERS: Filter[] = [
       e.matchStatus === "LIVE" ||
       e.matchStatus === "POSTPONED" ||
       e.matchStatus == null,
+  },
+  {
+    key: "finished",
+    label: "Terminados",
+    match: (e) => e.matchStatus === "FINISHED" || e.matchStatus === "ABANDONED",
   },
 ];
 
@@ -62,10 +57,9 @@ export function EventsPage() {
     <div className="space-y-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Próximos jogos</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Jogos</h1>
           <p className="text-sm text-muted-foreground max-w-xl">
-            Calendário dos próximos jogos com bilheteira aberta. Reserva o teu lugar e apresenta o
-            QR à entrada do estádio.
+            Compra bilhetes para os próximos jogos e consulta os resultados dos que já terminaram.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -113,7 +107,7 @@ export function EventsPage() {
       {!loading && !error && visible.length === 0 && (
         <p className="text-sm text-muted-foreground py-12 text-center">
           {entries.length === 0
-            ? "Ainda não há jogos com bilheteira aberta. Volta em breve."
+            ? "Ainda não há jogos publicados. Volta em breve."
             : "Não encontramos jogos com esses critérios."}
         </p>
       )}
