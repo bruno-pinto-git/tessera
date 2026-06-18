@@ -3,6 +3,7 @@ import type { Player } from "@/features/players/api/playersApi";
 import { useMatchSheetHistory, useTeamRosters } from "../hooks/useSheet";
 import type { LineupEntry, Occurrence } from "../api/sheetApi";
 import { occurrenceIcon, occurrenceTypeLabel } from "../lib/labels";
+import { scoreMismatch, tallyGoals } from "../lib/score";
 
 /**
  * Read-only public view of a CLOSED match sheet (lineups + occurrences),
@@ -41,6 +42,19 @@ export function MatchSheetView({
           </p>
         ) : (
           <div className="space-y-8">
+            {scoreMismatch(
+              history.summary.homeScore,
+              history.summary.awayScore,
+              tallyGoals(history.occurrences, history.summary.homeTeamId, history.summary.awayTeamId),
+            ) && (
+              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-muted-foreground">
+                Nota: os golos listados não somam o resultado oficial{" "}
+                <span className="font-medium text-foreground">
+                  {history.summary.homeScore}–{history.summary.awayScore}
+                </span>{" "}
+                — a ficha pode estar incompleta.
+              </p>
+            )}
             <div className="grid gap-8 md:grid-cols-2">
               <LineupColumn
                 title={homeName}

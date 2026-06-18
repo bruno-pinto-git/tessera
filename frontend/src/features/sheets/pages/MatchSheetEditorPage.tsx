@@ -5,12 +5,13 @@ import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Lock, LockOpen } from "lucide-react";
+import { Lock, LockOpen, TriangleAlert } from "lucide-react";
 import { getMatch, type Match } from "@/features/matches/api/matchesApi";
 import { useMatchLookups } from "@/features/matches/hooks/useMatchLookups";
 import { MatchStatusBadge } from "@/features/matches/components/MatchStatusBadge";
 import { useMatchSheet, useTeamRosters } from "../hooks/useSheet";
 import { lockMatchSheet, unlockMatchSheet } from "../api/sheetApi";
+import { scoreMismatch, tallyGoals } from "../lib/score";
 import { LineupEditor } from "../components/LineupEditor";
 import { OccurrenceEditor } from "../components/OccurrenceEditor";
 
@@ -146,6 +147,12 @@ export function MatchSheetEditorPage() {
         <p className="text-sm text-muted-foreground py-8">A carregar ficha…</p>
       ) : (
         <>
+          <ScoreMismatchBanner
+            homeScore={match.homeScore}
+            awayScore={match.awayScore}
+            tally={tallyGoals(sheet.occurrences, match.homeTeamId, match.awayTeamId)}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Convocatórias</CardTitle>
@@ -207,6 +214,29 @@ export function MatchSheetEditorPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function ScoreMismatchBanner({
+  homeScore,
+  awayScore,
+  tally,
+}: {
+  homeScore?: number | null;
+  awayScore?: number | null;
+  tally: { home: number; away: number };
+}) {
+  if (!scoreMismatch(homeScore, awayScore, tally)) return null;
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+      <TriangleAlert className="size-4 shrink-0 text-amber-500 mt-0.5" />
+      <span>
+        Os golos registados na ficha (<span className="font-medium">{tally.home}–{tally.away}</span>)
+        não coincidem com o resultado oficial (
+        <span className="font-medium">{homeScore}–{awayScore}</span>). Confirma os lances ou o
+        resultado do jogo.
+      </span>
     </div>
   );
 }
