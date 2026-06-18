@@ -47,6 +47,15 @@ export function useNextMatch(): NextMatch | null {
   };
 }
 
+/** "Hoje" / "Amanhã" depending on the kickoff's calendar day (24h window). */
+export function dayLabel(target: Date, now: Date = new Date()): string {
+  const sameDay =
+    target.getFullYear() === now.getFullYear() &&
+    target.getMonth() === now.getMonth() &&
+    target.getDate() === now.getDate();
+  return sameDay ? "Hoje" : "Amanhã";
+}
+
 /** Human-readable "Xh YYmin" formatter for the banner. */
 export function formatCountdown(target: Date, now: Date = new Date()): string {
   const diffMs = target.getTime() - now.getTime();

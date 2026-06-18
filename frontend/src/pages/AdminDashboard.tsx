@@ -8,7 +8,6 @@ import {
   UserSquare2,
   UserCog,
   CalendarRange,
-  ClipboardList,
 } from "lucide-react";
 
 interface Section {
@@ -61,13 +60,6 @@ const SECTIONS: Section[] = [
     to: "/admin/matches",
     icon: <CalendarRange className="size-5 text-primary" />,
     status: "ready",
-  },
-  {
-    title: "Fichas técnicas",
-    description: "Convocatórias, golos, cartões e substituições.",
-    to: "/admin/match-sheets",
-    icon: <ClipboardList className="size-5 text-primary" />,
-    status: "soon",
   },
 ];
 

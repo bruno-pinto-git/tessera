@@ -4,6 +4,8 @@ import { ChevronRight } from "lucide-react";
 interface MatchdayBannerProps {
   home: string;
   away: string;
+  /** Day label, e.g. "Hoje" / "Amanhã". */
+  label: string;
   /** Human-readable countdown, e.g. "3h 22min". */
   kickoff: string;
   href: string;
@@ -17,7 +19,7 @@ interface MatchdayBannerProps {
  * Visually it uses `color-mix()` so the tint follows the active theme
  * without needing a dedicated `--primary-soft` token.
  */
-export function MatchdayBanner({ home, away, kickoff, href }: MatchdayBannerProps) {
+export function MatchdayBanner({ home, away, label, kickoff, href }: MatchdayBannerProps) {
   return (
     <Link
       to={href}
@@ -37,7 +39,7 @@ export function MatchdayBanner({ home, away, kickoff, href }: MatchdayBannerProp
             }}
           />
           <span className="font-medium" style={{ color: "var(--primary)" }}>
-            Hoje
+            {label}
           </span>
           <span className="text-muted-foreground">·</span>
           <span className="truncate">

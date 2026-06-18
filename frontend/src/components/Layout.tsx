@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { MatchdayBanner } from "@/components/MatchdayBanner";
 import { UserMenu } from "@/components/UserMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useNextMatch, formatCountdown } from "@/features/matches/useNextMatch";
+import { useNextMatch, formatCountdown, dayLabel } from "@/features/matches/useNextMatch";
 import { cn } from "@/lib/utils";
 
 export function Layout() {
@@ -17,6 +17,7 @@ export function Layout() {
         <MatchdayBanner
           home={next.homeShort}
           away={next.awayShort}
+          label={dayLabel(next.kickoffAt)}
           kickoff={formatCountdown(next.kickoffAt)}
           href={`/events/${next.eventId}`}
         />

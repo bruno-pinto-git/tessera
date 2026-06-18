@@ -11,7 +11,6 @@ import { TeamDetailPage } from "@/pages/TeamDetailPage";
 import { EventsPage } from "@/features/events/pages/EventsPage";
 import { EventDetailPage } from "@/features/events/pages/EventDetailPage";
 import { MyTicketsPage } from "@/features/tickets/pages/MyTicketsPage";
-import { TicketsPage } from "@/features/tickets/pages/TicketsPage";
 import { ClubsAdminPage } from "@/features/clubs/pages/ClubsAdminPage";
 import { UsersAdminPage } from "@/features/users/pages/UsersAdminPage";
 import { VenuesAdminPage } from "@/features/venues/pages/VenuesAdminPage";
@@ -36,16 +35,6 @@ export function AppRoutes() {
           element={
             <ProtectedRoute>
               <MyTicketsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Dev sandbox (kept while the real purchase flow is under construction). */}
-        <Route
-          path="tickets/sandbox"
-          element={
-            <ProtectedRoute>
-              <TicketsPage />
             </ProtectedRoute>
           }
         />
