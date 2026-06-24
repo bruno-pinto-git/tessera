@@ -35,6 +35,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
 import com.tessera.android.data.KeycloakConfig
+import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.LoginState
 import com.tessera.android.viewmodels.LoginViewModel
 
@@ -73,7 +74,7 @@ fun LoginScreen(
             Icon(
                 imageVector = Icons.Filled.Settings,
                 contentDescription = stringResource(R.string.menu_settings),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = GlassInkMuted,
             )
         }
     }
@@ -132,7 +133,7 @@ private fun CenteredProgress(message: String) {
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = GlassInkMuted,
             textAlign = TextAlign.Center,
         )
     }
@@ -157,7 +158,7 @@ private fun ErrorPanel(messageRes: Int, onRetry: () -> Unit) {
         Text(
             text = stringResource(R.string.login_check_settings),
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = GlassInkMuted,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))

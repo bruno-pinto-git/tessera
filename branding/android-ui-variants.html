@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tessera Android — App completa × 10 variantes</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;background:#eceeec;color:#0f1411;padding:40px 20px 80px}
+  .page-head{max-width:1100px;margin:0 auto 28px;text-align:center}
+  .page-head h1{font-size:30px;font-weight:900;color:#1F5A2C;letter-spacing:-.4px}
+  .page-head p{color:#5a6b60;margin-top:8px;font-size:14px;max-width:720px;margin-inline:auto}
+  .page-head .legend{margin-top:10px;font-size:12px;color:#7a8a7e}
+
+  .variant{max-width:1200px;margin:0 auto 18px;background:#fff;border:1px solid #dfe6e0;border-radius:20px;padding:20px 22px 26px}
+  .variant > h2{font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px}
+  .variant > h2 .vn{width:28px;height:28px;border-radius:8px;background:#2E7D40;color:#fff;display:grid;place-items:center;font-size:14px}
+  .variant > .vdesc{color:#5a6b60;font-size:13px;margin:6px 0 16px}
+  .phones{display:flex;flex-wrap:wrap;gap:16px}
+  .pcol{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .cap{font-size:10px;color:#8a978c;font-weight:600}
+
+  /* phone */
+  .phone{width:150px;height:300px;background:#0f1411;border-radius:22px;padding:5px}
+  .scr{width:100%;height:100%;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;
+       background:var(--bg);color:var(--text);font-family:var(--font)}
+  .top{height:30px;display:flex;align-items:center;padding:0 10px;gap:6px;font-size:9px;font-weight:700;color:var(--text)}
+  .body{flex:1;overflow:hidden;padding:9px}
+  .nav{height:34px;display:flex;background:var(--surface);border-top:1px solid var(--line)}
+  .nav i{flex:1;display:flex;align-items:center;justify-content:center}
+  .nav i b{width:13px;height:13px;border-radius:4px;background:var(--muted);display:block}
+  .nav i.on b{background:var(--primary)}
+
+  .h1s{font-weight:800;font-size:13px}
+  .subs{font-size:9px;color:var(--muted);margin-bottom:7px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:8px;margin-bottom:6px;box-shadow:var(--shadow)}
+  .btn{background:var(--primary);color:var(--pink);border-radius:var(--radius);text-align:center;padding:8px;font-size:10px;font-weight:800}
+  .ghost{background:transparent;border:1.4px solid var(--primary);color:var(--primary);border-radius:var(--radius);text-align:center;padding:7px;font-size:10px;font-weight:700}
+  .pill{display:inline-block;font-size:8px;font-weight:800;padding:2px 7px;border-radius:999px;background:var(--primary);color:var(--pink)}
+  .pill.am{background:var(--amber);color:#3a1c00}
+  .row{display:flex;gap:6px;align-items:center}
+  .crestA{width:20px;height:20px;border-radius:50%;background:var(--primary);flex:none}
+  .crestB{width:20px;height:20px;border-radius:50%;background:var(--accent2);flex:none}
+  .ln{height:6px;border-radius:3px;background:var(--line)}
+  .tabs{display:flex;gap:10px;border-bottom:1px solid var(--line);margin-bottom:8px;font-size:9px;font-weight:700;color:var(--muted)}
+  .tabs b{padding-bottom:5px;color:var(--primary);border-bottom:2px solid var(--primary)}
+  .big{font-size:30px;font-weight:900;color:var(--primary);line-height:1}
+  .logo{width:40px;height:40px;border-radius:11px;background:var(--primary);display:grid;place-items:center}
+  .logo b{width:20px;height:13px;border-radius:3px;background:var(--pink);display:block}
+  .qr{width:74px;height:74px;border-radius:8px;margin:6px auto;
+      background:repeating-linear-gradient(90deg,#0F1411 0 5px,#fff 5px 10px),repeating-linear-gradient(0deg,#0F1411 0 5px,#fff 5px 10px);
+      background-blend-mode:multiply;border:3px solid #fff}
+  .scanbox{width:78px;height:78px;border:4px solid var(--primary);border-radius:14px;margin:10px auto;position:relative}
+  .scanbox::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;background:var(--amber)}
+  .field{height:22px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);margin-bottom:6px}
+  .center{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;height:100%;gap:8px}
+</style>
+</head>
+<body>
+<div class="page-head">
+  <h1>Tessera · Android — App completa × 10 variantes</h1>
+  <p>O <b>mesmo conjunto de ecrãs</b> (todos os do frontend + os próprios do Android), repetido em <b>10 peles visuais</b>. Compara a app inteira em cada variante e escolhe a direção — depois desenho os detalhes finais.</p>
+  <div class="legend">Ecrãs: Login · Home · Eventos · Detalhe · Comprar · Bilhetes · Validar (Android) · Clube · Equipa · Admin · Definições (Android)</div>
+</div>
+<div id="app"></div>
+
+<script>
+/* ---------- screens (theme-agnostic markup; estilo vem do tema) ---------- */
+const SCREENS = [
+  ["Login", `<div class="top"></div><div class="body"><div class="center">
+      <div class="logo"><b></b></div>
+      <div class="h1s" style="font-size:16px">TESSERA</div>
+      <div class="subs">Validação & bilheteira</div>
+      <div class="field" style="width:100%"></div><div class="field" style="width:100%"></div>
+      <div class="btn" style="width:100%">Entrar</div>
+   </div></div>`],
+
+  ["Home", `<div class="top">Olá, Daniel</div><div class="body">
+      <div class="card" style="background:var(--primary);border:none"><div style="color:var(--pink);font-weight:800;font-size:11px">Validar bilhetes</div></div>
+      <div class="row" style="gap:6px"><div class="card" style="flex:1"><div class="h1s" style="font-size:10px">Eventos</div></div><div class="card" style="flex:1"><div class="h1s" style="font-size:10px">Bilhetes</div></div></div>
+      <div class="row" style="gap:6px"><div class="card" style="flex:1"><div class="h1s" style="font-size:10px">Clube</div></div><div class="card" style="flex:1"><div class="h1s" style="font-size:10px">Admin</div></div></div>
+   </div>${nav(0)}`],
+
+  ["Eventos", `<div class="top">Eventos</div><div class="body">
+      <div class="h1s">Próximos jogos</div><div class="subs">Esta semana</div>
+      <div class="card"><div class="row"><div class="crestA"></div><div class="crestB"></div><div style="flex:1;font-size:9px;font-weight:700">Águias vs Leões</div><span class="pill">8€</span></div></div>
+      <div class="card"><div class="row"><div class="crestA"></div><div class="crestB"></div><div style="flex:1;font-size:9px;font-weight:700">FC Vale vs Unidos</div><span class="pill">6€</span></div></div>
+      <div class="card"><div class="row"><div class="crestA"></div><div class="crestB"></div><div style="flex:1;font-size:9px;font-weight:700">Mar vs Serra</div><span class="pill">7€</span></div></div>
+   </div>${nav(0)}`],
+
+  ["Detalhe", `<div class="top">← Evento</div><div class="body">
+      <div class="row" style="justify-content:center;gap:10px;margin:4px 0"><div class="crestA" style="width:30px;height:30px"></div><div style="font-weight:900;font-size:11px">VS</div><div class="crestB" style="width:30px;height:30px"></div></div>
+      <div style="text-align:center;font-weight:800;font-size:11px">Águias vs Leões</div>
+      <div class="subs" style="text-align:center">Sáb 18h00 · Estádio Municipal</div>
+      <div class="card"><div class="row" style="justify-content:space-around;text-align:center"><div><div style="font-size:8px;color:var(--muted)">Normal</div><div class="h1s">8€</div></div><div><div style="font-size:8px;color:var(--muted)">Sócio</div><div class="h1s">4€</div></div></div></div>
+      <div class="btn" style="width:100%;margin-top:4px">Comprar bilhete</div>
+   </div>`],
+
+  ["Comprar", `<div class="top">Pagamento</div><div class="body">
+      <div class="h1s">Método</div><div class="subs">Águias vs Leões · 8€</div>
+      <div class="field" style="width:100%"></div>
+      <div class="btn" style="width:100%;margin-bottom:6px">Pagar com MB WAY</div>
+      <div class="ghost" style="width:100%">Pagar com cartão</div>
+      <div class="ln" style="margin-top:10px;width:60%"></div>
+   </div>`],
+
+  ["Bilhetes", `<div class="top">Os meus bilhetes</div><div class="body">
+      <div class="subs">Pronto a usar</div>
+      <div class="card" style="text-align:center"><div class="qr"></div><div style="font-size:8px;color:var(--muted)">Águias vs Leões · 8€</div></div>
+      <div class="subs">Aguarda pagamento</div>
+      <div class="card"><div class="row" style="justify-content:space-between"><span style="font-size:9px;font-weight:700">FC Vale · 6€</span><span class="pill am">pendente</span></div></div>
+   </div>${nav(1)}`],
+
+  ["Validar", `<div class="top">Tessera · Portão</div><div class="body"><div class="center">
+      <div class="subs">Aproxima o QR ao leitor</div>
+      <div class="scanbox"></div>
+      <span class="pill">VÁLIDO</span>
+      <div style="font-size:9px;color:var(--muted)">Carrega no botão lateral</div>
+   </div></div>`],
+
+  ["Clube", `<div class="top">Águias FC</div><div class="body">
+      <div class="tabs"><b>Equipas</b><span>Jogos</span><span>Membros</span></div>
+      <div class="card"><div class="h1s" style="font-size:10px">Sénior Masculina</div></div>
+      <div class="card"><div class="h1s" style="font-size:10px">Sub-19</div></div>
+      <div class="card"><div class="h1s" style="font-size:10px">Sub-15</div></div>
+   </div>${nav(2)}`],
+
+  ["Equipa", `<div class="top">← Sénior M</div><div class="body">
+      <div class="card"><div class="row"><div style="width:18px;font-weight:800;color:var(--primary)">10</div><div style="flex:1"><div style="font-size:9px;font-weight:700">João Silva</div><div style="font-size:8px;color:var(--muted)">MF · Activo</div></div></div></div>
+      <div class="card"><div class="row"><div style="width:18px;font-weight:800;color:var(--primary)">7</div><div style="flex:1"><div style="font-size:9px;font-weight:700">Rui Costa</div><div style="font-size:8px;color:var(--muted)">FW · Activo</div></div></div></div>
+      <div class="card"><div class="row"><div style="width:18px;font-weight:800;color:var(--primary)">1</div><div style="flex:1"><div style="font-size:9px;font-weight:700">P. Alves</div><div style="font-size:8px;color:var(--muted)">GK · Lesionado</div></div></div></div>
+   </div>`],
+
+  ["Admin", `<div class="top">Administração</div><div class="body">
+      <div class="row" style="gap:6px"><div class="card" style="flex:1"><div class="h1s" style="font-size:9px">Clubes</div></div><div class="card" style="flex:1"><div class="h1s" style="font-size:9px">Users</div></div></div>
+      <div class="row" style="gap:6px"><div class="card" style="flex:1"><div class="h1s" style="font-size:9px">Recintos</div></div><div class="card" style="flex:1"><div class="h1s" style="font-size:9px">Jogos</div></div></div>
+      <div class="row" style="gap:6px"><div class="card" style="flex:1"><div class="h1s" style="font-size:9px">Jogadores</div></div><div class="card" style="flex:1"><div class="h1s" style="font-size:9px">Equipas</div></div></div>
+   </div>${nav(3)}`],
+
+  ["Definições", `<div class="top">Configurações</div><div class="body">
+      <div class="h1s">Servidor</div><div class="subs">IP do backend na rede</div>
+      <div class="field" style="width:100%"></div>
+      <div style="font-size:8px;color:var(--muted);margin-bottom:8px">http://192.168.1.10:8000</div>
+      <div class="btn" style="width:100%">Guardar</div>
+   </div>`],
+];
+function nav(active){
+  return `<div class="nav">${[0,1,2,3].map(i=>`<i class="${i===active?'on':''}"><b></b></i>`).join('')}</div>`;
+}
+
+/* ---------- 10 themes ---------- */
+const THEMES = [
+  {id:'material', name:'Material You', desc:'Claro, arredondado, verde Tessera. Bottom nav, cards suaves. O padrão Android de hoje.',
+   v:{'--bg':'#F4F7F4','--surface':'#FFFFFF','--primary':'#2E7D40','--pink':'#FFFFFF','--accent2':'#3a6ea5','--text':'#0f1411','--muted':'#6B7A6E','--line':'#E2E9E3','--amber':'#FF8A3D','--radius':'14px','--shadow':'0 1px 2px rgba(0,0,0,.05)','--font':"'Inter',sans-serif"}},
+
+  {id:'mono', name:'Minimal Mono', desc:'Preto / branco / verde, tipografia forte, botões outline. Elegante e atemporal.',
+   v:{'--bg':'#FFFFFF','--surface':'#FFFFFF','--primary':'#15331F','--pink':'#FFFFFF','--accent2':'#9aa','--text':'#0f1411','--muted':'#9aa39b','--line':'#E6E6E6','--amber':'#15331F','--radius':'6px','--shadow':'none','--font':"'Inter',sans-serif"}},
+
+  {id:'stadium', name:'Estádio', desc:'Gradientes de campo, energia desportiva, herói vibrante. Vende a emoção do jogo.',
+   v:{'--bg':'#EAF3EC','--surface':'#FFFFFF','--primary':'#1F8A4C','--pink':'#FFFFFF','--accent2':'#1769aa','--text':'#10231a','--muted':'#5f7a68','--line':'#D6E6DA','--amber':'#FFB300','--radius':'16px','--shadow':'0 3px 10px rgba(31,138,76,.12)','--font':"'Inter',sans-serif"}},
+
+  {id:'neon', name:'Dark Neon', desc:'Tema escuro com verde-neon. Confortável à noite, brilha em OLED.',
+   v:{'--bg':'#0E1512','--surface':'#16201B','--primary':'#3DDC84','--pink':'#06140c','--accent2':'#4f9fe0','--text':'#EAF2EC','--muted':'#6a7a70','--line':'#24302A','--amber':'#FFC24B','--radius':'14px','--shadow':'none','--font':"'Inter',sans-serif"}},
+
+  {id:'ticket', name:'Bilhete', desc:'Metáfora do bilhete físico — fundo creme, stubs coloridos, QR como herói.',
+   v:{'--bg':'#FBF7EE','--surface':'#FFFFFF','--primary':'#2E7D40','--pink':'#FFFFFF','--accent2':'#b5552e','--text':'#26201a','--muted':'#9a8f7e','--line':'#E8DFCD','--amber':'#E08A2E','--radius':'10px','--shadow':'0 2px 6px rgba(0,0,0,.06)','--font':"'Inter',sans-serif"}},
+
+  {id:'flat', name:'Flat Bold', desc:'Cores chapadas, pesos fortes, contraste alto mas amigável. Direto ao assunto.',
+   v:{'--bg':'#EFEFEA','--surface':'#FFFFFF','--primary':'#0B6E3A','--pink':'#FFFFFF','--accent2':'#1d4e89','--text':'#111','--muted':'#777','--line':'#E0E0DA','--amber':'#FF6A1A','--radius':'10px','--shadow':'none','--font':"'Inter',sans-serif"}},
+
+  {id:'pastel', name:'Soft Pastel', desc:'Verdes suaves, cantos muito redondos, sombras leves. Acolhedor e calmo.',
+   v:{'--bg':'#EFF6F0','--surface':'#FFFFFF','--primary':'#5FB07C','--pink':'#FFFFFF','--accent2':'#7fa9d8','--text':'#33453a','--muted':'#9bb3a3','--line':'#E4EFE7','--amber':'#F4A261','--radius':'20px','--shadow':'0 4px 14px rgba(95,176,124,.16)','--font':"'Inter',sans-serif"}},
+
+  {id:'editorial', name:'Editorial', desc:'Serif, ar de revista, linhas finas. Sofisticado, foco no conteúdo.',
+   v:{'--bg':'#FCFBF7','--surface':'#FFFFFF','--primary':'#234A2E','--pink':'#FFFFFF','--accent2':'#7a5c3a','--text':'#1c1a16','--muted':'#8a857a','--line':'#E7E3D8','--amber':'#9a6b2f','--radius':'4px','--shadow':'none','--font':"Georgia,'Times New Roman',serif"}},
+
+  {id:'glass', name:'Glass', desc:'Fundo em gradiente com superfícies translúcidas (efeito iOS). Profundidade e brilho.',
+   v:{'--bg':'linear-gradient(160deg,#2E7D40,#0E1512)','--surface':'rgba(255,255,255,.14)','--primary':'#FFFFFF','--pink':'#16402a','--accent2':'#bfe3c9','--text':'#FFFFFF','--muted':'#cfe0d5','--line':'rgba(255,255,255,.22)','--amber':'#FFD27A','--radius':'16px','--shadow':'0 4px 18px rgba(0,0,0,.18)','--font':"'Inter',sans-serif"}},
+
+  {id:'pos', name:'POS Kiosk', desc:'Alto contraste, elementos grandes, zero distrações. Pensado para o terminal apG31.',
+   v:{'--bg':'#0F1411','--surface':'#1C2620','--primary':'#36C26B','--pink':'#04130a','--accent2':'#3a6ea5','--text':'#FFFFFF','--muted':'#7e8e84','--line':'#2c3a32','--amber':'#FFB020','--radius':'12px','--shadow':'none','--font':"'Inter',sans-serif"}},
+];
+
+const app = document.getElementById('app');
+THEMES.forEach((t,i)=>{
+  const sec = document.createElement('section');
+  sec.className = 'variant';
+  Object.entries(t.v).forEach(([k,val])=>sec.style.setProperty(k,val));
+  let phones = SCREENS.map(([cap,html])=>`<div class="pcol"><div class="phone"><div class="scr">${html}</div></div><div class="cap">${cap}</div></div>`).join('');
+  sec.innerHTML = `<h2><span class="vn">${i+1}</span>${t.name}</h2><div class="vdesc">${t.desc}</div><div class="phones">${phones}</div>`;
+  app.appendChild(sec);
+});
+</script>
+</body>
+</html>

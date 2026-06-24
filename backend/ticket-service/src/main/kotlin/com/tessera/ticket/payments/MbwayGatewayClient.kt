@@ -7,8 +7,10 @@ import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
+import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
@@ -35,7 +37,10 @@ class MbwayGatewayClient(
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val restTemplate = RestTemplate()
+    private val restTemplate: RestTemplate = RestTemplateBuilder()
+        .setConnectTimeout(Duration.ofSeconds(4))
+        .setReadTimeout(Duration.ofSeconds(6))
+        .build()
 
     /**
      * Initiates a MB WAY payment for [ticket] with the given customer phone.

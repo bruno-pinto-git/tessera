@@ -10,24 +10,41 @@ object NsdkRepository {
 
     private const val TAG = "NsdkRepository"
 
-    val barcodeScanner: BarcodeScanner by lazy {
-        NSDKModuleManagerImpl.getInstance()
-            .getModule(ModuleType.BARCODE_SCANNER) as BarcodeScanner
+    /** True apenas num dispositivo Newland onde o NSDK arrancou com sucesso. */
+    var available: Boolean = false
+        private set
+
+    /** Null num dispositivo sem o hardware/SDK Newland (ex: telemóvel normal). */
+    val barcodeScanner: BarcodeScanner? by lazy {
+        if (!available) {
+            null
+        } else {
+            try {
+                NSDKModuleManagerImpl.getInstance().getModule(ModuleType.BARCODE_SCANNER) as? BarcodeScanner
+            } catch (t: Throwable) {
+                Log.e(TAG, "Barcode scanner indisponível: ${t.message}", t)
+                null
+            }
+        }
     }
 
     fun init(context: Context) {
-        try {
+        // catch Throwable: num telemóvel sem Newland o NSDK pode lançar Error
+        // (UnsatisfiedLinkError/NoClassDefFoundError), que catch(Exception) não apanha.
+        available = try {
             NSDKModuleManagerImpl.getInstance().init(context)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to init NSDK: ${e.message}", e)
+            true
+        } catch (t: Throwable) {
+            Log.e(TAG, "NSDK indisponível neste dispositivo: ${t.message}", t)
+            false
         }
     }
 
     fun destroy() {
         try {
             NSDKModuleManagerImpl.getInstance().destroy()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to destroy NSDK: ${e.message}", e)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to destroy NSDK: ${t.message}", t)
         }
     }
 }

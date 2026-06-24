@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
+import com.tessera.android.screens.components.searchFieldColors
+import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.SettingsViewModel
 
 @Composable
@@ -50,7 +52,7 @@ fun SettingsScreen(
         Text(
             text = stringResource(R.string.settings_help),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = GlassInkMuted,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(28.dp))
@@ -66,6 +68,7 @@ fun SettingsScreen(
                 imeAction = ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(onDone = { viewModel.save() }),
+            colors = searchFieldColors(),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))
@@ -73,12 +76,12 @@ fun SettingsScreen(
         Text(
             text = viewModel.previewBaseUrl,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = GlassInkMuted,
         )
         Text(
             text = viewModel.previewIssuer,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = GlassInkMuted,
         )
         Spacer(Modifier.height(24.dp))
 

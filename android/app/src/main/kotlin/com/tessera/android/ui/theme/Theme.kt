@@ -5,34 +5,36 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val TesseraLightScheme = lightColorScheme(
-    primary = TesseraForest,
+// Warm Paper (#15) — fundo creme, cartões brancos, verde de destaque, texto escuro.
+private val TesseraWarmPaper = lightColorScheme(
+    primary = Color(0xFF15803D),
     onPrimary = Color.White,
-    primaryContainer = TesseraForestSoft,
-    onPrimaryContainer = TesseraForest,
-    secondary = Neutral700,
+    primaryContainer = Color(0xFFCCE9D5),
+    onPrimaryContainer = Color(0xFF06351A),
+    secondary = Color(0xFF4D6354),
     onSecondary = Color.White,
-    secondaryContainer = Neutral100,
-    onSecondaryContainer = Neutral900,
-    tertiary = Neutral500,
-    background = Color.White,
-    onBackground = Neutral900,
+    secondaryContainer = Color(0xFFD7E5DB),
+    onSecondaryContainer = Color(0xFF16241B),
+    tertiary = Color(0xFF6B6052),
+    onTertiary = Color.White,
+    background = GlassBgLight,
+    onBackground = GlassInk,
     surface = Color.White,
-    onSurface = Neutral900,
-    surfaceVariant = Neutral100,
-    onSurfaceVariant = Neutral500,
-    error = StatusInvalid,
+    onSurface = GlassInk,
+    surfaceVariant = Color(0xFFEDE7DC),
+    onSurfaceVariant = GlassInkMuted,
+    error = Color(0xFFB3261E),
     onError = Color.White,
-    errorContainer = StatusInvalidSoft,
-    onErrorContainer = StatusInvalid,
-    outline = Neutral200,
-    outlineVariant = Neutral200,
+    errorContainer = Color(0xFFF9DEDC),
+    onErrorContainer = Color(0xFF410E0B),
+    outline = Color(0xFFE4DCCF),
+    outlineVariant = Color(0xFFEDE7DC),
 )
 
 @Composable
 fun TesseraTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = TesseraLightScheme,
+        colorScheme = TesseraWarmPaper,
         typography = TesseraTypography,
         content = content,
     )

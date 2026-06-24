@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tessera Android — 10 estilos de layout</title>
+<style>
+  :root{
+    --green:#2E7D40;--green-d:#1F5A2C;--green-l:#3DDC84;
+    --bg:#F4F7F4;--surface:#fff;--text:#0f1411;--muted:#6B7A6E;--line:#E2E9E3;--amber:#FF8A3D;--blue:#3a6ea5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;background:#e9ebe9;color:var(--text);padding:40px 20px 80px}
+  .ph-head{max-width:1100px;margin:0 auto 26px;text-align:center}
+  .ph-head h1{font-size:30px;font-weight:900;color:var(--green-d);letter-spacing:-.4px}
+  .ph-head p{color:#5a6b60;font-size:14px;margin-top:8px;max-width:740px;margin-inline:auto}
+  .variant{max-width:1200px;margin:0 auto 16px;background:#fff;border:1px solid #dfe6e0;border-radius:20px;padding:20px 22px 26px}
+  .variant h2{font-size:19px;font-weight:800;display:flex;align-items:center;gap:10px}
+  .variant h2 .vn{width:28px;height:28px;border-radius:8px;background:var(--green);color:#fff;display:grid;place-items:center;font-size:14px}
+  .sig{color:#5a6b60;font-size:12.5px;margin:7px 0 16px}
+  .sig b{color:var(--text)}
+  .phones{display:flex;flex-wrap:wrap;gap:16px}
+  .pcol{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .cap{font-size:10px;color:#8a978c;font-weight:600}
+
+  .phone{width:152px;height:310px;background:#0f1411;border-radius:22px;padding:5px;flex:none}
+  .scr{width:100%;height:100%;border-radius:18px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;position:relative}
+  .body{flex:1;overflow:hidden;padding:9px;display:flex;flex-direction:column;gap:6px}
+  .rowscr{flex-direction:row!important;padding:0!important;gap:0!important}
+
+  /* ===== TOP BARS ===== */
+  .tb{height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:11px;font-weight:800;color:#fff;background:var(--green);flex:none}
+  .tb.flat{background:transparent;color:var(--text);border-bottom:1px solid var(--line)}
+  .tb.ctr{justify-content:center;background:transparent;color:var(--text);border-bottom:1px solid var(--line)}
+  .tb.lg{height:auto;flex-direction:column;align-items:flex-start;background:transparent;color:var(--text);padding:12px 12px 8px;gap:2px;border-bottom:1px solid var(--line)}
+  .tb.lg .big{font-size:18px;font-weight:900}
+  .tb.lg .sm{font-size:9px;color:var(--muted);font-weight:600}
+  .mi{display:flex;flex-direction:column;gap:2px}.mi b{width:13px;height:1.8px;background:currentColor;display:block}
+  .back{font-size:13px;font-weight:800}
+  .grow{flex:1}
+  .dot{width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.4)}
+  .se{flex:1;height:20px;border-radius:999px;background:rgba(255,255,255,.22);display:flex;align-items:center;padding:0 8px;font-size:9px;color:rgba(255,255,255,.8);font-weight:600}
+  .se.dk{background:#fff;border:1px solid var(--line);color:var(--muted)}
+
+  /* ===== BOTTOM / NAV ===== */
+  .bn{height:36px;display:flex;background:var(--surface);border-top:1px solid var(--line);flex:none}
+  .bn i{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:7px;color:var(--muted)}
+  .bn i b{width:14px;height:14px;border-radius:5px;background:currentColor;opacity:.8}
+  .bn i.on{color:var(--green)}
+  .bn.ios{background:rgba(255,255,255,.92)}
+  .bn.pill{padding:5px 8px}.bn.pill .wrap{background:var(--green-d);border-radius:999px;display:flex;width:100%;height:100%}
+  .bn.pill i{color:rgba(255,255,255,.6)}.bn.pill i.on{color:#fff}
+  .rail{width:34px;background:var(--green-d);display:flex;flex-direction:column;align-items:center;padding-top:10px;gap:14px;flex:none}
+  .rail i{width:16px;height:16px;border-radius:6px;background:rgba(255,255,255,.45)}.rail i.on{background:#fff}
+  .drawer{position:absolute;inset:0;display:flex}
+  .drawer .panel{width:66%;background:var(--green-d);color:#fff;padding:14px 12px;display:flex;flex-direction:column;gap:3px}
+  .drawer .panel .di{font-size:10px;padding:6px 8px;border-radius:8px}
+  .drawer .panel .di.on{background:rgba(255,255,255,.16)}
+  .drawer .panel .grp{font-size:8px;opacity:.6;margin:8px 0 2px}
+  .drawer .scrim{flex:1;background:rgba(0,0,0,.35)}
+  .fab{position:absolute;right:12px;bottom:46px;width:34px;height:34px;border-radius:14px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:18px;font-weight:300;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+  .fab.ctr{right:auto;left:50%;transform:translateX(-50%)}
+
+  /* ===== CONTENT ===== */
+  .h{font-weight:800;font-size:12px}.s{font-size:9px;color:var(--muted)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
+  .crestA{width:18px;height:18px;border-radius:50%;background:var(--green);flex:none}
+  .crestB{width:18px;height:18px;border-radius:50%;background:var(--blue);flex:none}
+  .row{display:flex;align-items:center;gap:6px}
+  .pill{font-size:8px;font-weight:800;padding:2px 6px;border-radius:999px;background:var(--green);color:#fff}
+  .pill.am{background:var(--amber);color:#3a1c00}
+  .btn{background:var(--green);color:#fff;border-radius:10px;text-align:center;padding:7px;font-size:10px;font-weight:800}
+  .btnf{border:1.4px solid var(--green);color:var(--green);border-radius:10px;text-align:center;padding:6px;font-size:10px;font-weight:700}
+  .seg{display:flex;background:#e7ece8;border-radius:9px;padding:2px;font-size:8px;font-weight:700}
+  .seg span{flex:1;text-align:center;padding:4px;border-radius:7px;color:var(--muted)}
+  .seg span.on{background:#fff;color:var(--text)}
+  .tabsbar{display:flex;gap:12px;font-size:9px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);padding:0 2px}
+  .tabsbar b{padding:6px 0;color:var(--green);border-bottom:2px solid var(--green)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 8px;font-size:9px;font-weight:700}
+  .tile .ti{width:18px;height:18px;border-radius:6px;background:var(--green);margin-bottom:6px}
+  .hcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800}
+  .hcard .ti{width:24px;height:24px;border-radius:8px;background:var(--green)}
+  .qr{width:66px;height:66px;border-radius:7px;margin:4px auto;background:repeating-linear-gradient(90deg,#0F1411 0 5px,#fff 5px 10px),repeating-linear-gradient(0deg,#0F1411 0 5px,#fff 5px 10px);background-blend-mode:multiply;border:3px solid #fff}
+  .scanbox{width:74px;height:74px;border:4px solid var(--green);border-radius:14px;margin:8px auto;position:relative}
+  .scanbox::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;background:var(--amber)}
+  .field{height:20px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+  .center{align-items:center;justify-content:center;text-align:center}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:12px;box-shadow:0 -4px 14px rgba(0,0,0,.12);display:flex;flex-direction:column;gap:7px}
+  .grab{width:30px;height:3px;border-radius:3px;background:var(--line);margin:0 auto 4px}
+  .chip{font-size:8px;font-weight:700;padding:4px 8px;border-radius:999px;background:#e7ece8;color:var(--green-d)}
+</style>
+</head>
+<body>
+<div class="ph-head">
+  <h1>Tessera · Android — 10 estilos de layout</h1>
+  <p>Mesma cor (verde Tessera) em todos. O que muda é a <b>estrutura</b>: top bars, navegação (bottom bar / gaveta / abas / rail / hub), botões, FABs e arrumação do conteúdo. Cada estilo mostra ecrãs-chave que evidenciam a sua moldura.</p>
+</div>
+<div id="app"></div>
+
+<script>
+/* ---- conteúdo reutilizável (varia a apresentação conforme o estilo) ---- */
+const evList = ()=>`
+  <div class="card"><div class="row"><div class="crestA"></div><div class="crestB"></div><div class="grow" style="font-size:9px;font-weight:700">Águias vs Leões</div><span class="pill">8€</span></div></div>
+  <div class="card"><div class="row"><div class="crestA"></div><div class="crestB"></div><div class="grow" style="font-size:9px;font-weight:700">FC Vale vs Unidos</div><span class="pill">6€</span></div></div>
+  <div class="card"><div class="row"><div class="crestA"></div><div class="crestB"></div><div class="grow" style="font-size:9px;font-weight:700">Mar vs Serra</div><span class="pill">7€</span></div></div>`;
+const evFeed = ()=>`
+  <div class="card" style="padding:0;overflow:hidden"><div style="height:42px;background:linear-gradient(135deg,var(--green),var(--green-l))"></div><div style="padding:8px;font-size:10px;font-weight:800">Águias vs Leões<div class="s">Sáb 18h · 8€</div></div></div>
+  <div class="card" style="padding:0;overflow:hidden"><div style="height:42px;background:linear-gradient(135deg,var(--blue),#7fb3e8)"></div><div style="padding:8px;font-size:10px;font-weight:800">FC Vale vs Unidos<div class="s">Dom 16h · 6€</div></div></div>`;
+const ticketsC = ()=>`
+  <div class="s">Pronto a usar</div>
+  <div class="card center" style="display:flex;flex-direction:column"><div class="qr"></div><div style="font-size:8px;color:var(--muted)">Águias vs Leões · 8€</div></div>`;
+const detailC = ()=>`
+  <div class="row center" style="gap:8px;margin:2px 0"><div class="crestA" style="width:26px;height:26px"></div><b style="font-size:10px">VS</b><div class="crestB" style="width:26px;height:26px"></div></div>
+  <div style="text-align:center;font-weight:800;font-size:10px">Águias vs Leões</div><div class="s" style="text-align:center">Sáb 18h00</div>
+  <div class="card"><div class="row" style="justify-content:space-around;text-align:center"><div><div class="s">Normal</div><div class="h">8€</div></div><div><div class="s">Sócio</div><div class="h">4€</div></div></div></div>
+  <div class="btn">Comprar bilhete</div>`;
+const adminGrid = ()=>`<div class="grid2">
+  ${['Clubes','Users','Recintos','Jogos','Jogadores','Equipas'].map(x=>`<div class="tile"><div class="ti"></div>${x}</div>`).join('')}</div>`;
+const players = ()=>`
+  ${[['10','João Silva','MF'],['7','Rui Costa','FW'],['1','P. Alves','GK']].map(p=>`<div class="card"><div class="row"><b style="width:16px;color:var(--green)">${p[0]}</b><div class="grow" style="font-size:9px;font-weight:700">${p[1]}</div><span class="s">${p[2]}</span></div></div>`).join('')}`;
+const playerList = players;
+const clubTeams = ()=>`
+  <div class="card"><div class="h" style="font-size:10px">Sénior Masculina</div></div>
+  <div class="card"><div class="h" style="font-size:10px">Sub-19</div></div>
+  <div class="card"><div class="h" style="font-size:10px">Sub-15</div></div>`;
+
+/* ---- helpers de moldura ---- */
+const phone = (inner)=>`<div class="phone"><div class="scr">${inner}</div></div>`;
+const col = (cap,inner)=>`<div class="pcol">${phone(inner)}<div class="cap">${cap}</div></div>`;
+const body = (html,extra='')=>`<div class="body ${extra}">${html}</div>`;
+const bn = (act,labels)=>`<div class="bn">${labels.map((l,i)=>`<i class="${i===act?'on':''}"><b></b>${l}</i>`).join('')}</div>`;
+
+const STYLES = [
+ {n:'Bottom Navigation Bar', sig:'<b>Top bar</b> fina colorida · <b>nav</b>: 4 tabs em baixo · <b>FAB</b> para a ação principal · listas em cards. O padrão Android por excelência.',
+  screens:[
+   ['Eventos', `<div class="tb">Eventos<div class="grow"></div><div class="dot"></div></div>${body(evList())}<div class="fab">+</div>${bn(0,['Eventos','Bilhetes','Clube','Perfil'])}`],
+   ['Bilhetes', `<div class="tb">Bilhetes</div>${body(ticketsC())}${bn(1,['Eventos','Bilhetes','Clube','Perfil'])}`],
+   ['Clube', `<div class="tb">Águias FC</div>${body(`<div class="tabsbar"><b>Equipas</b><span>Jogos</span><span>Membros</span></div>${clubTeams()}`)}${bn(2,['Eventos','Bilhetes','Clube','Perfil'])}`],
+  ]},
+
+ {n:'Navigation Drawer (gaveta)', sig:'<b>Top bar</b> com ☰ · <b>nav</b>: gaveta lateral por secções · conteúdo full-width. Aguenta o admin todo sem poluir.',
+  screens:[
+   ['Gaveta', `<div class="tb"><div class="mi"><b></b><b></b><b></b></div>Tessera</div>${body(evList())}<div class="drawer"><div class="panel"><b style="font-size:11px">Daniel</b><div class="grp">BILHETEIRA</div><div class="di on">Eventos</div><div class="di">Os meus bilhetes</div><div class="grp">CLUBE</div><div class="di">Equipas</div><div class="di">Jogos</div><div class="grp">ADMIN</div><div class="di">Utilizadores</div></div><div class="scrim"></div></div>`],
+   ['Eventos', `<div class="tb"><div class="mi"><b></b><b></b><b></b></div>Eventos</div>${body(evList())}`],
+   ['Admin', `<div class="tb"><div class="mi"><b></b><b></b><b></b></div>Administração</div>${body(adminGrid())}`],
+  ]},
+
+ {n:'Abas no topo (Top Tabs)', sig:'<b>Top bar</b> + linha de <b>abas</b> com swipe horizontal · sem bottom bar · conteúdo paginado.',
+  screens:[
+   ['Eventos', `<div class="tb">Tessera</div><div class="tabsbar" style="height:26px;align-items:center"><b>Eventos</b><span>Bilhetes</span><span>Clube</span></div>${body(evList())}`],
+   ['Bilhetes', `<div class="tb">Tessera</div><div class="tabsbar" style="height:26px;align-items:center"><span>Eventos</span><b>Bilhetes</b><span>Clube</span></div>${body(ticketsC())}`],
+   ['Clube', `<div class="tb">Tessera</div><div class="tabsbar" style="height:26px;align-items:center"><span>Eventos</span><span>Bilhetes</span><b>Clube</b></div>${body(clubTeams())}`],
+  ]},
+
+ {n:'Navigation Rail (lateral)', sig:'<b>Rail</b> vertical de ícones à esquerda · sem bottom bar · ótimo em ecrã largo / landscape do POS.',
+  screens:[
+   ['Eventos', `<div class="body rowscr"><div class="rail"><i class="on"></i><i></i><i></i><i></i></div><div style="flex:1;display:flex;flex-direction:column"><div class="tb flat">Eventos</div>${body(evList())}</div></div>`],
+   ['Clube', `<div class="body rowscr"><div class="rail"><i></i><i></i><i class="on"></i><i></i></div><div style="flex:1;display:flex;flex-direction:column"><div class="tb flat">Águias FC</div>${body(clubTeams())}</div></div>`],
+   ['Admin', `<div class="body rowscr"><div class="rail"><i></i><i></i><i></i><i class="on"></i></div><div style="flex:1;display:flex;flex-direction:column"><div class="tb flat">Admin</div>${body(adminGrid())}</div></div>`],
+  ]},
+
+ {n:'Hub / Launcher', sig:'Home = grelha de grandes <b>cards de ação</b> (por role) · cada um abre um fluxo com back · sem nav persistente. Evolução do menu actual.',
+  screens:[
+   ['Home', `<div class="tb flat">Olá, Daniel</div>${body(`<div class="hcard" style="background:var(--green);border:none;color:#fff"><div class="ti" style="background:#fff"></div>Validar bilhetes</div><div class="hcard"><div class="ti"></div>Eventos</div><div class="hcard"><div class="ti"></div>Os meus bilhetes</div><div class="hcard"><div class="ti"></div>Gerir clube</div>`)}`],
+   ['Eventos', `<div class="tb flat"><span class="back">←</span>Eventos</div>${body(evList())}`],
+   ['Validar', `<div class="tb flat"><span class="back">←</span>Portão</div>${body(`<div class="scanbox"></div><span class="pill" style="align-self:center">VÁLIDO</span>`,'center')}`],
+  ]},
+
+ {n:'Header Grande (Collapsing)', sig:'<b>Top bar grande</b> com título destacado que colapsa ao scroll · <b>FAB</b> · listas arejadas. Material 3 expressivo.',
+  screens:[
+   ['Eventos', `<div class="tb lg"><div class="big">Eventos</div><div class="sm">Esta semana · 4 jogos</div></div>${body(evList())}<div class="fab">+</div>${bn(0,['Eventos','Bilhetes','Clube','Perfil'])}`],
+   ['Bilhetes', `<div class="tb lg"><div class="big">Bilhetes</div><div class="sm">1 pronto · 1 pendente</div></div>${body(ticketsC())}${bn(1,['Eventos','Bilhetes','Clube','Perfil'])}`],
+   ['Equipa', `<div class="tb lg"><div class="back">←</div><div class="big">Sénior M</div><div class="sm">18 jogadores</div></div>${body(playerList())}`],
+  ]},
+
+ {n:'Bottom Sheets', sig:'Ecrã base limpo · detalhe e ações sobem em <b>bottom sheets</b> · <b>FAB central</b> · nav reduzida a 2-3 ícones.',
+  screens:[
+   ['Eventos', `<div class="tb flat">Eventos</div>${body(evList())}<div class="fab ctr">+</div>${bn(0,['Eventos','Bilhetes'])}`],
+   ['Detalhe ↑', `<div class="tb flat">Eventos</div>${body(`<div style="opacity:.35">${evList()}</div>`)}<div class="sheet"><div class="grab"></div>${detailC()}</div>`],
+   ['Comprar ↑', `<div class="tb flat">Eventos</div>${body(`<div style="opacity:.35">${evList()}</div>`)}<div class="sheet"><div class="grab"></div><div class="h">Pagamento</div><div class="field"></div><div class="btn">MB WAY</div><div class="btnf">Cartão</div></div>`],
+  ]},
+
+ {n:'iOS-like Segmented', sig:'<b>Top bar centrada</b> com título · <b>segmented control</b> para filtros · listas agrupadas · back textual · tab bar inferior translúcida.',
+  screens:[
+   ['Eventos', `<div class="tb ctr">Eventos</div>${body(`<div class="seg"><span class="on">Todos</span><span>Semana</span><span>Próximos</span></div>${evList()}`)}<div class="bn ios">${['Eventos','Bilhetes','Clube','Perfil'].map((l,i)=>`<i class="${i===0?'on':''}"><b></b>${l}</i>`).join('')}</div>`],
+   ['Detalhe', `<div class="tb ctr"><span class="back" style="position:absolute;left:10px">‹</span>Jogo</div>${body(detailC())}`],
+   ['Clube', `<div class="tb ctr">Águias FC</div>${body(`<div class="seg"><span class="on">Equipas</span><span>Jogos</span><span>Membros</span></div>${clubTeams()}`)}<div class="bn ios">${['Eventos','Bilhetes','Clube','Perfil'].map((l,i)=>`<i class="${i===2?'on':''}"><b></b>${l}</i>`).join('')}</div>`],
+  ]},
+
+ {n:'Feed de Cards', sig:'Sem chrome pesado · <b>top bar fina</b> com pesquisa · tudo é um <b>feed vertical</b> de cards ricos · navegação por toque, sem bottom bar.',
+  screens:[
+   ['Feed', `<div class="tb flat"><div class="se dk">Procurar jogo, clube…</div></div>${body(evFeed())}`],
+   ['Bilhetes', `<div class="tb flat"><div class="se dk">Os meus bilhetes</div></div>${body(`<div class="card center" style="display:flex;flex-direction:column"><div class="qr"></div><div class="s">Águias vs Leões · 8€</div></div>`)}`],
+   ['Detalhe', `<div class="tb flat"><span class="back">←</span><div class="grow"></div></div>${body(`<div class="card" style="padding:0;overflow:hidden"><div style="height:50px;background:linear-gradient(135deg,var(--green),var(--green-l))"></div><div style="padding:8px">${detailC()}</div></div>`)}`],
+  ]},
+
+ {n:'Pesquisa / Comando primeiro', sig:'<b>Barra de pesquisa</b> domina o topo · <b>chips</b> de acesso rápido · resultados e ações surgem dali · navegação minimalista (estilo "super app").',
+  screens:[
+   ['Início', `<div class="tb" style="background:var(--green-d)"><div class="se">Procurar ou validar…</div></div>${body(`<div class="row" style="flex-wrap:wrap;gap:5px"><span class="chip">Validar</span><span class="chip">Eventos</span><span class="chip">Bilhetes</span><span class="chip">Clube</span></div><div class="s" style="margin-top:6px">Recentes</div>${evList()}`)}`],
+   ['Resultados', `<div class="tb" style="background:var(--green-d)"><div class="se">águias</div></div>${body(`<div class="s">Jogos</div>${evList()}`)}`],
+   ['Validar', `<div class="tb" style="background:var(--green-d)"><div class="se">validar</div></div>${body(`<div class="scanbox"></div><span class="pill" style="align-self:center">VÁLIDO</span>`,'center')}`],
+  ]},
+];
+
+const app=document.getElementById('app');
+STYLES.forEach((st,i)=>{
+  const sec=document.createElement('section');sec.className='variant';
+  sec.innerHTML=`<h2><span class="vn">${i+1}</span>${st.n}</h2><div class="sig">${st.sig}</div>
+    <div class="phones">${st.screens.map(([c,h])=>col(c,h)).join('')}</div>`;
+  app.appendChild(sec);
+});
+</script>
+</body>
+</html>

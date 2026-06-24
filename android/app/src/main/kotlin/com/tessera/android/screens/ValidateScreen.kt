@@ -40,8 +40,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material3.Button
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import com.tessera.android.R
 import com.tessera.android.shared.ScanState
+import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.ui.theme.StatusInvalid
 import com.tessera.android.ui.theme.StatusInvalidSoft
 import com.tessera.android.ui.theme.StatusNetwork
@@ -61,6 +71,13 @@ import com.tessera.android.viewmodels.ValidationState
 fun ValidateScreen(viewModel: ValidateViewModel = viewModel()) {
     val scanActive by ScanState.scanActive
     val state = viewModel.validationState
+    val context = LocalContext.current
+    val hasCamera = remember { context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) }
+    val cameraOnly = !viewModel.hardwareScannerAvailable
+    val cameraPrompt = stringResource(R.string.validate_camera_prompt)
+    val launcher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        result.contents?.let { viewModel.submitCode(it) }
+    }
 
     LaunchedEffect(scanActive) {
         if (scanActive) viewModel.startScan() else viewModel.stopScan()
@@ -81,7 +98,11 @@ fun ValidateScreen(viewModel: ValidateViewModel = viewModel()) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            val display = resolveDisplay(state = state, scanActive = scanActive)
+            val display = if (cameraOnly && state is ValidationState.Idle) {
+                cameraIdleDisplay()
+            } else {
+                resolveDisplay(state = state, scanActive = scanActive)
+            }
             StateView(
                 icon = display.icon,
                 iconDescription = display.iconDescription,
@@ -90,6 +111,33 @@ fun ValidateScreen(viewModel: ValidateViewModel = viewModel()) {
                 accent = display.accent,
                 halo = display.halo,
             )
+
+            if (cameraOnly) {
+                Spacer(modifier = Modifier.height(28.dp))
+                if (hasCamera) {
+                    Button(onClick = {
+                        launcher.launch(
+                            ScanOptions().apply {
+                                setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                setPrompt(cameraPrompt)
+                                setBeepEnabled(true)
+                                setOrientationLocked(false)
+                            },
+                        )
+                    }) {
+                        Icon(Icons.Filled.PhotoCamera, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.validate_camera_button))
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.validate_no_camera),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GlassInkMuted,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
     }
 }
@@ -100,7 +148,7 @@ private fun Header() {
         Text(
             text = stringResource(R.string.validate_eyebrow).uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = GlassInkMuted,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -135,8 +183,19 @@ private fun idleDisplay() = Display(
     iconDescription = stringResource(R.string.validate_idle_icon_desc),
     title = stringResource(R.string.validate_idle_title),
     subtitle = stringResource(R.string.validate_idle_subtitle),
-    accent = MaterialTheme.colorScheme.onSurfaceVariant,
-    halo = MaterialTheme.colorScheme.surfaceVariant,
+    accent = GlassInkMuted,
+    halo = TesseraForestSoft,
+)
+
+@Composable
+private fun cameraIdleDisplay() = Display(
+    key = "camera-idle",
+    icon = Icons.Filled.PhotoCamera,
+    iconDescription = stringResource(R.string.validate_camera_button),
+    title = stringResource(R.string.validate_camera_title),
+    subtitle = stringResource(R.string.validate_no_hardware),
+    accent = TesseraForest,
+    halo = TesseraForestSoft,
 )
 
 @Composable
@@ -261,7 +320,7 @@ private fun StateView(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = GlassInkMuted,
                 textAlign = TextAlign.Center,
             )
         }

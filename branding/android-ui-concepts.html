@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tessera Android — 10 Conceitos de UI</title>
+<style>
+  :root{
+    --green:#2E7D40; --green-d:#1F5A2C; --green-l:#3DDC84;
+    --ink:#0F1411; --muted:#6B7A6E; --line:#E2E9E3;
+    --bg:#F4F7F4; --card:#FFFFFF; --amber:#FF8A3D; --red:#E5484D;
+    --r:18px; font-synthesis:none;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.5;
+    padding:48px 24px 80px;
+  }
+  .head{max-width:1200px;margin:0 auto 40px;text-align:center}
+  .head h1{font-size:34px;font-weight:900;letter-spacing:-.5px;color:var(--green-d)}
+  .head p{color:var(--muted);margin-top:10px;font-size:15px;max-width:680px;margin-inline:auto}
+  .legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:18px;font-size:12px;color:var(--muted)}
+  .legend b{color:var(--ink)}
+
+  .grid{
+    max-width:1280px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:28px;
+  }
+  .concept{
+    background:var(--card);border:1px solid var(--line);border-radius:24px;
+    padding:22px;display:flex;flex-direction:column;gap:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+  .concept .num{
+    width:30px;height:30px;border-radius:9px;background:var(--green);color:#fff;
+    font-weight:800;display:grid;place-items:center;font-size:14px;flex:none;
+  }
+  .ctitle{display:flex;align-items:center;gap:12px}
+  .ctitle h2{font-size:18px;font-weight:800}
+  .ctitle small{color:var(--muted);font-weight:600;font-size:12px;display:block}
+  .desc{font-size:13px;color:#42514a}
+  .tags{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:600;color:var(--green-d);background:#E7F3EA;border-radius:999px;padding:3px 10px}
+
+  /* phone frame */
+  .phone{
+    width:230px;height:430px;margin:4px auto;background:#0F1411;border-radius:30px;
+    padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);flex:none;
+  }
+  .screen{width:100%;height:100%;border-radius:23px;overflow:hidden;position:relative;background:#fff;display:flex;flex-direction:column}
+  .stat{height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:9px;color:#9aa;}
+  .nav{height:54px;border-top:1px solid var(--line);display:flex;background:#fff}
+  .nav div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:8px;color:var(--muted)}
+  .nav div.on{color:var(--green)}
+  .ic{width:18px;height:18px;border-radius:6px;background:currentColor;opacity:.85}
+  .body{flex:1;overflow:hidden;padding:12px}
+  .h{font-weight:800;font-size:15px;margin-bottom:2px}
+  .sub{font-size:10px;color:var(--muted);margin-bottom:10px}
+  .row{display:flex;gap:8px;align-items:center}
+  .crest{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green-l));flex:none}
+  .crest.b{background:linear-gradient(135deg,#3a6ea5,#7fb3e8)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:8px}
+  .pill{display:inline-block;font-size:8px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .green{background:var(--green);color:#fff}
+  .gline{height:7px;border-radius:4px;background:#EAF0EB}
+  .btn{background:var(--green);color:#fff;border-radius:10px;text-align:center;padding:9px;font-size:11px;font-weight:700}
+  .qr{width:90px;height:90px;border-radius:10px;margin:0 auto;
+      background:
+        repeating-linear-gradient(90deg,#0F1411 0 6px,#fff 6px 12px),
+        repeating-linear-gradient(0deg,#0F1411 0 6px,#fff 6px 12px);
+      background-blend-mode:multiply;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>Tessera · Android — 10 Conceitos de UI</h1>
+  <p>Dez direções visuais para a app completa. <b>Todas</b> suportam o conjunto inteiro de funcionalidades do frontend (eventos, compra, bilhetes, validação, gestão de clube, administração) — a navegação adapta-se à <b>role</b> via capabilities. O que muda entre conceitos é o <b>estilo</b> e o <b>padrão de navegação</b>.</p>
+  <div class="legend">
+    <span><b>Base:</b> verde-floresta #2E7D40</span>
+    <span><b>RBAC:</b> fan · staff · club-manager · platform-admin</span>
+    <span><b>Mobile-first</b></span>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- 1 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">1</div><div><h2>Bottom Nav · Material You</h2><small>Tabs inferiores + FAB</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body" style="background:var(--bg)">
+        <div class="h">Próximos jogos</div>
+        <div class="sub">Esta semana · 4</div>
+        <div class="card"><div class="row"><div class="crest"></div><div class="crest b"></div><div style="flex:1"><div style="font-size:11px;font-weight:700">Águias vs Leões</div><div style="font-size:9px;color:var(--muted)">Sáb · 18h00</div></div><span class="pill green">8€</span></div></div>
+        <div class="card"><div class="row"><div class="crest"></div><div class="crest b"></div><div style="flex:1"><div style="font-size:11px;font-weight:700">FC Vale vs Unidos</div><div style="font-size:9px;color:var(--muted)">Dom · 16h00</div></div><span class="pill green">6€</span></div></div>
+      </div>
+      <div class="nav">
+        <div class="on"><div class="ic"></div>Eventos</div><div><div class="ic"></div>Bilhetes</div><div><div class="ic"></div>Clube</div><div><div class="ic"></div>Perfil</div>
+      </div>
+    </div></div>
+    <p class="desc">O padrão mais familiar em Android. Tabs filtradas por role; o FAB faz a ação principal do contexto (comprar / validar). Admin entra num 5.º tab "Mais".</p>
+    <div class="tags"><span class="tag">Familiar</span><span class="tag">Troca rápida</span><span class="tag">Material 3</span></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">2</div><div><h2>Hub de Cards</h2><small>Dashboard de atalhos</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body">
+        <div class="h">Olá, Daniel</div>
+        <div class="sub">club-manager</div>
+        <div class="card" style="background:var(--green);border:none"><div style="color:#fff;font-weight:800;font-size:13px">Validar bilhetes</div><div style="color:#cfe8d5;font-size:9px">Scanner no portão</div></div>
+        <div class="row" style="gap:8px">
+          <div class="card" style="flex:1"><div class="ic" style="background:var(--green);width:22px;height:22px"></div><div style="font-size:10px;font-weight:700;margin-top:6px">Eventos</div></div>
+          <div class="card" style="flex:1"><div class="ic" style="background:var(--green);width:22px;height:22px"></div><div style="font-size:10px;font-weight:700;margin-top:6px">Bilhetes</div></div>
+        </div>
+        <div class="row" style="gap:8px">
+          <div class="card" style="flex:1"><div class="ic" style="background:var(--green);width:22px;height:22px"></div><div style="font-size:10px;font-weight:700;margin-top:6px">Clube</div></div>
+          <div class="card" style="flex:1"><div class="ic" style="background:var(--green);width:22px;height:22px"></div><div style="font-size:10px;font-weight:700;margin-top:6px">Admin</div></div>
+        </div>
+      </div>
+    </div></div>
+    <p class="desc">Evolução natural do menu actual. Cada card é uma capability — aparece/desaparece por role. Simples de implementar e escala bem para muitas áreas.</p>
+    <div class="tags"><span class="tag">Menor risco</span><span class="tag">Reaproveita base</span><span class="tag">Escalável</span></div>
+  </div>
+
+  <!-- 3 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">3</div><div><h2>Drawer Lateral</h2><small>Menu por secções</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body" style="padding:0;display:flex">
+        <div style="width:62%;background:var(--green-d);padding:14px;color:#fff">
+          <div style="font-weight:800;font-size:13px;margin-bottom:14px">Tessera</div>
+          <div style="font-size:11px;opacity:.7;margin:8px 0 4px">BILHETEIRA</div>
+          <div style="font-size:11px;padding:6px 0">Eventos</div>
+          <div style="font-size:11px;padding:6px 0;background:rgba(255,255,255,.15);border-radius:8px;padding-left:8px">Os meus bilhetes</div>
+          <div style="font-size:11px;opacity:.7;margin:12px 0 4px">CLUBE</div>
+          <div style="font-size:11px;padding:6px 0">Equipas</div>
+          <div style="font-size:11px;padding:6px 0">Jogos</div>
+          <div style="font-size:11px;opacity:.7;margin:12px 0 4px">ADMIN</div>
+          <div style="font-size:11px;padding:6px 0">Utilizadores</div>
+        </div>
+        <div style="flex:1;background:var(--bg)"></div>
+      </div>
+    </div></div>
+    <p class="desc">Menu deslizante agrupado por secção. A melhor escolha se trouxeres o <b>admin CRUD todo</b> — aguenta dezenas de entradas sem poluir o ecrã principal.</p>
+    <div class="tags"><span class="tag">Muitas features</span><span class="tag">Organizado</span><span class="tag">Admin-friendly</span></div>
+  </div>
+
+  <!-- 4 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">4</div><div><h2>Dashboard por Role</h2><small>Home camaleão</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body" style="background:var(--bg)">
+        <div class="h">Portão · Staff</div>
+        <div class="sub">Águias vs Leões · hoje</div>
+        <div class="card" style="text-align:center;padding:14px"><div style="font-size:9px;color:var(--muted)">VALIDADOS</div><div style="font-size:26px;font-weight:900;color:var(--green)">312</div><div style="font-size:9px;color:var(--muted)">de 480 vendidos</div></div>
+        <div class="btn">Abrir scanner</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:10px">Últimas leituras</div>
+        <div class="row" style="margin-top:4px"><span class="pill green">válido</span><span style="font-size:9px;color:var(--muted)">há 2s</span></div>
+      </div>
+    </div></div>
+    <p class="desc">A home muda radicalmente por role: o fan vê eventos, o staff vê um painel de portão com contadores e scanner, o admin vê KPIs. Cada um entra direto no que importa.</p>
+    <div class="tags"><span class="tag">Contextual</span><span class="tag">Eficiente</span><span class="tag">Wow-factor</span></div>
+  </div>
+
+  <!-- 5 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">5</div><div><h2>Metáfora de Bilhete</h2><small>Stubs e perfurações</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body" style="background:var(--bg)">
+        <div class="h">O meu bilhete</div>
+        <div class="sub">Pronto a usar</div>
+        <div style="background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--line)">
+          <div style="background:var(--green);height:46px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:800;font-size:11px">Águias vs Leões</div>
+          <div style="border-top:2px dashed var(--line);position:relative"></div>
+          <div style="padding:12px;text-align:center"><div class="qr"></div><div style="font-size:9px;color:var(--muted);margin-top:8px">Bancada · Normal · 8€</div></div>
+        </div>
+      </div>
+    </div></div>
+    <p class="desc">UI inspirada no bilhete físico — recorte picotado, "stub" colorido, QR em destaque. Cria identidade forte e torna o bilhete o herói do ecrã.</p>
+    <div class="tags"><span class="tag">Identidade</span><span class="tag">Memorável</span><span class="tag">QR herói</span></div>
+  </div>
+
+  <!-- 6 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">6</div><div><h2>Estádio / Desportivo</h2><small>Energia e imagem</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat" style="color:#cfe8d5"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body" style="padding:0">
+        <div style="height:150px;background:linear-gradient(160deg,var(--green-d),var(--green));position:relative;padding:14px;color:#fff">
+          <div style="font-size:9px;opacity:.8">JOGO EM DESTAQUE</div>
+          <div style="font-weight:900;font-size:17px;margin-top:30px">Águias<br>vs Leões</div>
+          <div style="font-size:10px;opacity:.9;margin-top:6px">Sáb 18h00 · Estádio Municipal</div>
+        </div>
+        <div style="padding:12px">
+          <div class="btn">Comprar bilhete · 8€</div>
+          <div style="font-size:9px;color:var(--muted);margin-top:10px">Outros jogos</div>
+          <div class="card" style="margin-top:4px"><div class="row"><div class="crest"></div><div style="font-size:10px;font-weight:700">FC Vale</div></div></div>
+        </div>
+      </div>
+    </div></div>
+    <p class="desc">Heros visuais com gradientes de campo, jogo em destaque, energia de evento. Vende a emoção do desporto — ótimo para captar o adepto.</p>
+    <div class="tags"><span class="tag">Emocional</span><span class="tag">Vibrante</span><span class="tag">Adepto</span></div>
+  </div>
+
+  <!-- 7 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">7</div><div><h2>Minimal Mono</h2><small>Tipografia e espaço</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body">
+        <div style="font-size:11px;color:var(--muted);letter-spacing:2px">TESSERA</div>
+        <div style="font-weight:900;font-size:26px;line-height:1.1;margin-top:30px">Águias<br>vs<br>Leões</div>
+        <div style="height:1px;background:var(--line);margin:16px 0"></div>
+        <div class="row" style="justify-content:space-between"><span style="font-size:11px;color:var(--muted)">Sáb 18h00</span><span style="font-weight:800;font-size:13px">8€</span></div>
+        <div style="height:1px;background:var(--line);margin:16px 0"></div>
+        <div style="font-weight:800;font-size:13px;border:1.5px solid var(--ink);border-radius:10px;text-align:center;padding:10px">Comprar →</div>
+      </div>
+    </div></div>
+    <p class="desc">Preto/branco/verde, muito ar, tipografia grande como elemento gráfico. Elegante e atemporal; foca a atenção numa ação de cada vez.</p>
+    <div class="tags"><span class="tag">Elegante</span><span class="tag">Clean</span><span class="tag">Atemporal</span></div>
+  </div>
+
+  <!-- 8 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">8</div><div><h2>Feed de Jogos</h2><small>Scroll contínuo</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body" style="background:var(--bg)">
+        <div class="h">Jogos</div>
+        <div class="sub">Para ti</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="height:54px;background:linear-gradient(135deg,var(--green),var(--green-l))"></div>
+          <div style="padding:10px"><div style="font-size:11px;font-weight:800">Águias vs Leões</div><div style="font-size:9px;color:var(--muted)">Sáb 18h00 · 8€</div></div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="height:54px;background:linear-gradient(135deg,#3a6ea5,#7fb3e8)"></div>
+          <div style="padding:10px"><div style="font-size:11px;font-weight:800">FC Vale vs Unidos</div><div style="font-size:9px;color:var(--muted)">Dom 16h00 · 6€</div></div>
+        </div>
+      </div>
+    </div></div>
+    <p class="desc">Catálogo como feed scrollável, cada jogo um card rico com banner. Familiar das redes sociais; convida à descoberta e ao scroll.</p>
+    <div class="tags"><span class="tag">Descoberta</span><span class="tag">Visual</span><span class="tag">Engajamento</span></div>
+  </div>
+
+  <!-- 9 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">9</div><div><h2>Modo Nocturno</h2><small>Dark + neon</small></div></div>
+    <div class="phone"><div class="screen" style="background:#0E1512">
+      <div class="stat" style="color:#5a6b60"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body">
+        <div class="h" style="color:#fff">Próximos jogos</div>
+        <div class="sub" style="color:#5a6b60">Esta noite</div>
+        <div style="background:#16201B;border:1px solid #24302A;border-radius:14px;padding:10px;margin-bottom:8px">
+          <div class="row"><div class="crest"></div><div class="crest b"></div><div style="flex:1;color:#fff;font-size:11px;font-weight:700">Águias vs Leões</div><span class="pill" style="background:var(--green-l);color:#06140c">8€</span></div>
+        </div>
+        <div style="background:#16201B;border:1px solid #24302A;border-radius:14px;padding:10px">
+          <div class="row"><div class="crest"></div><div class="crest b"></div><div style="flex:1;color:#fff;font-size:11px;font-weight:700">FC Vale vs Unidos</div><span class="pill" style="background:var(--green-l);color:#06140c">6€</span></div>
+        </div>
+      </div>
+      <div class="nav" style="background:#0E1512;border-top:1px solid #24302A">
+        <div class="on" style="color:var(--green-l)"><div class="ic"></div>Jogos</div><div style="color:#5a6b60"><div class="ic"></div>Bilhetes</div><div style="color:#5a6b60"><div class="ic"></div>Perfil</div>
+      </div>
+    </div></div>
+    <p class="desc">Tema escuro com acentos verde-neon. Confortável para jogos à noite e no escuro das bancadas; poupa bateria em OLED. Pode ser opção, não obrigatório.</p>
+    <div class="tags"><span class="tag">Nocturno</span><span class="tag">OLED</span><span class="tag">Moderno</span></div>
+  </div>
+
+  <!-- 10 -->
+  <div class="concept">
+    <div class="ctitle"><div class="num">10</div><div><h2>POS Kiosk</h2><small>Terminal apG31</small></div></div>
+    <div class="phone"><div class="screen">
+      <div class="stat"><span>09:41</span><span>▮▮▮ 100%</span></div>
+      <div class="body" style="display:flex;flex-direction:column;justify-content:center;text-align:center;gap:14px">
+        <div style="font-size:10px;color:var(--muted);letter-spacing:2px">TESSERA · PORTÃO</div>
+        <div style="width:120px;height:120px;margin:0 auto;border-radius:20px;background:var(--green);display:grid;place-items:center">
+          <div style="width:60px;height:60px;border:4px solid #fff;border-radius:12px"></div>
+        </div>
+        <div style="font-weight:800;font-size:15px">Aproxima o QR</div>
+        <div style="font-size:10px;color:var(--muted)">Carrega no botão lateral</div>
+      </div>
+    </div></div>
+    <p class="desc">Modo dedicado ao terminal: scanner gigante, botões grandes, alto contraste, zero distrações. Co-existe com o resto via role (o staff cai aqui por defeito).</p>
+    <div class="tags"><span class="tag">Hardware POS</span><span class="tag">Alto contraste</span><span class="tag">Focado</span></div>
+  </div>
+
+</div>
+</body>
+</html>

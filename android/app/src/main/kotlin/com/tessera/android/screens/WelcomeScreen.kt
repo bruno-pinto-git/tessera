@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tessera.android.R
+import com.tessera.android.ui.theme.GlassInkMuted
 import kotlinx.coroutines.delay
 
 private const val LOGO_FADE_MS = 600
@@ -94,7 +95,7 @@ fun WelcomeScreen(onContinue: () -> Unit) {
         Text(
             text = stringResource(R.string.menu_tagline),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = GlassInkMuted,
             modifier = Modifier.graphicsLayer { alpha = textAlpha },
         )
     }

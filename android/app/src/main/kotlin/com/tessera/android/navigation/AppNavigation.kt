@@ -7,19 +7,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tessera.android.data.KeycloakClient
 import com.tessera.android.screens.LoginScreen
-import com.tessera.android.screens.MainMenuScreen
 import com.tessera.android.screens.SettingsScreen
-import com.tessera.android.screens.ValidateScreen
 import com.tessera.android.screens.WelcomeScreen
 import com.tessera.android.shared.AuthSession
-
-object Routes {
-    const val WELCOME = "welcome"
-    const val LOGIN = "login"
-    const val MAIN_MENU = "main_menu"
-    const val VALIDATE = "validate"
-    const val SETTINGS = "settings"
-}
 
 @Composable
 fun AppNavigation() {
@@ -32,8 +22,7 @@ fun AppNavigation() {
         composable(Routes.WELCOME) {
             WelcomeScreen(
                 onContinue = {
-                    val next = if (AuthSession.isAuthenticated) Routes.MAIN_MENU else Routes.LOGIN
-                    navController.navigate(next) {
+                    navController.navigate(Routes.SHELL) {
                         popUpTo(Routes.WELCOME) { inclusive = true }
                     }
                 },
@@ -42,32 +31,27 @@ fun AppNavigation() {
         composable(Routes.LOGIN) {
             LoginScreen(
                 onAuthenticated = {
-                    navController.navigate(Routes.MAIN_MENU) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    navController.navigate(Routes.SHELL) {
+                        popUpTo(Routes.SHELL) { inclusive = true }
                     }
                 },
                 onSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
-        composable(Routes.MAIN_MENU) {
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.SHELL) {
             val context = LocalContext.current
-            MainMenuScreen(
-                onValidateClick = { navController.navigate(Routes.VALIDATE) },
-                onSettingsClick = { navController.navigate(Routes.SETTINGS) },
+            AppShell(
+                onRequestLogin = { navController.navigate(Routes.LOGIN) },
                 onLogout = {
                     KeycloakClient(context).logout()
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.MAIN_MENU) { inclusive = true }
+                    AuthSession.clear()
+                    navController.navigate(Routes.SHELL) {
+                        popUpTo(Routes.SHELL) { inclusive = true }
                     }
                 },
-            )
-        }
-        composable(Routes.VALIDATE) {
-            ValidateScreen()
-        }
-        composable(Routes.SETTINGS) {
-            SettingsScreen(
-                onBack = { navController.popBackStack() },
             )
         }
     }

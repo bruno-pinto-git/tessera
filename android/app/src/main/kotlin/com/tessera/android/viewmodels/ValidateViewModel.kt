@@ -48,10 +48,13 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
     private val keycloak = KeycloakClient(application)
     private var resetJob: Job? = null
 
+    /** False num dispositivo sem o leitor dedicado Newland. */
+    val hardwareScannerAvailable: Boolean = NsdkRepository.available
+
     init {
         Log.i(TAG, "init: registering decoding callback + initScan")
         try {
-            scanner.setDecodingCallback(DecodingCallback { eventCode, result ->
+            scanner?.setDecodingCallback(DecodingCallback { eventCode, result ->
                 Log.d(TAG, "Decode callback: eventCode=$eventCode, result=$result")
                 val code = result?.trim().orEmpty()
                 if (code.isEmpty()) {
@@ -68,8 +71,8 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
                 setSoundSwitcher(true)
                 setTimeout(25400)
             }
-            scanner.initScan(params)
-            Log.i(TAG, "init: scanner ready")
+            scanner?.initScan(params)
+            Log.i(TAG, "init: scanner ready (available=${scanner != null})")
         } catch (e: Exception) {
             Log.e(TAG, "init failed", e)
         }
@@ -80,7 +83,7 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
         resetJob?.cancel()
         validationState = ValidationState.Idle
         try {
-            scanner.startScan()
+            scanner?.startScan()
             Log.i(TAG, "startScan() -> scanner.startScan() ok")
         } catch (e: Exception) {
             Log.e(TAG, "startScan failed", e)
@@ -90,10 +93,16 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
     fun stopScan() {
         Log.i(TAG, "stopScan() called")
         try {
-            scanner.stopScan()
+            scanner?.stopScan()
         } catch (e: Exception) {
             Log.d(TAG, "stopScan (already stopped?): ${e.message}")
         }
+    }
+
+    /** Validação a partir de um código lido pela câmara (fallback ZXing). */
+    fun submitCode(code: String) {
+        val trimmed = code.trim()
+        if (trimmed.isNotEmpty()) onCodeScanned(trimmed)
     }
 
     private fun onCodeScanned(code: String) {
@@ -170,7 +179,7 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
         Log.i(TAG, "onCleared() — releasing scanner + keycloak client")
         super.onCleared()
         try {
-            scanner.releaseScan()
+            scanner?.releaseScan()
         } catch (e: Exception) {
             Log.d(TAG, "releaseScan: ${e.message}")
         }

@@ -43,5 +43,7 @@ dependencies {
     implementation("org.http4k:http4k-core:5.32.4.0")
     implementation("org.http4k:http4k-client-okhttp:5.32.4.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

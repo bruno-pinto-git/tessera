@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
         keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (isScanTriggerKey(keyCode)) {
+        if (isScanTriggerKey(keyCode) && NsdkRepository.available) {
             if (event?.repeatCount == 0) {
                 Log.d(tag, "key DOWN (initial) — scanActive=true")
                 ScanState.scanActive.value = true
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        if (isScanTriggerKey(keyCode)) {
+        if (isScanTriggerKey(keyCode) && NsdkRepository.available) {
             Log.d(tag, "key UP — scanActive=false")
             ScanState.scanActive.value = false
             return true
