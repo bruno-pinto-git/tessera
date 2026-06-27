@@ -6,7 +6,12 @@ WORKDIR /app
 COPY frontend/.npmrc frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ .
-RUN npm run build
+# Public Keycloak URL baked into the bundle. Defaults to the dev value so local
+# `docker compose build` is unchanged; the prod compose overrides it with the
+# public HTTPS URL (e.g. https://<fqdn>/auth). Vite gives process.env precedence
+# over .env.production for VITE_* keys.
+ARG VITE_KEYCLOAK_URL=http://localhost:8180
+RUN VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL npm run build
 
 FROM nginx:alpine
 RUN rm /etc/nginx/conf.d/default.conf
