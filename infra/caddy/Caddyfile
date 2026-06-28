@@ -1,0 +1,21 @@
+# Caddy fronts the whole stack on the public FQDN with automatic Let's Encrypt
+# TLS. One hostname, one certificate:
+#   - /auth/*  -> Keycloak  (Keycloak runs under the /auth relative path)
+#   - /*       -> nginx      (the SPA + its /api proxy to the BFF)
+#
+# TESSERA_FQDN comes from the environment (.env). For Let's Encrypt to issue a
+# cert, this hostname must resolve to this machine and ports 80/443 must be open.
+
+{$TESSERA_FQDN} {
+	encode gzip
+
+	# Keycloak (auth) — keep the /auth prefix; Keycloak serves under it.
+	handle /auth/* {
+		reverse_proxy keycloak:8180
+	}
+
+	# Everything else — the SPA and /api (nginx proxies /api to the BFF).
+	handle {
+		reverse_proxy nginx:80
+	}
+}
