@@ -156,6 +156,18 @@
     font-family: var(--font-display);
     letter-spacing: 0.01em;
   }
+  /* Native <select> dropdowns: force theme colours so the option list stays
+     readable in dark mode (the native popup otherwise renders dark-on-dark).
+     Tailwind bg-* utilities on a given <select> still win over this fallback;
+     the <option> rule fixes the popup, which carries no utility classes. */
+  select {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+  option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
 }
 
 /* Opt-in display utility for any title that isn't an <h1>. */
