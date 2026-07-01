@@ -49,6 +49,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
 import com.tessera.android.data.dto.UserDto
 import com.tessera.android.screens.components.FormDialog
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.screens.components.USER_CREATE_ROLES
 import com.tessera.android.screens.components.prettyUserRole
 import com.tessera.android.screens.components.searchFieldColors
@@ -64,6 +65,7 @@ fun UsersAdminScreen(viewModel: UsersAdminViewModel = viewModel()) {
     var resetting by remember { mutableStateOf<UserDto?>(null) }
     var toDelete by remember { mutableStateOf<UserDto?>(null) }
     var query by remember { mutableStateOf("") }
+    RefreshOnResume { viewModel.load() }
 
     Box(Modifier.fillMaxSize()) {
         when (val s = viewModel.state) {

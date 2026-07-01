@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 enum class PurchaseStep { TIER, METHOD, DONE }
 
-enum class PurchaseError { INVALID_PHONE, PAYMENT_FAILED }
+enum class PurchaseError { INVALID_PHONE, PAYMENT_FAILED, CONNECTION }
 
 class EventDetailViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -132,7 +132,8 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
                     else -> formError = PurchaseError.PAYMENT_FAILED
                 }
             } catch (ex: Exception) {
-                formError = PurchaseError.PAYMENT_FAILED
+                // Falha a contactar o servidor (IP/backend/rede), não recusa de pagamento.
+                formError = PurchaseError.CONNECTION
             } finally {
                 submitting = false
                 awaiting = false

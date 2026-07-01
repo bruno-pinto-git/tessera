@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
 import com.tessera.android.data.dto.ClubDto
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.ClubsState
 import com.tessera.android.viewmodels.ClubsViewModel
@@ -33,6 +34,7 @@ fun ClubsListScreen(
     onClubClick: (Long) -> Unit,
     viewModel: ClubsViewModel = viewModel(),
 ) {
+    RefreshOnResume { viewModel.load() }
     when (val s = viewModel.state) {
         ClubsState.Loading -> Centered { CircularProgressIndicator() }
         ClubsState.Error -> Centered {

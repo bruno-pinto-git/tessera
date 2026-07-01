@@ -380,6 +380,7 @@ private fun MethodStep(viewModel: EventDetailViewModel, busy: Boolean) {
         val msg = when (it) {
             PurchaseError.INVALID_PHONE -> stringResource(R.string.purchase_phone_invalid)
             PurchaseError.PAYMENT_FAILED -> stringResource(R.string.purchase_failed)
+            PurchaseError.CONNECTION -> stringResource(R.string.purchase_connection_error)
         }
         Text(msg, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
     }

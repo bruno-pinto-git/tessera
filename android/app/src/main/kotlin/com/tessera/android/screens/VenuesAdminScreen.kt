@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
 import com.tessera.android.data.dto.VenueDto
 import com.tessera.android.screens.components.FormDialog
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.AdminVenuesState
 import com.tessera.android.viewmodels.VenuesAdminViewModel
@@ -51,6 +52,7 @@ import com.tessera.android.viewmodels.VenuesAdminViewModel
 fun VenuesAdminScreen(viewModel: VenuesAdminViewModel = viewModel()) {
     var showAdd by remember { mutableStateOf(false) }
     var toDelete by remember { mutableStateOf<VenueDto?>(null) }
+    RefreshOnResume { viewModel.load() }
 
     Box(Modifier.fillMaxSize()) {
         when (val s = viewModel.state) {

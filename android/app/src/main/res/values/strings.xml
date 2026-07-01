@@ -245,10 +245,11 @@
     <string name="purchase_summary_total">A pagar</string>
     <string name="purchase_processing">A processar…</string>
     <string name="purchase_awaiting_mbway">A aguardar MB WAY…</string>
-    <string name="purchase_back">← Voltar</string>
-    <string name="purchase_confirm">Confirmar pagamento</string>
+    <string name="purchase_back">Voltar</string>
+    <string name="purchase_confirm">Confirmar</string>
     <string name="purchase_phone_invalid">Telemóvel inválido. Usa o formato 351XXXXXXXXX.</string>
     <string name="purchase_failed">O pagamento expirou ou foi recusado. Tenta de novo.</string>
+    <string name="purchase_connection_error">Sem ligação ao servidor. Confirma o IP em Configurações e se o backend está a correr.</string>
     <string name="purchase_view_tickets">Ver em \"Os meus bilhetes\"</string>
     <string name="purchase_close">Fechar</string>
 

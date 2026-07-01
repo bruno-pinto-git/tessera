@@ -56,6 +56,7 @@ import com.tessera.android.screens.components.prettyCategory
 import com.tessera.android.screens.components.prettyFoot
 import com.tessera.android.screens.components.prettyPlayerStatus
 import com.tessera.android.screens.components.prettyPosition
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.TeamDetailViewModel
 
@@ -66,6 +67,7 @@ fun TeamDetailScreen(
     viewModel: TeamDetailViewModel = viewModel(),
 ) {
     LaunchedEffect(teamId) { viewModel.load(teamId) }
+    RefreshOnResume { viewModel.load(teamId) }
     var editing by remember { mutableStateOf<PlayerDto?>(null) }
     var creating by remember { mutableStateOf(false) }
     var toDelete by remember { mutableStateOf<PlayerDto?>(null) }
