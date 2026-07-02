@@ -47,6 +47,8 @@ data class TicketResponse(
     val paymentDate: OffsetDateTime?,
     val validationDate: OffsetDateTime?,
     val validatorSub: String?,
+    /** Stripe Checkout hosted-page URL. Only populated on a fresh `pay()` response for CARD. */
+    val checkoutUrl: String? = null,
 )
 
 @RestController
@@ -89,9 +91,10 @@ class TicketController(
             throw AccessDeniedException("Only the ticket owner or staff/platform-admin can pay for this ticket.")
         }
         val method = request.paymentMethod ?: throw IllegalArgumentException("paymentMethod is required")
-        val updated = ticketService.pay(id, method, request.phoneNumber, request.mbwayReference)
+        val result = ticketService.pay(id, method, request.phoneNumber, request.mbwayReference)
+        val updated = result.ticket
         log.info("Pay ticket id={} method={} status={}", updated.id, updated.paymentMethod, updated.status)
-        return toResponse(updated)
+        return toResponse(updated, checkoutUrl = result.checkoutUrl)
     }
 
     /**
@@ -149,11 +152,14 @@ class TicketController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt,
     ): TicketResponse {
-        val ticket = ticketService.getById(id)
-        if (!isOwnerOrPrivileged(jwt, ticket)) {
+        val existing = ticketService.getById(id)
+        if (!isOwnerOrPrivileged(jwt, existing)) {
             throw AccessDeniedException("You can only access your own tickets.")
         }
-        return toResponse(ticket)
+        // Authorization checked against a plain read first — getByIdRefreshed can call
+        // out to Stripe and mutate the ticket, which an unauthorized caller shouldn't
+        // be able to trigger just by guessing an id.
+        return toResponse(ticketService.getByIdRefreshed(id))
     }
 
     /**
@@ -179,7 +185,7 @@ class TicketController(
         return "staff" in roles || "platform-admin" in roles
     }
 
-    private fun toResponse(ticket: Ticket) = TicketResponse(
+    private fun toResponse(ticket: Ticket, checkoutUrl: String? = null) = TicketResponse(
         id              = ticket.id,
         code            = ticket.code.toString(),
         eventId         = ticket.event?.id ?: 0,
@@ -192,5 +198,6 @@ class TicketController(
         paymentDate     = ticket.paymentDate,
         validationDate  = ticket.validationDate,
         validatorSub    = ticket.validatorSub,
+        checkoutUrl     = checkoutUrl,
     )
 }

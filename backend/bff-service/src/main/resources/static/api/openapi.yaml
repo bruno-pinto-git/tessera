@@ -1639,6 +1639,42 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /stats/sales/by-club/{clubId}:
+    parameters:
+      - in: path
+        name: clubId
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    get:
+      operationId: getSalesByClub
+      tags:
+        - Statistics
+      summary: Ticket sales for a single club
+      description: |
+        Aggregated sales for the matches a club hosts at home. Unlike the other
+        sales reports this is not platform-admin only: a club manager (or admin)
+        sees everything including revenue; club staff may see the sold/validated
+        counts but `revenue` is returned as null for them.
+      x-required-roles:
+        - admin
+        - manager
+        - staff
+      responses:
+        '200':
+          description: Aggregated sales for the club.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/salesByClub'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /stats/sales/range:
     get:
       operationId: getSalesInRange
@@ -2382,6 +2418,8 @@ components:
       $ref: '#/components/schemas/salesSummary'
     SalesByMatch:
       $ref: '#/components/schemas/salesByMatch'
+    SalesByClub:
+      $ref: '#/components/schemas/salesByClub'
     Event:
       $ref: '#/components/schemas/event'
     EventCreateRequest:
@@ -3823,6 +3861,39 @@ components:
         revenue:
           type: string
           description: Total revenue for this match, decimal string.
+    salesByClub:
+      type: object
+      description: Ticket sales aggregated for a single club (matches it hosts at home).
+      required:
+        - clubId
+        - sold
+        - validated
+        - revenue
+        - validationRate
+      properties:
+        clubId:
+          type: integer
+          format: int64
+        sold:
+          type: integer
+          format: int64
+          description: Number of tickets paid for the club's home matches.
+        validated:
+          type: integer
+          format: int64
+          description: Number of those tickets that were validated at the gate.
+        revenue:
+          type:
+            - string
+            - 'null'
+          description: |
+            Total revenue for the club's home matches, decimal string. Null when the
+            caller is staff (staff may see counts but not revenue).
+        validationRate:
+          type: string
+          description: '`validated / sold` (0.000 .. 1.000).'
+          examples:
+            - '0.875'
     occurrenceCreateRequest:
       type: object
       description: Append a new occurrence to the match sheet.
@@ -3867,6 +3938,14 @@ components:
           type:
             - string
             - 'null'
+        matchLabel:
+          type:
+            - string
+            - 'null'
+          description: |
+            Snapshot of the fixture ("Home vs Away") taken when the box office was
+            opened. Lets tickets keep showing the teams even if the match is later
+            deleted in match-service.
         matchId:
           type:
             - integer
@@ -3899,6 +3978,13 @@ components:
         name:
           type: string
           minLength: 1
+        matchLabel:
+          type:
+            - string
+            - 'null'
+          description: |
+            Snapshot of the fixture ("Home vs Away") at box-office creation, so
+            tickets survive a later match deletion.
         matchId:
           type:
             - integer
@@ -3983,8 +4069,14 @@ components:
           enum:
             - MBWAY
             - CARD
-            - CASH
             - null
+        checkoutUrl:
+          type:
+            - string
+            - 'null'
+          description: |
+            Stripe Checkout hosted-page URL. Only present in the response of
+            POST /tickets/{id}/pay for a fresh CARD payment — never on reads.
         createdAt:
           type: string
           format: date-time
@@ -4028,7 +4120,6 @@ components:
           enum:
             - MBWAY
             - CARD
-            - CASH
         mbwayReference:
           type:
             - string

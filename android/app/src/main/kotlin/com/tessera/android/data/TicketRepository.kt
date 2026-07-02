@@ -80,5 +80,6 @@ class TicketRepository(context: Context) {
         paymentMethod = o.optStringOrNull("paymentMethod"),
         paymentDate = o.optStringOrNull("paymentDate"),
         validationDate = o.optStringOrNull("validationDate"),
+        checkoutUrl = o.optStringOrNull("checkoutUrl"),
     )
 }

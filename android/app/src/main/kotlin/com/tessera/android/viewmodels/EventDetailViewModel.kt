@@ -13,7 +13,7 @@ import com.tessera.android.data.dto.TicketDto
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-enum class PurchaseStep { TIER, METHOD, DONE }
+enum class PurchaseStep { TIER, METHOD, CHECKOUT, DONE }
 
 enum class PurchaseError { INVALID_PHONE, PAYMENT_FAILED, CONNECTION }
 
@@ -45,6 +45,9 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
         private set
     var awaiting by mutableStateOf(false)
         private set
+    var checkoutUrl by mutableStateOf<String?>(null)
+        private set
+    private var pendingTicketId: Long? = null
 
     val total: Double
         get() = entry?.let { if (supporter) it.priceSupporter else it.priceNormal } ?: 0.0
@@ -70,6 +73,8 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
         formError = null
         submitting = false
         awaiting = false
+        checkoutUrl = null
+        pendingTicketId = null
         sheetOpen = true
     }
 
@@ -112,8 +117,13 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             try {
                 val created = tickets.create(e.eventId, supporter)
+                pendingTicketId = created.id
                 val paid = tickets.pay(created.id, method, if (method == "MBWAY") normalized else null)
                 when {
+                    method == "CARD" && paid.checkoutUrl != null -> {
+                        checkoutUrl = paid.checkoutUrl
+                        step = PurchaseStep.CHECKOUT
+                    }
                     method == "MBWAY" && paid.status != "PAID" -> {
                         submitting = false
                         awaiting = true
@@ -125,10 +135,6 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
                             formError = PurchaseError.PAYMENT_FAILED
                         }
                     }
-                    paid.status == "PAID" -> {
-                        ticket = paid
-                        step = PurchaseStep.DONE
-                    }
                     else -> formError = PurchaseError.PAYMENT_FAILED
                 }
             } catch (ex: Exception) {
@@ -136,6 +142,34 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
                 formError = PurchaseError.CONNECTION
             } finally {
                 submitting = false
+                awaiting = false
+            }
+        }
+    }
+
+    /** Called by the CheckoutWebView once it detects the Stripe success/cancel URL. */
+    fun onCheckoutResult(success: Boolean) {
+        checkoutUrl = null
+        val id = pendingTicketId
+        if (!success || id == null) {
+            step = PurchaseStep.METHOD
+            return
+        }
+        viewModelScope.launch {
+            awaiting = true
+            try {
+                val confirmed = pollUntilPaid(id)
+                if (confirmed != null && confirmed.status == "PAID") {
+                    ticket = confirmed
+                    step = PurchaseStep.DONE
+                } else {
+                    formError = PurchaseError.PAYMENT_FAILED
+                    step = PurchaseStep.METHOD
+                }
+            } catch (ex: Exception) {
+                formError = PurchaseError.CONNECTION
+                step = PurchaseStep.METHOD
+            } finally {
                 awaiting = false
             }
         }

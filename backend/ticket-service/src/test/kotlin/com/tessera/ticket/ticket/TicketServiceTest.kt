@@ -5,6 +5,7 @@ import com.tessera.ticket.event.EventRepository
 import com.tessera.ticket.event.MatchLookupClient
 import com.tessera.ticket.events.TicketEventPublisher
 import com.tessera.ticket.payments.MbwayGatewayClient
+import com.tessera.ticket.payments.StripeGatewayClient
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -24,10 +25,11 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 /**
- * Unit tests for [TicketService] — the ticket status machine and the
- * synchronous (CARD/CASH) vs asynchronous (MBWAY) payment flows, mirroring
- * docs/http-tests/09-tickets.http. Collaborators are mocked; the post-commit
- * publish runs inline because there is no active transaction in a unit test.
+ * Unit tests for [TicketService] — the ticket status machine and the two
+ * asynchronous payment flows (MBWAY via webhook, CARD via Stripe Checkout
+ * polling), mirroring docs/http-tests/09-tickets.http. Collaborators are
+ * mocked; the post-commit publish runs inline because there is no active
+ * transaction in a unit test.
  */
 class TicketServiceTest {
 
@@ -35,10 +37,11 @@ class TicketServiceTest {
     private val eventRepository: EventRepository = mock()
     private val publisher: TicketEventPublisher = mock()
     private val mbwayGateway: MbwayGatewayClient = mock()
+    private val stripeGateway: StripeGatewayClient = mock()
     private val matchLookup: MatchLookupClient = mock()
 
     private val service =
-        TicketService(ticketRepository, eventRepository, publisher, mbwayGateway, matchLookup)
+        TicketService(ticketRepository, eventRepository, publisher, mbwayGateway, stripeGateway, matchLookup)
 
     // ----- create -------------------------------------------------------------
 
@@ -136,16 +139,20 @@ class TicketServiceTest {
     }
 
     @Test
-    fun `paying by card transitions to PAID and publishes`() {
+    fun `paying by card creates a Stripe checkout session and stays pending`() {
         val t = ticket()
         whenever(ticketRepository.findById(7L)).thenReturn(Optional.of(t))
+        whenever(stripeGateway.createCheckoutSession(t))
+            .thenReturn(StripeGatewayClient.StripeCheckoutInitiation("cs_123", "https://checkout.stripe.com/pay/cs_123"))
         doReturn(t).whenever(ticketRepository).save(any())
 
-        val paid = service.pay(7L, "card", null, null)
+        val result = service.pay(7L, "card", null, null)
 
-        assertEquals(TicketStatus.PAID, paid.status)
-        assertEquals("CARD", paid.paymentMethod)
-        verify(publisher).publishTicketPaid(paid)
+        assertEquals(TicketStatus.PENDING, result.ticket.status)
+        assertEquals("CARD", result.ticket.paymentMethod)
+        assertEquals("cs_123", result.ticket.stripeCheckoutSessionId)
+        assertEquals("https://checkout.stripe.com/pay/cs_123", result.checkoutUrl)
+        verify(publisher, never()).publishTicketPaid(any())
         verify(mbwayGateway, never()).initiatePayment(any(), any())
     }
 
@@ -156,10 +163,11 @@ class TicketServiceTest {
         whenever(mbwayGateway.initiatePayment(eq(t), eq("912345678"))).thenReturn("txn-123")
         doReturn(t).whenever(ticketRepository).save(any())
 
-        val pending = service.pay(7L, "MBWAY", "912345678", "ref-1")
+        val result = service.pay(7L, "MBWAY", "912345678", "ref-1")
 
-        assertEquals(TicketStatus.PENDING, pending.status)
-        assertEquals("txn-123", pending.mbwayTransactionId)
+        assertEquals(TicketStatus.PENDING, result.ticket.status)
+        assertEquals("txn-123", result.ticket.mbwayTransactionId)
+        assertNull(result.checkoutUrl)
         verify(mbwayGateway).initiatePayment(t, "912345678")
         verify(publisher, never()).publishTicketPaid(any())
     }
@@ -323,6 +331,66 @@ class TicketServiceTest {
         assertNull(t.paymentDate)
     }
 
+    // ----- getByIdRefreshed (Stripe status polling) ----------------------------
+
+    @Test
+    fun `getByIdRefreshed does not call Stripe for a non-pending ticket`() {
+        whenever(ticketRepository.findById(7L)).thenReturn(
+            Optional.of(ticket(status = TicketStatus.PAID, paymentMethod = "CARD", stripeCheckoutSessionId = "cs_1")),
+        )
+
+        service.getByIdRefreshed(7L)
+
+        verify(stripeGateway, never()).checkStatus(any())
+    }
+
+    @Test
+    fun `getByIdRefreshed does not call Stripe for a pending non-card ticket`() {
+        whenever(ticketRepository.findById(7L)).thenReturn(
+            Optional.of(ticket(status = TicketStatus.PENDING, paymentMethod = "MBWAY")),
+        )
+
+        service.getByIdRefreshed(7L)
+
+        verify(stripeGateway, never()).checkStatus(any())
+    }
+
+    @Test
+    fun `getByIdRefreshed marks the ticket PAID when Stripe reports paid`() {
+        val t = ticket(paymentMethod = "CARD", stripeCheckoutSessionId = "cs_1")
+        whenever(ticketRepository.findById(7L)).thenReturn(Optional.of(t))
+        whenever(stripeGateway.checkStatus("cs_1")).thenReturn("paid")
+        doReturn(t).whenever(ticketRepository).save(any())
+
+        val refreshed = service.getByIdRefreshed(7L)
+
+        assertEquals(TicketStatus.PAID, refreshed.status)
+        verify(publisher).publishTicketPaid(t)
+    }
+
+    @Test
+    fun `getByIdRefreshed leaves the ticket pending when Stripe reports unpaid`() {
+        val t = ticket(paymentMethod = "CARD", stripeCheckoutSessionId = "cs_1")
+        whenever(ticketRepository.findById(7L)).thenReturn(Optional.of(t))
+        whenever(stripeGateway.checkStatus("cs_1")).thenReturn("unpaid")
+
+        val refreshed = service.getByIdRefreshed(7L)
+
+        assertEquals(TicketStatus.PENDING, refreshed.status)
+        verify(ticketRepository, never()).save(any())
+    }
+
+    @Test
+    fun `getByIdRefreshed swallows a Stripe failure and returns the ticket unchanged`() {
+        val t = ticket(paymentMethod = "CARD", stripeCheckoutSessionId = "cs_1")
+        whenever(ticketRepository.findById(7L)).thenReturn(Optional.of(t))
+        whenever(stripeGateway.checkStatus("cs_1")).thenThrow(RuntimeException("Stripe is down"))
+
+        val refreshed = service.getByIdRefreshed(7L)
+
+        assertEquals(TicketStatus.PENDING, refreshed.status)
+    }
+
     // -------------------------------------------------------------------------
     // Fixtures
     // -------------------------------------------------------------------------
@@ -336,11 +404,17 @@ class TicketServiceTest {
         status = "PUBLISHED",
     )
 
-    private fun ticket(status: TicketStatus = TicketStatus.PENDING) = Ticket(
+    private fun ticket(
+        status: TicketStatus = TicketStatus.PENDING,
+        paymentMethod: String? = null,
+        stripeCheckoutSessionId: String? = null,
+    ) = Ticket(
         id = 7L,
         event = event(),
         price = BigDecimal("10.00"),
         status = status,
+        paymentMethod = paymentMethod,
+        stripeCheckoutSessionId = stripeCheckoutSessionId,
         ownerSub = "owner-sub",
     )
 

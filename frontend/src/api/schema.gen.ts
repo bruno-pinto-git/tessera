@@ -2040,7 +2040,12 @@ export interface components {
             price: string;
             status: components["schemas"]["ticketStatus"];
             /** @enum {string|null} */
-            paymentMethod?: "MBWAY" | "CARD" | "CASH" | null;
+            paymentMethod?: "MBWAY" | "CARD" | null;
+            /**
+             * @description Stripe Checkout hosted-page URL. Only present in the response of
+             *     POST /tickets/{id}/pay for a fresh CARD payment — never on reads.
+             */
+            checkoutUrl?: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2062,7 +2067,7 @@ export interface components {
         };
         ticketPayRequest: {
             /** @enum {string} */
-            paymentMethod: "MBWAY" | "CARD" | "CASH";
+            paymentMethod: "MBWAY" | "CARD";
             /**
              * @description Optional. Reference returned by the MB WAY provider (only meaningful
              *     when `paymentMethod = MBWAY`).

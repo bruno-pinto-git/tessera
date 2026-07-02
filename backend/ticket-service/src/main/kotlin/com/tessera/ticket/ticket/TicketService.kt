@@ -6,6 +6,8 @@ import com.tessera.ticket.event.MatchAvailability
 import com.tessera.ticket.event.MatchLookupClient
 import com.tessera.ticket.events.TicketEventPublisher
 import com.tessera.ticket.payments.MbwayGatewayClient
+import com.tessera.ticket.payments.StripeGatewayClient
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.security.access.AccessDeniedException
@@ -23,8 +25,10 @@ class TicketService(
     private val eventRepository: EventRepository,
     private val publisher: TicketEventPublisher,
     private val mbwayGateway: MbwayGatewayClient,
+    private val stripeGateway: StripeGatewayClient,
     private val matchLookup: MatchLookupClient,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun create(eventId: Long, supporter: Boolean, ownerSub: String): Ticket {
@@ -49,6 +53,27 @@ class TicketService(
         ticketRepository.findById(id)
             .orElseThrow { TicketNotFoundException("Ticket not found: $id") }
 
+    /**
+     * Like [getById], but for a PENDING CARD ticket also polls Stripe's
+     * Checkout Session status first. There is no reachable webhook endpoint,
+     * so this is the confirmation path — triggered whenever a client reads
+     * the ticket back (e.g. after returning from Stripe's hosted page). A
+     * Stripe hiccup here just leaves the ticket PENDING for this read; the
+     * caller's next read retries. Not applied to list endpoints (`mine`,
+     * `findByEvent`) to avoid an N+1 Stripe call per row.
+     */
+    fun getByIdRefreshed(id: Long): Ticket {
+        val ticket = getById(id)
+        if (ticket.status != TicketStatus.PENDING || ticket.paymentMethod != "CARD") return ticket
+        val sessionId = ticket.stripeCheckoutSessionId ?: return ticket
+        try {
+            if (stripeGateway.checkStatus(sessionId) == "paid") markPaid(ticket)
+        } catch (e: Exception) {
+            log.warn("Stripe: status check failed for ticket id={}: {}", ticket.id, e.message)
+        }
+        return ticket
+    }
+
     @Transactional(readOnly = true)
     fun findByOwner(ownerSub: String, pageable: Pageable): Page<Ticket> =
         ticketRepository.findByOwnerSub(ownerSub, pageable)
@@ -57,20 +82,23 @@ class TicketService(
     fun findByEvent(eventId: Long, pageable: Pageable): Page<Ticket> =
         ticketRepository.findByEventId(eventId, pageable)
 
+    data class PayResult(val ticket: Ticket, val checkoutUrl: String? = null)
+
     /**
-     * Pays a PENDING ticket. Two flavours:
+     * Pays a PENDING ticket. Two flavours, both asynchronous:
      *
-     *  - **CASH / CARD** — synchronous: the ticket transitions PENDING → PAID
-     *    immediately and `ticket.ticket.paid` is published on commit. There is
-     *    no external gateway in the loop.
-     *
-     *  - **MBWAY** — asynchronous: we call [MbwayGatewayClient] to push a
-     *    request to the customer's phone. The ticket stays PENDING (with
+     *  - **MBWAY** — we call [MbwayGatewayClient] to push a request to the
+     *    customer's phone. The ticket stays PENDING (with
      *    `mbwayTransactionId` stamped). The transition to PAID happens later,
      *    in `MbwayWebhookService`, when the gateway calls our webhook.
+     *
+     *  - **CARD** — we create a Stripe Checkout Session and return its
+     *    hosted `checkoutUrl` for the caller to send the buyer to. The
+     *    ticket stays PENDING (with `stripeCheckoutSessionId` stamped) until
+     *    [getByIdRefreshed] observes the session as paid.
      */
     @Transactional
-    fun pay(id: Long, paymentMethod: String, phoneNumber: String?, mbwayReference: String?): Ticket {
+    fun pay(id: Long, paymentMethod: String, phoneNumber: String?, mbwayReference: String?): PayResult {
         val ticket = ticketRepository.findById(id)
             .orElseThrow { TicketNotFoundException("Ticket not found: $id") }
 
@@ -89,19 +117,28 @@ class TicketService(
         ticket.paymentMethod = method
         ticket.mbwayReference = mbwayReference
 
-        return if (method == "MBWAY") {
-            val phone = phoneNumber?.takeIf { it.isNotBlank() }
-                ?: throw IllegalArgumentException("phoneNumber is required for MBWAY payments")
-            val transactionId = mbwayGateway.initiatePayment(ticket, phone)
-            ticket.mbwayTransactionId = transactionId
-            ticketRepository.save(ticket)
-        } else {
-            ticket.status = TicketStatus.PAID
-            ticket.paymentDate = OffsetDateTime.now(ZoneOffset.UTC)
-            val saved = ticketRepository.save(ticket)
-            publishOnCommit { publisher.publishTicketPaid(saved) }
-            saved
+        return when (method) {
+            "MBWAY" -> {
+                val phone = phoneNumber?.takeIf { it.isNotBlank() }
+                    ?: throw IllegalArgumentException("phoneNumber is required for MBWAY payments")
+                val transactionId = mbwayGateway.initiatePayment(ticket, phone)
+                ticket.mbwayTransactionId = transactionId
+                PayResult(ticketRepository.save(ticket))
+            }
+            "CARD" -> {
+                val initiation = stripeGateway.createCheckoutSession(ticket)
+                ticket.stripeCheckoutSessionId = initiation.sessionId
+                PayResult(ticketRepository.save(ticket), checkoutUrl = initiation.checkoutUrl)
+            }
+            else -> error("unreachable: '$method' already validated against $ALLOWED_PAYMENT_METHODS")
         }
+    }
+
+    private fun markPaid(ticket: Ticket) {
+        ticket.status = TicketStatus.PAID
+        ticket.paymentDate = OffsetDateTime.now(ZoneOffset.UTC)
+        val saved = ticketRepository.save(ticket)
+        publishOnCommit { publisher.publishTicketPaid(saved) }
     }
 
     /**
@@ -202,7 +239,7 @@ class TicketService(
     }
 
     companion object {
-        val ALLOWED_PAYMENT_METHODS = setOf("MBWAY", "CARD", "CASH")
+        val ALLOWED_PAYMENT_METHODS = setOf("MBWAY", "CARD")
 
         /** Staff validation opens this many hours before kickoff (admins exempt). */
         const val VALIDATION_OPENS_HOURS_BEFORE = 2L

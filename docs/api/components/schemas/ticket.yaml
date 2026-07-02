@@ -37,7 +37,12 @@ properties:
     $ref: "./ticketStatus.yaml"
   paymentMethod:
     type: [string, "null"]
-    enum: [MBWAY, CARD, CASH, null]
+    enum: [MBWAY, CARD, null]
+  checkoutUrl:
+    type: [string, "null"]
+    description: |
+      Stripe Checkout hosted-page URL. Only present in the response of
+      POST /tickets/{id}/pay for a fresh CARD payment — never on reads.
   createdAt:
     type: string
     format: date-time
