@@ -47,6 +47,15 @@ class Ticket(
     @Column(name = "mbway_transaction_id")
     var mbwayTransactionId: String? = null,
 
+    /**
+     * Stripe Checkout Session id returned when a CARD payment is initiated.
+     * Lets [com.tessera.ticket.ticket.TicketService.getByIdRefreshed] poll
+     * Stripe for the session's status — there is no reachable webhook
+     * endpoint, so this is the confirmation path.
+     */
+    @Column(name = "stripe_checkout_session_id")
+    var stripeCheckoutSessionId: String? = null,
+
     /** Keycloak subject UUID of the buyer. Null only for legacy rows. */
     @Column(name = "owner_sub")
     val ownerSub: String? = null,

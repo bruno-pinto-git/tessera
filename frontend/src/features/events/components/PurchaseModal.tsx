@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, ChevronRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -12,12 +12,14 @@ import { ApiError } from "@/api/client";
 import type { CatalogEntry } from "../lib/catalog";
 
 type Step = 1 | 2 | 3;
-type PaymentMethod = "MBWAY" | "CARD" | "CASH";
+type PaymentMethod = "MBWAY" | "CARD";
 
 interface PurchaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: CatalogEntry;
+  /** Set when returning from Stripe Checkout — skips straight to the awaiting-confirmation poll. */
+  resumeTicketId?: number;
 }
 
 /**
@@ -27,15 +29,16 @@ interface PurchaseModalProps {
  *   2. pick payment method, type phone (MBWAY), confirm
  *      → POST /tickets → POST /tickets/{id}/pay
  *      → MBWAY: poll GET /tickets/{id} until PAID/expired
+ *      → CARD: redirect to Stripe Checkout; resumed via `resumeTicketId` on return
  *   3. show the real QR + ticket id
  */
-export function PurchaseModal({ open, onOpenChange, entry }: PurchaseModalProps) {
+export function PurchaseModal({ open, onOpenChange, entry, resumeTicketId }: PurchaseModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [supporter, setSupporter] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("MBWAY");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [awaitingMbway, setAwaitingMbway] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Ticket | null>(null);
 
@@ -47,10 +50,39 @@ export function PurchaseModal({ open, onOpenChange, entry }: PurchaseModalProps)
     setPaymentMethod("MBWAY");
     setPhoneNumber("");
     setSubmitting(false);
-    setAwaitingMbway(false);
+    setAwaitingConfirmation(false);
     setError(null);
     setTicket(null);
   };
+
+  async function awaitResolution(ticketId: number) {
+    setSubmitting(true);
+    setAwaitingConfirmation(true);
+    try {
+      const finalTicket = await pollUntilResolved(ticketId);
+      if (finalTicket.status === "PAID") {
+        setTicket(finalTicket);
+        setStep(3);
+      } else {
+        setError("O pagamento expirou ou foi recusado. Tenta de novo.");
+      }
+    } catch (e) {
+      setError(messageFromError(e));
+    } finally {
+      setSubmitting(false);
+      setAwaitingConfirmation(false);
+    }
+  }
+
+  // Returning from Stripe Checkout: skip straight to the awaiting-confirmation poll.
+  useEffect(() => {
+    if (open && resumeTicketId != null) {
+      setStep(2);
+      setPaymentMethod("CARD");
+      void awaitResolution(resumeTicketId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, resumeTicketId]);
 
   async function confirmPayment() {
     setError(null);
@@ -68,24 +100,16 @@ export function PurchaseModal({ open, onOpenChange, entry }: PurchaseModalProps)
         phoneNumber: paymentMethod === "MBWAY" ? normalisePhone(phoneNumber) : undefined,
       });
 
-      if (paid.status === "PAID") {
-        setTicket(paid);
-        setStep(3);
-      } else {
-        setAwaitingMbway(true);
-        const finalTicket = await pollUntilResolved(paid.id);
-        if (finalTicket.status === "PAID") {
-          setTicket(finalTicket);
-          setStep(3);
-        } else {
-          setError("O pagamento expirou ou foi recusado. Tenta de novo.");
-        }
+      if (paymentMethod === "CARD" && paid.checkoutUrl) {
+        sessionStorage.setItem("pendingTicketId", String(paid.id));
+        window.location.href = paid.checkoutUrl;
+        return;
       }
+
+      await awaitResolution(paid.id);
     } catch (e) {
       setError(messageFromError(e));
-    } finally {
       setSubmitting(false);
-      setAwaitingMbway(false);
     }
   }
 
@@ -130,7 +154,7 @@ export function PurchaseModal({ open, onOpenChange, entry }: PurchaseModalProps)
             phoneNumber={phoneNumber}
             onPhoneNumber={setPhoneNumber}
             submitting={submitting}
-            awaitingMbway={awaitingMbway}
+            awaitingConfirmation={awaitingConfirmation}
             error={error}
             onBack={() => setStep(1)}
             onConfirm={confirmPayment}
@@ -251,7 +275,7 @@ function StepPayment({
   phoneNumber,
   onPhoneNumber,
   submitting,
-  awaitingMbway,
+  awaitingConfirmation,
   error,
   onBack,
   onConfirm,
@@ -263,15 +287,14 @@ function StepPayment({
   phoneNumber: string;
   onPhoneNumber: (v: string) => void;
   submitting: boolean;
-  awaitingMbway: boolean;
+  awaitingConfirmation: boolean;
   error: string | null;
   onBack: () => void;
   onConfirm: () => void;
 }) {
-  const options: { value: PaymentMethod; name: string; sub: string; disabled?: boolean }[] = [
+  const options: { value: PaymentMethod; name: string; sub: string }[] = [
     { value: "MBWAY", name: "MBWAY", sub: "Notificação no telemóvel" },
     { value: "CARD", name: "Cartão", sub: "Visa, Mastercard" },
-    { value: "CASH", name: "Dinheiro à porta", sub: "Só sócios", disabled: true },
   ];
 
   return (
@@ -283,8 +306,7 @@ function StepPayment({
             <label
               key={p.value}
               className={cn(
-                "flex items-start gap-3 rounded-md border px-3 py-2.5",
-                p.disabled ? "opacity-50" : "cursor-pointer",
+                "flex items-start gap-3 rounded-md border px-3 py-2.5 cursor-pointer",
                 on && "border-primary bg-primary/5",
               )}
             >
@@ -292,7 +314,6 @@ function StepPayment({
                 type="radio"
                 name="payment"
                 className="sr-only"
-                disabled={p.disabled}
                 checked={on}
                 onChange={() => onPaymentMethod(p.value)}
               />
@@ -357,7 +378,11 @@ function StepPayment({
           {submitting ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              {awaitingMbway ? "A aguardar MB WAY…" : "A processar…"}
+              {awaitingConfirmation
+                ? paymentMethod === "CARD"
+                  ? "A confirmar pagamento…"
+                  : "A aguardar MB WAY…"
+                : "A processar…"}
             </>
           ) : (
             <>Confirmar pagamento</>

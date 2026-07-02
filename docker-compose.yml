@@ -61,6 +61,13 @@ services:
       MBWAY_WEBHOOK_BASE_URL: ${MBWAY_WEBHOOK_BASE_URL:-http://host.docker.internal:8081}
       MBWAY_TERMINAL_ID: ${MBWAY_TERMINAL_ID:-47215}
       MBWAY_CLIENT_ID: ${MBWAY_CLIENT_ID:-tessera-mock}
+      # Stripe Checkout (CARD payments). Test-mode secret key from
+      # dashboard.stripe.com (Developers > API keys, with "Test mode" on).
+      # Success/cancel URLs point at the web frontend; {id}/{eventId} are
+      # filled in by StripeGatewayClient before the URL is sent to Stripe.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:8000/events/{eventId}?stripe_ticket_id={id}}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:8000/events/{eventId}?stripe_cancelled=1}
       # match-service URL, used to resolve a match's home club when a club
       # manager opens a box office (scoped authorization in EventController).
       MATCH_SERVICE_URL: http://match-service:8082

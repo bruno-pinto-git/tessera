@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
 import { Card } from "@/components/ui/card";
@@ -16,8 +16,38 @@ export function EventDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const { entry, loading, error, notFound } = useEventCatalog(id);
-  const { authenticated, login } = useAuth();
+  const { authenticated, initialized, login } = useAuth();
   const [open, setOpen] = useState(false);
+  const [resumeTicketId, setResumeTicketId] = useState<number | undefined>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Returning from Stripe Checkout: reopen the purchase modal straight into
+  // the awaiting-confirmation poll, then strip the query params so a refresh
+  // doesn't re-trigger this. Waits for `initialized` because this is a full
+  // page load (we navigated away to Stripe and back) — Keycloak's check-sso
+  // re-authentication runs through a hidden iframe and resolves
+  // asynchronously; firing the poll before it settles sends the request
+  // with no Authorization header at all (401), not a bad token.
+  useEffect(() => {
+    if (!initialized) return;
+    const stripeTicketId = searchParams.get("stripe_ticket_id");
+    if (stripeTicketId) {
+      setResumeTicketId(Number(stripeTicketId));
+      setOpen(true);
+    }
+    if (stripeTicketId || searchParams.has("stripe_cancelled")) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("stripe_ticket_id");
+          next.delete("stripe_cancelled");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized]);
 
   if (notFound) return <NotFoundPage />;
   if (loading) {
@@ -122,13 +152,22 @@ export function EventDetailPage() {
             <PurchaseSticky
               entry={entry}
               authenticated={authenticated}
-              onBuy={() => (authenticated ? setOpen(true) : login())}
+              onBuy={() => {
+                if (!authenticated) return login();
+                setResumeTicketId(undefined);
+                setOpen(true);
+              }}
             />
           </aside>
         </div>
       </div>
 
-      <PurchaseModal open={open} onOpenChange={setOpen} entry={entry} />
+      <PurchaseModal
+        open={open}
+        onOpenChange={setOpen}
+        entry={entry}
+        resumeTicketId={resumeTicketId}
+      />
     </>
   );
 }
@@ -238,7 +277,7 @@ function Indications({ time }: { time: string }) {
       </div>
       <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-sm">
         <Row k="Apito inicial">{time || "—"}</Row>
-        <Row k="Pagamento à porta">MB WAY, dinheiro</Row>
+        <Row k="Pagamento à porta">MB WAY</Row>
         <Row k="QR no telemóvel">Sem papel; mostra o ecrã ao portão</Row>
         <Row k="Política">Sem reembolso após apito</Row>
       </div>

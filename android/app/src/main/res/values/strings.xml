@@ -236,8 +236,8 @@
     <string name="purchase_continue">Continuar →</string>
     <string name="method_mbway">MBWAY</string>
     <string name="method_mbway_sub">Notificação no telemóvel</string>
-    <string name="method_paid_test">Bilhete já pago (teste)</string>
-    <string name="method_paid_test_sub">Marca como pago — apenas para testes</string>
+    <string name="method_card">Cartão</string>
+    <string name="method_card_sub">Visa, Mastercard</string>
     <string name="purchase_phone_mbway_label">Telemóvel MB WAY</string>
     <string name="purchase_phone_mbway_ph">351912345678</string>
     <string name="purchase_phone_helper">Formato internacional sem espaços. A notificação chega ao telemóvel registado no MB WAY.</string>

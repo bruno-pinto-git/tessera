@@ -51,3 +51,11 @@ tessera:
     webhook-base-url: ${MBWAY_WEBHOOK_BASE_URL:http://host.docker.internal:8081}
     terminal-id: ${MBWAY_TERMINAL_ID:47215}
     client-id: ${MBWAY_CLIENT_ID:tessera-mock}
+  stripe:
+    # Test-mode secret key from dashboard.stripe.com (Developers > API keys).
+    secret-key: ${STRIPE_SECRET_KEY:}
+    # Where Stripe sends the buyer back after Checkout. {id}/{eventId} are
+    # filled in by StripeGatewayClient — Stripe only auto-substitutes its own
+    # {CHECKOUT_SESSION_ID} placeholder.
+    success-url: ${STRIPE_SUCCESS_URL:http://localhost:8000/events/{eventId}?stripe_ticket_id={id}}
+    cancel-url: ${STRIPE_CANCEL_URL:http://localhost:8000/events/{eventId}?stripe_cancelled=1}
