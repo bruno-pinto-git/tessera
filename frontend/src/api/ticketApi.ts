@@ -22,11 +22,13 @@ export interface Ticket {
   ownerSub: string | null;
   price: number | string; // Jackson emits number; spec says string. Accept both.
   status: TicketStatus;
-  paymentMethod: "MBWAY" | "CARD" | "CASH" | null;
+  paymentMethod: "MBWAY" | "CARD" | null;
   createdAt: string;
   paymentDate: string | null;
   validationDate: string | null;
   validatorSub: string | null;
+  /** Stripe Checkout hosted-page URL. Only present in the pay() response for a fresh CARD payment. */
+  checkoutUrl: string | null;
 }
 
 export interface PageEnvelope<T> {
@@ -43,7 +45,7 @@ export interface CreateTicketRequest {
 }
 
 export interface PayTicketRequest {
-  paymentMethod: "MBWAY" | "CARD" | "CASH";
+  paymentMethod: "MBWAY" | "CARD";
   mbwayReference?: string;
   /** Required when paymentMethod === "MBWAY". Format: "351912345678". */
   phoneNumber?: string;

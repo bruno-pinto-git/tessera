@@ -72,6 +72,7 @@ import com.tessera.android.screens.components.isoToLocalTime
 import com.tessera.android.screens.components.localDateTimeToIso
 import com.tessera.android.screens.components.prettyCategory
 import com.tessera.android.screens.components.prettyClubRole
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.ClubDetailViewModel
 
@@ -85,6 +86,7 @@ fun ClubDetailScreen(
     viewModel: ClubDetailViewModel = viewModel(),
 ) {
     LaunchedEffect(clubId) { viewModel.load(clubId) }
+    RefreshOnResume { viewModel.load(clubId) }
     var tab by remember { mutableIntStateOf(0) }
     var showEditClub by remember { mutableStateOf(false) }
     var showAddTeam by remember { mutableStateOf(false) }

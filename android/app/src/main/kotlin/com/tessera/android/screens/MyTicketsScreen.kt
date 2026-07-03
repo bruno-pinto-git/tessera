@@ -37,6 +37,7 @@ import com.tessera.android.screens.components.StatusBadge
 import com.tessera.android.screens.components.formatEur
 import com.tessera.android.screens.components.formatKickoffFull
 import com.tessera.android.screens.components.formatShortDateTime
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.ui.theme.GlassInk
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.MyTicketsState
@@ -48,6 +49,7 @@ fun MyTicketsScreen(
     onOpenEvent: (Long) -> Unit = {},
     viewModel: MyTicketsViewModel = viewModel(),
 ) {
+    RefreshOnResume { viewModel.load() }
     when (val s = viewModel.state) {
         MyTicketsState.Loading -> Centered {
             CircularProgressIndicator()

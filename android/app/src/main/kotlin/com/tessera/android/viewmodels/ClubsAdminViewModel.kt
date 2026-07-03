@@ -53,6 +53,19 @@ class ClubsAdminViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun updateClub(id: Long, name: String, foundedYear: Int?, crestUrl: String?) {
+        busy = true
+        viewModelScope.launch {
+            try {
+                repo.updateClub(id, name, foundedYear, crestUrl)
+                state = AdminClubsState.Success(repo.listClubs())
+            } catch (e: Exception) {
+                state = AdminClubsState.Error
+            }
+            busy = false
+        }
+    }
+
     fun deleteClub(id: Long) {
         busy = true
         viewModelScope.launch {

@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -43,6 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
 import com.tessera.android.data.dto.ClubDto
 import com.tessera.android.screens.components.FormDialog
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.screens.components.searchFieldColors
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.AdminClubsState
@@ -55,8 +57,10 @@ fun ClubsAdminScreen(
     viewModel: ClubsAdminViewModel = viewModel(),
 ) {
     var showAdd by remember { mutableStateOf(false) }
+    var toEdit by remember { mutableStateOf<ClubDto?>(null) }
     var toDelete by remember { mutableStateOf<ClubDto?>(null) }
     var query by remember { mutableStateOf("") }
+    RefreshOnResume { viewModel.load() }
 
     Box(Modifier.fillMaxSize()) {
         when (val s = viewModel.state) {
@@ -89,7 +93,8 @@ fun ClubsAdminScreen(
                                             Text(club.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                                             club.foundedYear?.let { Text(stringResource(R.string.clubs_founded, it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                         }
-                                        IconButton(onClick = { toDelete = club }) { Icon(Icons.Filled.Delete, stringResource(R.string.common_delete), tint = MaterialTheme.colorScheme.error) }
+                                        IconButton(onClick = { toEdit = club }) { Icon(Icons.Filled.Edit, stringResource(R.string.common_edit), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                                    IconButton(onClick = { toDelete = club }) { Icon(Icons.Filled.Delete, stringResource(R.string.common_delete), tint = MaterialTheme.colorScheme.error) }
                                     }
                                 }
                             }
@@ -115,6 +120,23 @@ fun ClubsAdminScreen(
         ) {
             OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.club_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(year, { year = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.club_founded_label)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+    }
+
+    toEdit?.let { club ->
+        var name by remember { mutableStateOf(club.name) }
+        var year by remember { mutableStateOf(club.foundedYear?.toString() ?: "") }
+        var crest by remember { mutableStateOf(club.crestUrl ?: "") }
+        FormDialog(
+            title = stringResource(R.string.club_edit_title),
+            confirmLabel = stringResource(R.string.common_save),
+            confirmEnabled = name.trim().length >= 2,
+            onConfirm = { viewModel.updateClub(club.id, name.trim(), year.toIntOrNull(), crest.trim()); toEdit = null },
+            onDismiss = { toEdit = null },
+        ) {
+            OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.club_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(year, { year = it.filter { c -> c.isDigit() } }, label = { Text(stringResource(R.string.club_founded_label)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(crest, { crest = it }, label = { Text(stringResource(R.string.club_crest_url)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
         }
     }
 

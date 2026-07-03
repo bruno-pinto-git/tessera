@@ -155,7 +155,7 @@ POST {{ticketServiceUrl}}/api/v1/tickets/{{ticketId}}/pay
 Content-Type: application/json
 Authorization: Bearer {{adeptoToken}}
 
-{ "paymentMethod": "CASH" }
+{ "paymentMethod": "CARD" }
 
 > {% client.test("status 409", () => client.assert(response.status === 409)); %}
 

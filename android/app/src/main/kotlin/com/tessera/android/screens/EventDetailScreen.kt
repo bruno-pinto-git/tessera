@@ -33,6 +33,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -45,6 +48,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
@@ -284,14 +288,24 @@ private fun PurchaseSheet(entry: CatalogEntry?, viewModel: EventDetailViewModel,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
-        Stepper(currentIndex = viewModel.step.ordinal)
+        Stepper(currentIndex = stepperIndex(viewModel.step))
 
         when (viewModel.step) {
             PurchaseStep.TIER -> TierStep(entry, viewModel)
             PurchaseStep.METHOD -> MethodStep(viewModel, busy)
+            PurchaseStep.CHECKOUT -> viewModel.checkoutUrl?.let { url ->
+                CheckoutWebView(url = url, onResult = viewModel::onCheckoutResult)
+            }
             PurchaseStep.DONE -> DoneStep(viewModel, onOpenTickets)
         }
     }
+}
+
+/** CHECKOUT is still conceptually "Pagamento" — it doesn't get its own dot. */
+private fun stepperIndex(step: PurchaseStep): Int = when (step) {
+    PurchaseStep.TIER -> 0
+    PurchaseStep.METHOD, PurchaseStep.CHECKOUT -> 1
+    PurchaseStep.DONE -> 2
 }
 
 @Composable
@@ -357,7 +371,7 @@ private fun TierStep(entry: CatalogEntry, viewModel: EventDetailViewModel) {
 @Composable
 private fun MethodStep(viewModel: EventDetailViewModel, busy: Boolean) {
     SelectableOption(stringResource(R.string.method_mbway), stringResource(R.string.method_mbway_sub), null, viewModel.method == "MBWAY", enabled = !busy) { viewModel.selectMethod("MBWAY") }
-    SelectableOption(stringResource(R.string.method_paid_test), stringResource(R.string.method_paid_test_sub), null, viewModel.method == "CARD", enabled = !busy) { viewModel.selectMethod("CARD") }
+    SelectableOption(stringResource(R.string.method_card), stringResource(R.string.method_card_sub), null, viewModel.method == "CARD", enabled = !busy) { viewModel.selectMethod("CARD") }
 
     if (viewModel.method == "MBWAY") {
         OutlinedTextField(
@@ -380,6 +394,7 @@ private fun MethodStep(viewModel: EventDetailViewModel, busy: Boolean) {
         val msg = when (it) {
             PurchaseError.INVALID_PHONE -> stringResource(R.string.purchase_phone_invalid)
             PurchaseError.PAYMENT_FAILED -> stringResource(R.string.purchase_failed)
+            PurchaseError.CONNECTION -> stringResource(R.string.purchase_connection_error)
         }
         Text(msg, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
     }
@@ -398,6 +413,42 @@ private fun MethodStep(viewModel: EventDetailViewModel, busy: Boolean) {
             }
         }
     }
+}
+
+/**
+ * Renders the Stripe Checkout hosted page. Watches navigation for the
+ * success/cancel redirect (matched by query param, not host — the backend's
+ * configured redirect URLs point at the web frontend, which this WebView
+ * never actually needs to load; it just intercepts the navigation) and
+ * reports the result back to the ViewModel, which owns what happens next.
+ */
+@Composable
+private fun CheckoutWebView(url: String, onResult: (Boolean) -> Unit) {
+    AndroidView(
+        modifier = Modifier.fillMaxWidth().height(480.dp),
+        factory = { context ->
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                        val uri = request.url
+                        return when {
+                            uri.getQueryParameter("stripe_ticket_id") != null -> {
+                                onResult(true)
+                                true
+                            }
+                            uri.getQueryParameter("stripe_cancelled") != null -> {
+                                onResult(false)
+                                true
+                            }
+                            else -> false
+                        }
+                    }
+                }
+                loadUrl(url)
+            }
+        },
+    )
 }
 
 @Composable

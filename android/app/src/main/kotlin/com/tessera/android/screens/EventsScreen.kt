@@ -39,6 +39,7 @@ import com.tessera.android.screens.components.ClubCrest
 import com.tessera.android.screens.components.formatEur
 import com.tessera.android.screens.components.formatKickoffFull
 import com.tessera.android.screens.components.kickoffParts
+import com.tessera.android.screens.components.RefreshOnResume
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.EventsFilter
 import com.tessera.android.viewmodels.EventsState
@@ -49,6 +50,7 @@ fun EventsScreen(
     onEventClick: (Long) -> Unit,
     viewModel: EventsViewModel = viewModel(),
 ) {
+    RefreshOnResume { viewModel.load() }
     when (val s = viewModel.state) {
         EventsState.Loading -> Centered {
             CircularProgressIndicator()

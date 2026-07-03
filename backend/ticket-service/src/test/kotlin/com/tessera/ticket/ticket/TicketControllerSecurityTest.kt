@@ -64,7 +64,8 @@ class TicketControllerSecurityTest {
     @Test
     fun `owner can pay their own ticket`() {
         doReturn(ticket(ownerSub = "user")).whenever(ticketService).getById(1L)
-        doReturn(ticket(ownerSub = "user")).whenever(ticketService).pay(any(), any(), anyOrNull(), anyOrNull())
+        doReturn(TicketService.PayResult(ticket(ownerSub = "user")))
+            .whenever(ticketService).pay(any(), any(), anyOrNull(), anyOrNull())
         mvc.perform(
             post("/api/v1/tickets/1/pay").with(fan())
                 .contentType(MediaType.APPLICATION_JSON).content("""{"paymentMethod":"CARD"}"""),
