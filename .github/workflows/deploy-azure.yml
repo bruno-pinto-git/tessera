@@ -1,0 +1,91 @@
+name: deploy-azure
+
+# One manual button (Actions tab -> "deploy-azure" -> Run workflow) that operates
+# the demo VM. Because the VM is deallocated most of the time to save credit, a
+# plain "push -> deploy" is a poor fit (it would fail while the VM is off, or force
+# the VM to stay on). Instead this is dispatch-only with an operation to pick:
+#
+#   deploy  -> start the VM if needed, pull the chosen branch, rebuild & up. Leaves it running.
+#   start   -> just power the VM on.
+#   stop    -> deallocate the VM (stops billing for compute).
+#
+# App secrets (STRIPE_SECRET_KEY, KC_*_PASSWORD, ...) live ONLY in the VM's .env and
+# never touch GitHub. This workflow only needs to (a) start/stop the VM via an Azure
+# service principal, and (b) SSH in to run docker compose. See DEPLOY.md section 7
+# for the one-time setup (service principal + the repo secrets listed below).
+#
+# Required repo secrets:
+#   AZURE_CREDENTIALS  - service-principal JSON from `az ad sp create-for-rbac --json-auth`
+#   AZURE_RG           - resource group holding the VM
+#   AZURE_VM           - VM name
+#   VM_HOST            - FQDN / public IP to SSH into
+#   VM_USER            - SSH user (e.g. azureuser)
+#   VM_SSH_KEY         - private SSH key authorized on the VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "What to do"
+        type: choice
+        options: [deploy, start, stop]
+        default: deploy
+      ref:
+        description: "Branch to deploy (main = the stable/release branch)"
+        type: string
+        default: main
+
+# Never let two VM operations overlap (e.g. a stop racing a deploy).
+concurrency:
+  group: azure-vm
+  cancel-in-progress: false
+
+env:
+  DEPLOY_REF: ${{ inputs.ref }}
+
+jobs:
+  ops:
+    name: ${{ inputs.operation }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Start VM
+        if: ${{ inputs.operation == 'deploy' || inputs.operation == 'start' }}
+        run: az vm start -g "${{ secrets.AZURE_RG }}" -n "${{ secrets.AZURE_VM }}"
+
+      # az vm start returns once the VM is allocated; give sshd a moment to accept.
+      - name: Wait for SSH
+        if: ${{ inputs.operation == 'deploy' }}
+        run: |
+          for i in $(seq 1 30); do
+            if nc -z -w 5 "${{ secrets.VM_HOST }}" 22; then echo "SSH is up"; exit 0; fi
+            echo "waiting for SSH... ($i)"; sleep 5
+          done
+          echo "SSH did not come up in time"; exit 1
+
+      - name: Deploy over SSH
+        if: ${{ inputs.operation == 'deploy' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          envs: DEPLOY_REF
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
+            cd ~/tessera
+            git fetch origin
+            git checkout "$DEPLOY_REF"
+            git reset --hard "origin/$DEPLOY_REF"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+            docker image prune -f
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+
+      - name: Stop (deallocate) VM
+        if: ${{ inputs.operation == 'stop' }}
+        run: az vm deallocate -g "${{ secrets.AZURE_RG }}" -n "${{ secrets.AZURE_VM }}"

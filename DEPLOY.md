@@ -55,7 +55,8 @@ ssh azureuser@<FQDN>
 git clone -b develop https://github.com/bruno-pinto-git/tessera.git
 cd tessera
 cp .env.prod.example .env
-nano .env          # set TESSERA_FQDN=<your FQDN>, and strong KC_DB_PASSWORD / KC_ADMIN_PASSWORD
+nano .env          # set TESSERA_FQDN=<your FQDN>, strong KC_DB_PASSWORD / KC_ADMIN_PASSWORD
+                   # STRIPE_SECRET_KEY is optional — leave empty unless you want card payments
 ```
 
 ## 4. Build & launch
@@ -86,7 +87,44 @@ az vm start      -g $RG -n $VM     # bring it back (same FQDN); containers auto-
 ```
 `restart: unless-stopped` + the persistent volumes mean the stack comes back on its own after `az vm start`.
 
-## 7. Android app (your colleague)
+## 7. One-click deploy / power from GitHub (optional)
+`.github/workflows/deploy-azure.yml` gives a manual button (Actions tab →
+**deploy-azure** → *Run workflow*) with three operations:
+- **deploy** — powers the VM on, pulls the chosen branch (default `main`), `up -d --build`, leaves it running.
+- **start** / **stop** — just power the VM on / deallocate it (same as `az vm start`/`deallocate`, but from GitHub).
+
+App secrets stay in the VM's `.env` — they never go to GitHub. The workflow only
+needs to power the VM and SSH in. One-time setup:
+
+1. **Service principal** (lets the action start/stop the VM), scoped to just this RG:
+   ```bash
+   az ad sp create-for-rbac --name tessera-deploy \
+     --role "Virtual Machine Contributor" \
+     --scopes /subscriptions/<SUB_ID>/resourceGroups/$RG \
+     --json-auth
+   ```
+   Copy the whole JSON output.
+2. **SSH key** the action will use (or reuse the one you log in with). The private
+   key goes in a secret; the public key must be in the VM's `~/.ssh/authorized_keys`.
+3. **Add repo secrets** (Settings → Secrets and variables → Actions → *New repository secret*):
+   | Secret | Value |
+   |---|---|
+   | `AZURE_CREDENTIALS` | the SP JSON from step 1 |
+   | `AZURE_RG` | your resource group name |
+   | `AZURE_VM` | your VM name |
+   | `VM_HOST` | your FQDN (or public IP) |
+   | `VM_USER` | `azureuser` |
+   | `VM_SSH_KEY` | the private SSH key from step 2 |
+
+**Release flow:** `main` is the deploy source. When `develop` is demo-ready, merge it
+into `main` and push; then run **deploy**. (You can also type `develop` in the *ref*
+box to test-deploy without promoting.)
+
+> The VM must be provisioned once (sections 1–4) before the button works. This is a
+> dispatch-only button on purpose — a `push`-triggered deploy would fail while the VM
+> is off, or force it to stay on and burn credit.
+
+## 8. Android app (your colleague)
 Point the Android client at the public URLs:
 - API base: `https://<FQDN>/api/v1`
 - Keycloak: `https://<FQDN>/auth` (realm `tessera`, the appropriate client)
@@ -95,4 +133,4 @@ Point the Android client at the public URLs:
 - **Login redirect rejected** — the `tessera-web` client allows `/*` + webOrigins `+`, which should cover the FQDN. If a redirect is still refused, add `https://<FQDN>/*` to *Valid redirect URIs* and `https://<FQDN>` to *Web origins* in the KC admin console (Clients → tessera-web).
 - **No TLS cert / cert errors** — Let's Encrypt needs the FQDN to resolve to the VM and ports 80+443 open. Check `az vm open-port` ran and `docker compose logs caddy`.
 - **Out of memory / containers killed** — the `B2ms` (8 GB) fits the capped stack; if tight, bump to `Standard_B4ms` or consolidate the three app Postgres into one.
-- **Update after a push** — `git pull` then re-run the `up -d --build` command.
+- **Update after a push** — `git pull` then re-run the `up -d --build` command, or use the **deploy-azure** GitHub button (section 7).

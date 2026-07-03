@@ -92,6 +92,13 @@ services:
     mem_limit: 512m
     environment:
       KEYCLOAK_JWKS_URI: http://keycloak:8180/auth/realms/tessera/protocol/openid-connect/certs
+      # Stripe redirects the buyer back here after Checkout; the base compose
+      # defaults these to localhost, which would strand the buyer in prod. Point
+      # them at the public site. {eventId}/{id} are literal placeholders that
+      # StripeGatewayClient fills in (not shell/compose vars). STRIPE_SECRET_KEY
+      # still comes from .env via the base compose (empty = card payments off).
+      STRIPE_SUCCESS_URL: https://${TESSERA_FQDN}/events/{eventId}?stripe_ticket_id={id}
+      STRIPE_CANCEL_URL: https://${TESSERA_FQDN}/events/{eventId}?stripe_cancelled=1
 
   match-service:
     restart: unless-stopped
