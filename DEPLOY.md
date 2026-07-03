@@ -52,7 +52,7 @@ ssh azureuser@<FQDN>
 
 ## 3. Get the code + configure
 ```bash
-git clone -b deploy/azure-vm https://github.com/bruno-pinto-git/tessera.git
+git clone -b develop https://github.com/bruno-pinto-git/tessera.git
 cd tessera
 cp .env.prod.example .env
 nano .env          # set TESSERA_FQDN=<your FQDN>, and strong KC_DB_PASSWORD / KC_ADMIN_PASSWORD
