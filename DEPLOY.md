@@ -22,16 +22,16 @@ Pick a unique DNS label — the public FQDN becomes `<label>.<region>.cloudapp.a
 
 ```bash
 RG=tessera-rg
-LOC=westeurope
+LOC=swedencentral                  # see the "region gotcha" note below
 VM=tessera-vm
-DNS=tessera-demo-<your-suffix>     # must be globally unique in the region
+DNS=tessera                        # must be globally unique in the region; add a suffix if taken
 
 az group create -n $RG -l $LOC
 
 az vm create \
-  -g $RG -n $VM \
+  -g $RG -n $VM -l $LOC \
   --image Ubuntu2204 \
-  --size Standard_B2ms \
+  --size Standard_B2as_v2 \
   --admin-username azureuser \
   --generate-ssh-keys \
   --public-ip-address-dns-name $DNS
@@ -41,6 +41,20 @@ az vm open-port -g $RG -n $VM --port 80,443 --priority 900
 ```
 
 Your FQDN: `${DNS}.${LOC}.cloudapp.azure.com` (note it — it's the `TESSERA_FQDN`).
+
+> **Region gotcha (Azure for Students).** The subscription is locked by policy to
+> a small set of regions, and even inside those the cheap burstable/B-series sizes
+> are often capacity-restricted. `westeurope`/`uksouth` are blocked; `swedencentral`
+> had `Standard_B2as_v2` (2 vCPU / 8 GB, AMD, burstable) available. If a region or
+> size is refused (`RequestDisallowedByAzure` / `SkuNotAvailable`), find what's
+> allowed:
+> ```bash
+> # allowed regions for this subscription
+> az policy assignment list --disable-scope-strict-match \
+>   --query "[?parameters.listOfAllowedLocations].parameters.listOfAllowedLocations.value" -o json
+> # unrestricted 8 GB / 2 vCPU sizes in a region (x86 — avoid the ARM 'p' variants)
+> az vm list-skus -l <region> --all --query "[?resourceType=='virtualMachines' && restrictions[0]==null && (starts_with(name,'Standard_B2') || starts_with(name,'Standard_D2'))].{name:name, mem:capabilities[?name=='MemoryGB'].value|[0], vCPU:capabilities[?name=='vCPUs'].value|[0]}" -o table
+> ```
 
 ## 2. Install Docker on the VM
 ```bash
@@ -52,7 +66,7 @@ ssh azureuser@<FQDN>
 
 ## 3. Get the code + configure
 ```bash
-git clone -b develop https://github.com/bruno-pinto-git/tessera.git
+git clone -b main https://github.com/bruno-pinto-git/tessera.git
 cd tessera
 cp .env.prod.example .env
 nano .env          # set TESSERA_FQDN=<your FQDN>, strong KC_DB_PASSWORD / KC_ADMIN_PASSWORD
