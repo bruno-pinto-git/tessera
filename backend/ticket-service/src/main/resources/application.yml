@@ -40,17 +40,18 @@ tessera:
   events:
     exchange: tessera.events
   mbway:
-    # URL of the MB WAY gateway the ticket-service calls when a customer
-    # picks MB WAY as payment method. Override at deploy time with
-    # MBWAY_GATEWAY_URL=http://<device-ip>:8443 — typically the LAN IP of
-    # the phone running the mock-mbway app, or in prod the real SIBS host.
-    gateway-url: ${MBWAY_GATEWAY_URL:http://host.docker.internal:8443}
-    # Base URL the gateway uses to call our webhook back. From inside the
-    # gateway (running on a phone on the LAN), that means our LAN-reachable
-    # IP — not host.docker.internal. Set MBWAY_WEBHOOK_BASE_URL=http://<host-lan-ip>:8081.
+    # mock-mbway (or the real SIBS gateway) polls us for pending payments —
+    # we never call out to it directly, since it may be on a network we
+    # can't reach (a phone on its own hotspot/mobile data). See
+    # MbwayGatewayClient/MbwayRelayController.
+    # Base URL the gateway uses to call our webhook back with the payment
+    # result. Set MBWAY_WEBHOOK_BASE_URL=http://<host-lan-ip>:8081 for a LAN
+    # demo, or the public HTTPS origin in prod.
     webhook-base-url: ${MBWAY_WEBHOOK_BASE_URL:http://host.docker.internal:8081}
     terminal-id: ${MBWAY_TERMINAL_ID:47215}
-    client-id: ${MBWAY_CLIENT_ID:tessera-mock}
+    # Shared secret the poller must present (X-Relay-Secret header) — the
+    # poll endpoint is public once deployed, unlike the old LAN-only setup.
+    relay-secret: ${MBWAY_RELAY_SECRET:}
   stripe:
     # Test-mode secret key from dashboard.stripe.com (Developers > API keys).
     secret-key: ${STRIPE_SECRET_KEY:}

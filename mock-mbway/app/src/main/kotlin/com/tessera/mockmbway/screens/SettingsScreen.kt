@@ -1,4 +1,4 @@
-package com.tessera.android.screens
+package com.tessera.mockmbway.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,11 +25,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.tessera.android.R
-import com.tessera.android.screens.components.searchFieldColors
-import com.tessera.android.shared.ServerConfig
-import com.tessera.android.ui.theme.GlassInkMuted
-import com.tessera.android.viewmodels.SettingsViewModel
+import com.tessera.mockmbway.R
+import com.tessera.mockmbway.shared.RelayConfig
+import com.tessera.mockmbway.viewmodels.SettingsViewModel
 
 @Composable
 fun SettingsScreen(
@@ -53,7 +51,7 @@ fun SettingsScreen(
         Text(
             text = stringResource(R.string.settings_help),
             style = MaterialTheme.typography.bodyMedium,
-            color = GlassInkMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(28.dp))
@@ -64,12 +62,17 @@ fun SettingsScreen(
             label = { Text(stringResource(R.string.settings_host_label)) },
             placeholder = { Text(stringResource(R.string.settings_host_hint)) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Done,
-            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = viewModel.secret,
+            onValueChange = viewModel::onSecretChange,
+            label = { Text(stringResource(R.string.settings_secret_label)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { viewModel.save() }),
-            colors = searchFieldColors(),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))
@@ -78,45 +81,31 @@ fun SettingsScreen(
             viewModel.resolving -> Text(
                 text = stringResource(R.string.settings_resolving),
                 style = MaterialTheme.typography.bodySmall,
-                color = GlassInkMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            viewModel.saved && viewModel.resolvedMode == ServerConfig.Mode.UNKNOWN -> Text(
+            viewModel.saved && viewModel.resolvedMode == RelayConfig.Mode.UNKNOWN -> Text(
                 text = stringResource(R.string.settings_resolve_failed),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
-            viewModel.saved -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = ServerConfig.baseUrl, style = MaterialTheme.typography.bodySmall, color = GlassInkMuted)
-                Text(text = ServerConfig.issuer, style = MaterialTheme.typography.bodySmall, color = GlassInkMuted)
-            }
+            viewModel.saved -> Text(
+                text = stringResource(R.string.settings_resolve_ok, RelayConfig.baseUrl),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         Spacer(Modifier.height(24.dp))
-
-        if (viewModel.saved && viewModel.resolvedMode != ServerConfig.Mode.UNKNOWN) {
-            Text(
-                text = stringResource(R.string.settings_saved),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(16.dp))
-        }
 
         Button(
             onClick = viewModel::save,
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(vertical = 16.dp),
         ) {
-            Text(
-                text = stringResource(R.string.settings_save),
-                style = MaterialTheme.typography.labelLarge,
-            )
+            Text(stringResource(R.string.settings_save))
         }
         Spacer(Modifier.height(12.dp))
-        TextButton(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(text = stringResource(R.string.settings_back))
+        TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.settings_back))
         }
     }
 }

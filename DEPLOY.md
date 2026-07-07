@@ -143,6 +143,13 @@ Point the Android client at the public URLs:
 - API base: `https://<FQDN>/api/v1`
 - Keycloak: `https://<FQDN>/auth` (realm `tessera`, the appropriate client)
 
+**mock-mbway** (the SIBS/MB WAY simulator on a separate phone): it polls the
+backend rather than being called by it, so it works from any network — set
+`https://<FQDN>` as the host in its Settings screen and `MBWAY_RELAY_SECRET`
+must match the value configured in `.env`. This traffic rides the existing
+Caddy entry (`/api/v1/mbway/*`, `/api/v1/webhooks/mbway*`) — no extra port
+to open.
+
 ## Troubleshooting
 - **Login redirect rejected** — the `tessera-web` client allows `/*` + webOrigins `+`, which should cover the FQDN. If a redirect is still refused, add `https://<FQDN>/*` to *Valid redirect URIs* and `https://<FQDN>` to *Web origins* in the KC admin console (Clients → tessera-web).
 - **No TLS cert / cert errors** — Let's Encrypt needs the FQDN to resolve to the VM and ports 80+443 open. Check `az vm open-port` ran and `docker compose logs caddy`.

@@ -4,7 +4,10 @@
     <string name="header_eyebrow">Tessera · Mock SIBS</string>
     <string name="header_title">MB WAY</string>
 
-    <string name="server_label">Gateway HTTP em</string>
+    <string name="status_not_connected">Não ligado — configura o backend nas Definições</string>
+    <string name="status_connected">Ligado a %1$s</string>
+    <string name="status_lost">Sem resposta de %1$s</string>
+
     <string name="empty_title">Sem pagamentos pendentes</string>
     <string name="empty_subtitle">À espera de pedidos do ticket-service.</string>
 
@@ -19,13 +22,24 @@
     <string name="notif_channel_description">Notificações de pedidos de pagamento recebidos pela app mock.</string>
     <string name="notif_title">Pedido MB WAY</string>
 
-    <string name="server_notif_channel">Servidor MB WAY</string>
-    <string name="server_notif_title">Gateway MB WAY ativo</string>
-    <string name="server_notif_text">O servidor está a aceitar pedidos do ticket-service.</string>
+    <string name="server_notif_channel">MB WAY em segundo plano</string>
+    <string name="server_notif_title">A verificar pagamentos pendentes</string>
+    <string name="server_notif_text">A app está a consultar o backend Tessera periodicamente.</string>
 
     <string name="section_pending">Pendentes</string>
     <string name="section_history">Histórico</string>
     <string name="resolution_accepted">Aceite</string>
     <string name="resolution_declined">Recusado</string>
     <string name="resolution_expired">Expirado</string>
+
+    <string name="settings_title">Definições</string>
+    <string name="settings_help">Introduz o endereço do backend Tessera — a app deteta sozinha se é local ou publicado.</string>
+    <string name="settings_host_label">Endereço do backend</string>
+    <string name="settings_host_hint">ex: 192.168.43.10 ou tessera.exemplo.com</string>
+    <string name="settings_secret_label">Segredo partilhado (X-Relay-Secret)</string>
+    <string name="settings_save">Guardar</string>
+    <string name="settings_back">Voltar</string>
+    <string name="settings_resolving">A verificar ligação…</string>
+    <string name="settings_resolve_ok">Ligado a %1$s</string>
+    <string name="settings_resolve_failed">Não foi possível ligar a este endereço. Confirma o endereço e o segredo.</string>
 </resources>

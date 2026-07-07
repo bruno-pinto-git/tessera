@@ -8,12 +8,15 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.core.app.ActivityCompat
-import com.tessera.mockmbway.data.MockSibsServer
-import com.tessera.mockmbway.data.NetworkInfo
 import com.tessera.mockmbway.screens.PaymentsScreen
+import com.tessera.mockmbway.screens.SettingsScreen
 import com.tessera.mockmbway.services.ServerService
-import com.tessera.mockmbway.shared.PendingPaymentsState
+import com.tessera.mockmbway.shared.RelayConfig
 import com.tessera.mockmbway.ui.theme.MockMbwayTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,13 +31,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.i(tag, "onCreate — launching foreground ServerService")
+        Log.i(tag, "onCreate — launching foreground relay poller")
         requestNotificationsPermissionIfNeeded()
+        RelayConfig.load(this)
         ServerService.start(this)
-        PendingPaymentsState.serverEndpoint.value = formatEndpoint()
         setContent {
             MockMbwayTheme {
-                PaymentsScreen()
+                var showSettings by remember { mutableStateOf(false) }
+                if (showSettings) {
+                    SettingsScreen(onBack = { showSettings = false })
+                } else {
+                    PaymentsScreen(onOpenSettings = { showSettings = true })
+                }
             }
         }
     }
@@ -47,10 +55,5 @@ class MainActivity : ComponentActivity() {
             ) == PackageManager.PERMISSION_GRANTED
         ) return
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-    }
-
-    private fun formatEndpoint(): String {
-        val ip = NetworkInfo.localIPv4() ?: "<no-network>"
-        return "http://$ip:${MockSibsServer.PORT}"
     }
 }

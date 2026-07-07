@@ -99,6 +99,11 @@ services:
       # still comes from .env via the base compose (empty = card payments off).
       STRIPE_SUCCESS_URL: https://${TESSERA_FQDN}/events/{eventId}?stripe_ticket_id={id}
       STRIPE_CANCEL_URL: https://${TESSERA_FQDN}/events/{eventId}?stripe_cancelled=1
+      # mock-mbway calls this back with the payment result after polling
+      # /api/v1/mbway/relay/poll — the base compose defaults to localhost,
+      # which is unreachable from the phone in prod. MBWAY_RELAY_SECRET
+      # still comes from .env via the base compose.
+      MBWAY_WEBHOOK_BASE_URL: https://${TESSERA_FQDN}
 
   match-service:
     restart: unless-stopped

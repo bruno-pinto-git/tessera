@@ -35,6 +35,7 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
                 auth.requestMatchers(HttpMethod.POST, "/api/v1/webhooks/mbway").permitAll()
+                auth.requestMatchers(HttpMethod.POST, "/api/v1/mbway/relay/poll").permitAll()
                 auth.anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth ->

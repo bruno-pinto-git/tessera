@@ -15,34 +15,6 @@ data class ReturnStatus(
     val statusDescription: String? = null,
 )
 
-// ----- POST /api/v1/payments -----
-
-@Serializable
-data class MerchantIn(
-    val terminalId: Int? = null,
-    val channel: String? = null,
-    val merchantTransactionId: String,
-    val transactionDescription: String? = null,
-    val shopURL: String? = null,
-    val callbackUrl: String? = null,
-)
-
-@Serializable
-data class TransactionIn(
-    val transactionTimestamp: String? = null,
-    val description: String? = null,
-    val moto: Boolean? = null,
-    val paymentType: String,
-    val paymentMethod: List<String>,
-    val amount: Amount,
-)
-
-@Serializable
-data class CreatePaymentRequest(
-    val merchant: MerchantIn,
-    val transaction: TransactionIn,
-)
-
 @Serializable
 data class MerchantOut(
     val terminalId: Int? = null,
@@ -50,38 +22,18 @@ data class MerchantOut(
     val merchantTransactionId: String,
 )
 
+// ----- POST {backend}/api/v1/mbway/relay/poll (response) -----
+
 @Serializable
-data class CreatePaymentResponse(
-    val returnStatus: ReturnStatus,
+data class RelayItem(
     val transactionID: String,
     val transactionSignature: String,
+    val merchantTransactionId: String,
+    val terminalId: Int? = null,
+    val description: String? = null,
     val amount: Amount,
-    val merchant: MerchantOut,
-    val paymentMethodList: List<String>,
-    val expiry: String,
-)
-
-// ----- POST /api/v1/payments/{id}/mbway/purchase -----
-
-@Serializable
-data class MbwayPurchaseRequest(
     val customerPhone: String,
-)
-
-@Serializable
-data class MbwayPurchaseResponse(
-    val returnStatus: ReturnStatus,
-    val paymentStatus: String,
-    val transactionID: String,
-)
-
-// ----- GET /api/v1/payments/{id}/status -----
-
-@Serializable
-data class StatusResponse(
-    val returnStatus: ReturnStatus,
-    val paymentStatus: String,
-    val transactionID: String,
+    val callbackUrl: String? = null,
 )
 
 // ----- Merchant webhook (server → ticket-service) -----

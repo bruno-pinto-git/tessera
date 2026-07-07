@@ -3,95 +3,33 @@ package com.tessera.ticket.payments
 import com.tessera.ticket.ticket.Ticket
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.HttpEntity
-import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
-import org.springframework.http.MediaType
-import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.stereotype.Component
-import org.springframework.web.client.RestTemplate
-import java.time.Duration
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
+import java.util.UUID
 
 @Component
 class MbwayGatewayClient(
-    @Value("\${tessera.mbway.gateway-url}") private val gatewayUrl: String,
+    private val relayQueue: MbwayRelayQueue,
     @Value("\${tessera.mbway.webhook-base-url}") private val webhookBaseUrl: String,
     @Value("\${tessera.mbway.terminal-id}") private val terminalId: Int,
-    @Value("\${tessera.mbway.client-id:tessera-mock}") private val clientId: String,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
-    private val restTemplate: RestTemplate = RestTemplateBuilder()
-        .setConnectTimeout(Duration.ofSeconds(4))
-        .setReadTimeout(Duration.ofSeconds(6))
-        .build()
 
     fun initiatePayment(ticket: Ticket, customerPhone: String): String {
-        val checkout = createCheckout(ticket)
-        triggerPurchase(checkout.transactionID, checkout.transactionSignature, customerPhone)
-        return checkout.transactionID
-    }
-
-    private fun createCheckout(ticket: Ticket): CreatePaymentResponse {
-        val body = CreatePaymentRequest(
-            merchant = MerchantIn(
-                terminalId = terminalId,
-                channel = "web",
+        val transactionId = UUID.randomUUID().toString().replace("-", "")
+        relayQueue.enqueue(
+            MbwayRelayRequest(
+                transactionID = transactionId,
+                transactionSignature = UUID.randomUUID().toString().replace("-", ""),
                 merchantTransactionId = "ticket-${ticket.id}",
-                transactionDescription = ticket.event?.name ?: "Tessera",
+                terminalId = terminalId,
+                description = ticket.event?.name ?: "Bilhete Tessera",
+                amount = Amount(value = ticket.price.toDouble(), currency = "EUR"),
+                customerPhone = customerPhone,
                 callbackUrl = "$webhookBaseUrl/api/v1/webhooks/mbway",
             ),
-            transaction = TransactionIn(
-                transactionTimestamp = OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                description = ticket.event?.name ?: "Bilhete Tessera",
-                moto = false,
-                paymentType = "PURS",
-                paymentMethod = listOf("MBWAY"),
-                amount = Amount(
-                    value = ticket.price.toDouble(),
-                    currency = "EUR",
-                ),
-            ),
         )
-
-        val headers = HttpHeaders().apply {
-            contentType = MediaType.APPLICATION_JSON
-            set("Authorization", "Bearer tessera-mock-token")
-            set("X-IBM-Client-Id", clientId)
-        }
-        val url = "$gatewayUrl/api/v1/payments"
-        log.info("MB WAY: createCheckout {} ticket={}", url, ticket.id)
-        val response = restTemplate.exchange(
-            url,
-            HttpMethod.POST,
-            HttpEntity(body, headers),
-            CreatePaymentResponse::class.java,
-        ).body ?: error("MB WAY gateway returned empty body on createCheckout")
-        log.info("MB WAY: createCheckout returned transactionID={}", response.transactionID)
-        return response
-    }
-
-    private fun triggerPurchase(
-        transactionId: String,
-        transactionSignature: String,
-        customerPhone: String,
-    ) {
-        val body = MbwayPurchaseRequest(customerPhone = customerPhone)
-        val headers = HttpHeaders().apply {
-            contentType = MediaType.APPLICATION_JSON
-            set("Authorization", transactionSignature)
-            set("X-IBM-Client-Id", clientId)
-        }
-        val url = "$gatewayUrl/api/v1/payments/$transactionId/mbway/purchase"
-        log.info("MB WAY: triggerPurchase {} phone={}", url, customerPhone)
-        val response = restTemplate.exchange(
-            url,
-            HttpMethod.POST,
-            HttpEntity(body, headers),
-            MbwayPurchaseResponse::class.java,
-        ).body ?: error("MB WAY gateway returned empty body on purchase")
-        log.info("MB WAY: triggerPurchase returned paymentStatus={}", response.paymentStatus)
+        log.info("MB WAY: queued relay request transactionID={} ticket={}", transactionId, ticket.id)
+        return transactionId
     }
 }
