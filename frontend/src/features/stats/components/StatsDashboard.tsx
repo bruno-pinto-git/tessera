@@ -4,13 +4,6 @@ import { AdminSalesDashboard } from "./AdminSalesDashboard";
 import { ManagerSalesDashboard } from "./ManagerSalesDashboard";
 import { RecentResults } from "./RecentResults";
 
-/**
- * Role-aware statistics block for the homepage:
- *   - platform-admin  → global sales KPIs + charts, then recent results
- *   - club manager     → per-club sales incl. revenue, for each managed club
- *   - club staff       → per-club sold/validated counts (NO revenue)
- *   - everyone else    → public recent results
- */
 export function StatsDashboard() {
   const { hasRole } = useAuth();
   const { me } = useMe();
@@ -27,7 +20,6 @@ export function StatsDashboard() {
 
   const memberships = me?.clubMemberships ?? [];
   const managedClubIds = memberships.filter((m) => m.role === "MANAGER").map((m) => m.clubId);
-  // Staff-only clubs (exclude any the user also manages — those get the fuller view).
   const staffClubIds = memberships
     .filter((m) => m.role === "STAFF" && !managedClubIds.includes(m.clubId))
     .map((m) => m.clubId);

@@ -22,7 +22,6 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : "Erro inesperado";
 }
 
-/** Global sales summary (platform-admin). */
 export function useSalesSummary(enabled = true) {
   const [state, setState] = useState<AsyncState<SalesSummary>>(initial);
 
@@ -41,7 +40,6 @@ export function useSalesSummary(enabled = true) {
   return state;
 }
 
-/** Club-scoped sales summary (manager / admin). */
 export function useSalesByClub(clubId: number | null) {
   const [state, setState] = useState<AsyncState<SalesByClub>>(initial);
 
@@ -60,7 +58,6 @@ export function useSalesByClub(clubId: number | null) {
   return state;
 }
 
-/** Recent match-sheet snapshots (public). */
 export function useMatchHistory(params: MatchHistoryParams, enabled = true) {
   const [state, setState] = useState<AsyncState<MatchSummary[]>>(initial);
   const key = JSON.stringify(params);
@@ -82,19 +79,12 @@ export function useMatchHistory(params: MatchHistoryParams, enabled = true) {
 }
 
 export interface DailyPoint {
-  /** `dd/MM` label for the X axis. */
   label: string;
-  /** ISO date (`YYYY-MM-DD`) of the day. */
   date: string;
   revenue: number;
   sold: number;
 }
 
-/**
- * Revenue + tickets sold per day for the last [days] days (platform-admin).
- * Built from one `/stats/sales/range` call per day (UTC day boundaries),
- * fired in parallel. Returns oldest→newest for a left-to-right time axis.
- */
 export function useDailyRevenue(days = 7, enabled = true) {
   const [state, setState] = useState<AsyncState<DailyPoint[]>>(initial);
 
@@ -102,7 +92,6 @@ export function useDailyRevenue(days = 7, enabled = true) {
     if (!enabled) return;
     let cancelled = false;
 
-    // Build the list of UTC day windows ending today.
     const today = new Date();
     const windows: { start: Date; end: Date }[] = [];
     for (let i = days - 1; i >= 0; i--) {

@@ -59,3 +59,10 @@ tessera:
     # {CHECKOUT_SESSION_ID} placeholder.
     success-url: ${STRIPE_SUCCESS_URL:http://localhost:8000/events/{eventId}?stripe_ticket_id={id}}
     cancel-url: ${STRIPE_CANCEL_URL:http://localhost:8000/events/{eventId}?stripe_cancelled=1}
+  google-wallet:
+    # From pay.google.com/business/console — identifies our Wallet issuer account.
+    issuer-id: ${GOOGLE_WALLET_ISSUER_ID:}
+    # Service account JSON key (Cloud Console > IAM > Service Accounts),
+    # Base64-encoded into a single line so it fits the same .env pattern as
+    # every other secret here — never checked in as a file.
+    service-account-json-base64: ${GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_BASE64:}

@@ -25,9 +25,6 @@ export function useClubs({ page, size, name }: UseClubsParams): UseClubsResult {
   useEffect(() => {
     let cancelled = false;
 
-    // All setState calls happen inside this async callback (not synchronously
-    // at the top of the effect), which keeps react-hooks/set-state-in-effect
-    // happy — the rule allows setState inside async / promise callbacks.
     const run = async () => {
       try {
         const res = await listClubs({ page, size, name: name || undefined });
@@ -42,8 +39,6 @@ export function useClubs({ page, size, name }: UseClubsParams): UseClubsResult {
       }
     };
 
-    // Reset loading on the next dependency change. Using a microtask defers
-    // it out of the synchronous render phase the lint rule guards against.
     void Promise.resolve().then(() => {
       if (!cancelled) setLoading(true);
     });

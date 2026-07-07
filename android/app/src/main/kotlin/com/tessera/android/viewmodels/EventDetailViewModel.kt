@@ -1,6 +1,7 @@
 package com.tessera.android.viewmodels
 
 import android.app.Application
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -46,6 +47,8 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
     var awaiting by mutableStateOf(false)
         private set
     var checkoutUrl by mutableStateOf<String?>(null)
+        private set
+    var walletLoading by mutableStateOf(false)
         private set
     private var pendingTicketId: Long? = null
 
@@ -138,7 +141,7 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
                     else -> formError = PurchaseError.PAYMENT_FAILED
                 }
             } catch (ex: Exception) {
-                // Falha a contactar o servidor (IP/backend/rede), não recusa de pagamento.
+                Log.e(TAG, "confirm() failed", ex)
                 formError = PurchaseError.CONNECTION
             } finally {
                 submitting = false
@@ -147,7 +150,6 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    /** Called by the CheckoutWebView once it detects the Stripe success/cancel URL. */
     fun onCheckoutResult(success: Boolean) {
         checkoutUrl = null
         val id = pendingTicketId
@@ -167,11 +169,37 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
                     step = PurchaseStep.METHOD
                 }
             } catch (ex: Exception) {
+                Log.e(TAG, "onCheckoutResult() failed", ex)
                 formError = PurchaseError.CONNECTION
                 step = PurchaseStep.METHOD
             } finally {
                 awaiting = false
             }
+        }
+    }
+
+    fun addToWallet(onResult: (String?) -> Unit) {
+        val t = ticket ?: run {
+            Log.w(TAG, "addToWallet() called with no ticket set")
+            return
+        }
+        val e = entry
+        viewModelScope.launch {
+            walletLoading = true
+            val url = try {
+                tickets.walletSaveUrl(
+                    id = t.id,
+                    eventTitle = e?.let { "${it.homeShort} vs ${it.awayShort}" } ?: t.code,
+                    venue = e?.venueName,
+                    kickoffAt = e?.kickoffAt,
+                    tierLabel = if (supporter) "Sócio" else "Normal",
+                )
+            } catch (ex: Exception) {
+                Log.e(TAG, "addToWallet() failed", ex)
+                null
+            }
+            walletLoading = false
+            onResult(url)
         }
     }
 
@@ -185,6 +213,7 @@ class EventDetailViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     private companion object {
+        const val TAG = "EventDetailViewModel"
         const val POLL_ATTEMPTS = 90
         const val POLL_INTERVAL_MS = 2000L
     }

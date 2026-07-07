@@ -19,17 +19,6 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
 
-/**
- * BFF acts as an OAuth2 resource server: it validates the JWT presented by
- * the client (web SPA, Android), extracts the user roles, and forwards the
- * same token downstream so internal services can re-validate and apply their
- * own authorization rules.
- *
- * The BFF itself does NOT enforce role-based access — that is the
- * responsibility of the downstream services (which apply @PreAuthorize per
- * endpoint). The BFF only checks that **a valid token is present** for any
- * write request; reads remain public for fans browsing the catalog.
- */
 @Configuration
 class SecurityConfig(
     private val mapper: ObjectMapper,
@@ -39,19 +28,14 @@ class SecurityConfig(
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
-            .cors { /* keep CorsConfig */ }
+            .cors { }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // Swagger UI / OpenAPI spec are public
                 auth.requestMatchers("/api/docs", "/api/docs/**",
                                      "/swagger-ui/**", "/v3/api-docs/**",
                                      "/api/openapi.yaml").permitAll()
-                // /members and /users require an authenticated platform-admin —
-                // match BEFORE the public /api/v1/clubs/** below so they don't
-                // fall under permitAll.
                 auth.requestMatchers("/api/v1/clubs/*/members/**").authenticated()
                 auth.requestMatchers("/api/v1/users/**").authenticated()
-                // Public reads (catalog browsing)
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/clubs/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/teams/**").permitAll()
@@ -59,10 +43,6 @@ class SecurityConfig(
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/matches/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/stats/match-sheets/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
-                // /api/v1/stats/sales/** requires admin — downstream enforces.
-                // /api/v1/tickets/** always needs a valid token — downstream enforces roles.
-                // Anything else needs a valid token; fine-grained role
-                // checks happen downstream.
                 auth.anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth ->

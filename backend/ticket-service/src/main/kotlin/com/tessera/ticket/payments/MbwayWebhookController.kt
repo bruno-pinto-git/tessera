@@ -7,15 +7,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-/**
- * Public endpoint hit by the MB WAY gateway (mock-mbway in dev, SIBS in
- * production) when the customer accepts / declines / lets the payment expire.
- *
- * Public on purpose — the gateway calls us server-to-server, no JWT. In a
- * real SIBS integration, the payload is AES-GCM encrypted and the headers
- * carry the IV + auth tag for verification. The mock sends plain JSON; if we
- * later switch to real SIBS, this controller decrypts before delegating.
- */
 @RestController
 @RequestMapping("/api/v1/webhooks/mbway")
 class MbwayWebhookController(

@@ -2,11 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/auth/useAuth";
 import { getMe, type Me } from "@/api/meApi";
 
-/**
- * Loads the authenticated user's profile (`GET /me`) once the auth context
- * has a valid session. Re-fetches if the user logs in/out during the same
- * SPA session.
- */
 export function useMe() {
   const { authenticated, token } = useAuth();
   const [me, setMe] = useState<Me | null>(null);
@@ -34,8 +29,6 @@ export function useMe() {
       }
     };
 
-    // Defer the loading flag so we don't write state synchronously inside
-    // the effect (react-hooks/set-state-in-effect).
     void Promise.resolve().then(() => {
       if (!cancelled) setLoading(true);
     });

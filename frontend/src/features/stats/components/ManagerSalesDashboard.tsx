@@ -16,10 +16,6 @@ import { CHART, formatRate, formatRevenue } from "./statsFormat";
 import { StatCard } from "./StatCard";
 import { RecentResults } from "./RecentResults";
 
-/**
- * Club-scoped sales, one block per club. Managers see revenue; staff don't
- * (the backend returns `revenue: null` for them), so pass `showRevenue={false}`.
- */
 export function ManagerSalesDashboard({
   clubIds,
   showRevenue = true,

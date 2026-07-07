@@ -18,20 +18,9 @@ interface PurchaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: CatalogEntry;
-  /** Set when returning from Stripe Checkout — skips straight to the awaiting-confirmation poll. */
   resumeTicketId?: number;
 }
 
-/**
- * 3-step purchase flow wired to the real ticket-service.
- *
- *   1. choose "Normal" vs "Sócio" tier (the only two prices we model)
- *   2. pick payment method, type phone (MBWAY), confirm
- *      → POST /tickets → POST /tickets/{id}/pay
- *      → MBWAY: poll GET /tickets/{id} until PAID/expired
- *      → CARD: redirect to Stripe Checkout; resumed via `resumeTicketId` on return
- *   3. show the real QR + ticket id
- */
 export function PurchaseModal({ open, onOpenChange, entry, resumeTicketId }: PurchaseModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [supporter, setSupporter] = useState(false);
@@ -74,7 +63,6 @@ export function PurchaseModal({ open, onOpenChange, entry, resumeTicketId }: Pur
     }
   }
 
-  // Returning from Stripe Checkout: skip straight to the awaiting-confirmation poll.
   useEffect(() => {
     if (open && resumeTicketId != null) {
       setStep(2);
@@ -425,8 +413,6 @@ function StepConfirmation({
     </div>
   );
 }
-
-// ───── helpers ─────
 
 const POLL_INTERVAL_MS = 2_000;
 const POLL_TIMEOUT_MS = 180_000;

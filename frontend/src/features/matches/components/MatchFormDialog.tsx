@@ -22,14 +22,8 @@ interface MatchFormDialogProps {
   match?: Match | null;
   clubs: Map<number, Club>;
   venues: Map<number, Venue>;
-  /** Pre-fetched teams keyed by id, used to seed the cascading selectors
-   *  when editing (so we know the home/away team's clubs without an extra
-   *  round trip). */
   knownTeams: Map<number, Team>;
   onSaved: () => void;
-  /** When set AND creating a new match, the home club is fixed to this id and
-   *  its selector is disabled — managers can only create home matches for
-   *  their own club. The home TEAM selector stays enabled. */
   lockHomeClubId?: number;
 }
 
@@ -39,7 +33,6 @@ interface FormState {
   awayClubId: string;
   awayTeamId: string;
   venueId: string;
-  /** datetime-local format: YYYY-MM-DDTHH:mm */
   kickoffAt: string;
   refereeName: string;
 }
@@ -65,8 +58,6 @@ export function MatchFormDialog({
   lockHomeClubId,
 }: MatchFormDialogProps) {
   const isEdit = !!match;
-  // Lock the home club only when creating (managers can't reassign on edit,
-  // and the home fieldset is already disabled on edit anyway).
   const homeClubLocked = !isEdit && lockHomeClubId != null;
   const [form, setForm] = useState<FormState>(EMPTY);
   const [homeTeams, setHomeTeams] = useState<Team[]>([]);
@@ -74,7 +65,6 @@ export function MatchFormDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Hydrate or reset on open.
   useEffect(() => {
     if (!open) return;
     setError(null);
@@ -87,7 +77,6 @@ export function MatchFormDialog({
         awayClubId: awayTeam ? String(awayTeam.clubId) : "",
         awayTeamId: String(match.awayTeamId),
         venueId: match.venueId != null ? String(match.venueId) : "",
-        // OffsetDateTime "2026-06-12T20:30Z" -> "2026-06-12T20:30" for the input
         kickoffAt: match.kickoffAt ? toDatetimeLocal(match.kickoffAt) : "",
         refereeName: match.refereeName ?? "",
       });
@@ -100,7 +89,6 @@ export function MatchFormDialog({
     }
   }, [open, match, knownTeams, homeClubLocked, lockHomeClubId]);
 
-  // Whenever the selected club changes, reload that side's teams.
   useEffect(() => {
     if (!form.homeClubId) {
       setHomeTeams([]);
@@ -149,9 +137,6 @@ export function MatchFormDialog({
     setSubmitting(true);
     setError(null);
     try {
-      // Convert "2026-06-12T20:30" (local) to ISO with timezone. The
-      // browser interprets datetime-local as local time; toISOString
-      // produces UTC, which is what the backend expects.
       const kickoffIso = new Date(form.kickoffAt).toISOString();
 
       if (isEdit && match) {
@@ -210,7 +195,6 @@ export function MatchFormDialog({
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* HOME */}
             <fieldset className="space-y-3" disabled={isEdit}>
               <legend className="text-xs uppercase tracking-wider text-muted-foreground">
                 Casa
@@ -249,7 +233,6 @@ export function MatchFormDialog({
               </div>
             </fieldset>
 
-            {/* AWAY */}
             <fieldset className="space-y-3" disabled={isEdit}>
               <legend className="text-xs uppercase tracking-wider text-muted-foreground">
                 Visitante
@@ -348,8 +331,6 @@ export function MatchFormDialog({
   );
 }
 
-// -----------------------------------------------------------------------------
-
 function Selector({
   id,
   value,
@@ -377,10 +358,8 @@ function Selector({
 }
 
 function toDatetimeLocal(iso: string): string {
-  // Accepts "2026-06-12T20:30:00Z" or "2026-06-12T20:30:00+01:00" etc.
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  // Build local YYYY-MM-DDTHH:mm (without TZ — datetime-local has no TZ).
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

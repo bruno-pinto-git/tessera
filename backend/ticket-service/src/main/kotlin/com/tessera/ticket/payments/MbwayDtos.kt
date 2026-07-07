@@ -2,14 +2,6 @@ package com.tessera.ticket.payments
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-/**
- * DTOs that mirror the SIBS Payment Gateway protocol for MB WAY.
- *
- * These shapes are intentionally identical to what the production SIBS
- * gateway returns, so swapping the mock for the real gateway is a URL
- * change in config. See `mock-mbway/README.md` for the full contract.
- */
-
 data class Amount(
     val value: Double,
     val currency: String,
@@ -20,8 +12,6 @@ data class ReturnStatus(
     val statusMsg: String,
     val statusDescription: String? = null,
 )
-
-// ---------- POST /api/v1/payments (create checkout) ----------
 
 data class MerchantIn(
     val terminalId: Int? = null,
@@ -64,8 +54,6 @@ data class CreatePaymentResponse(
     val expiry: String? = null,
 )
 
-// ---------- POST /api/v1/payments/{id}/mbway/purchase ----------
-
 data class MbwayPurchaseRequest(
     val customerPhone: String,
 )
@@ -76,8 +64,6 @@ data class MbwayPurchaseResponse(
     val paymentStatus: String,
     val transactionID: String,
 )
-
-// ---------- Merchant webhook (gateway → ticket-service) ----------
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MbwayWebhookPayload(

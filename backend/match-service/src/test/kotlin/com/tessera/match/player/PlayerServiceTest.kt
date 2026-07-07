@@ -18,10 +18,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/**
- * Unit tests for [PlayerService] — shirt-number uniqueness and existence
- * checks, mirroring docs/http-tests/04-players.http. Repositories are mocked.
- */
 class PlayerServiceTest {
 
     private val repo: PlayerRepository = mock()
@@ -29,8 +25,6 @@ class PlayerServiceTest {
     private val clubRepo: ClubRepository = mock()
 
     private val service = PlayerService(repo, teamRepo, clubRepo)
-
-    // ----- create -------------------------------------------------------------
 
     @Test
     fun `create fails when the team does not exist`() {
@@ -69,8 +63,6 @@ class PlayerServiceTest {
         verify(repo, never()).existsActiveByTeamAndShirt(any(), any())
     }
 
-    // ----- update -------------------------------------------------------------
-
     @Test
     fun `update fails for an unknown player`() {
         whenever(repo.findActiveById(404L)).thenReturn(null)
@@ -98,8 +90,6 @@ class PlayerServiceTest {
         verify(repo, never()).existsActiveByTeamAndShirtExcluding(any(), any(), any())
     }
 
-    // ----- delete / get / listByClub -----------------------------------------
-
     @Test
     fun `delete soft-deletes the player`() {
         val player = player(11L, teamId = 1L, shirt = 7)
@@ -121,10 +111,6 @@ class PlayerServiceTest {
         whenever(clubRepo.findActiveById(99L)).thenReturn(null)
         assertFailsWith<ClubNotFoundException> { service.listByClub(99L, Pageable.unpaged()) }
     }
-
-    // -------------------------------------------------------------------------
-    // Fixtures
-    // -------------------------------------------------------------------------
 
     private fun createReq(shirt: Int?) = PlayerCreateRequest(
         firstName = "Test",

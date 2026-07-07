@@ -5,12 +5,6 @@ import type { LineupEntry, Occurrence } from "../api/sheetApi";
 import { occurrenceIcon, occurrenceTypeLabel } from "../lib/labels";
 import { scoreMismatch, tallyGoals } from "../lib/score";
 
-/**
- * Read-only public view of a CLOSED match sheet (lineups + occurrences),
- * built from the statistics snapshot. Player names are resolved from the
- * current team rosters (the snapshot stores only ids); a removed player
- * falls back to its shirt/id.
- */
 export function MatchSheetView({
   matchId,
   homeName,

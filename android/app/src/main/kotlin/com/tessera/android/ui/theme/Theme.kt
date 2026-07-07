@@ -5,7 +5,6 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Warm Paper (#15) — fundo creme, cartões brancos, verde de destaque, texto escuro.
 private val TesseraWarmPaper = lightColorScheme(
     primary = Color(0xFF15803D),
     onPrimary = Color.White,

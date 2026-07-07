@@ -11,8 +11,6 @@ export type OccurrenceType = components["schemas"]["occurrenceType"];
 export type OccurrenceCreateRequest = components["schemas"]["occurrenceCreateRequest"];
 export type MatchSheetHistory = components["schemas"]["matchSheetHistory"];
 
-// ---- Editor (live sheet in match-service, scoped by @clubAuthz.canEditSheet) ----
-
 export function getMatchSheet(matchId: number) {
   return apiGet<MatchSheet>(`/matches/${matchId}/sheet`);
 }
@@ -50,8 +48,6 @@ export function lockMatchSheet(matchId: number) {
 export function unlockMatchSheet(matchId: number) {
   return apiPostNoBody<MatchSheet>(`/matches/${matchId}/sheet/unlock`);
 }
-
-// ---- Public read-side (statistics snapshot of a closed sheet) ----
 
 export function getMatchSheetHistory(matchId: number) {
   return apiGet<MatchSheetHistory>(`/stats/match-sheets/${matchId}`);

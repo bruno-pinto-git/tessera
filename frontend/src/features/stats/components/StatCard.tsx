@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
 
-/** Compact KPI tile: a label, a big value, and an optional sub-line. */
 export function StatCard({
   label,
   value,

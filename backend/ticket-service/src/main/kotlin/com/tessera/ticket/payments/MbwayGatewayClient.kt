@@ -14,20 +14,6 @@ import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
-/**
- * HTTP client for the MB WAY payment gateway. Talks the SIBS protocol
- * (mock-mbway in dev, real SIBS in production — selected via
- * `tessera.mbway.gateway-url`).
- *
- * The flow is the two-step SIBS dance:
- *   1. POST /api/v1/payments              → returns transactionID + signature
- *   2. POST /api/v1/payments/{id}/mbway/purchase {customerPhone}
- *                                          → returns paymentStatus=Pending
- *
- * After step 2, the gateway will eventually call our webhook
- * (configured via `merchant.callbackUrl`) when the customer accepts /
- * declines / the request expires.
- */
 @Component
 class MbwayGatewayClient(
     @Value("\${tessera.mbway.gateway-url}") private val gatewayUrl: String,
@@ -42,11 +28,6 @@ class MbwayGatewayClient(
         .setReadTimeout(Duration.ofSeconds(6))
         .build()
 
-    /**
-     * Initiates a MB WAY payment for [ticket] with the given customer phone.
-     * Returns the gateway-side `transactionID` (caller stores on the ticket so
-     * the webhook can correlate).
-     */
     fun initiatePayment(ticket: Ticket, customerPhone: String): String {
         val checkout = createCheckout(ticket)
         triggerPurchase(checkout.transactionID, checkout.transactionSignature, customerPhone)

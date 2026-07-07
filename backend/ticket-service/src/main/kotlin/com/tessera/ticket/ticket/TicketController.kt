@@ -3,6 +3,7 @@ package com.tessera.ticket.ticket
 import com.tessera.ticket.common.PageEnvelope
 import com.tessera.ticket.event.isPlatformAdmin
 import com.tessera.ticket.event.staffClubIds
+import com.tessera.ticket.wallet.GoogleWalletClient
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import org.slf4j.LoggerFactory
@@ -34,6 +35,15 @@ data class ValidateTicketRequest(
     @field:NotBlank val code: String?,
 )
 
+data class WalletPassRequest(
+    @field:NotBlank val eventTitle: String?,
+    val venue: String? = null,
+    val kickoffAt: String? = null,
+    val tierLabel: String? = null,
+)
+
+data class WalletPassResponse(val saveUrl: String)
+
 data class TicketResponse(
     val id: Long,
     val code: String,
@@ -47,7 +57,6 @@ data class TicketResponse(
     val paymentDate: OffsetDateTime?,
     val validationDate: OffsetDateTime?,
     val validatorSub: String?,
-    /** Stripe Checkout hosted-page URL. Only populated on a fresh `pay()` response for CARD. */
     val checkoutUrl: String? = null,
 )
 
@@ -55,12 +64,9 @@ data class TicketResponse(
 @RequestMapping("/api/v1/tickets")
 class TicketController(
     private val ticketService: TicketService,
+    private val googleWalletClient: GoogleWalletClient,
 ) {
 
-    /**
-     * Create a PENDING ticket for the authenticated user.
-     * Open to all authenticated roles (fan/staff/platform-admin).
-     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
@@ -75,10 +81,6 @@ class TicketController(
         return toResponse(ticket)
     }
 
-    /**
-     * Transition PENDING → PAID. The buyer (owner) confirms the payment;
-     * staff/platform-admin may also pay on behalf of a fan (over-the-counter cash).
-     */
     @PostMapping("/{id}/pay")
     @PreAuthorize("isAuthenticated()")
     fun pay(
@@ -97,9 +99,6 @@ class TicketController(
         return toResponse(updated, checkoutUrl = result.checkoutUrl)
     }
 
-    /**
-     * Validate a ticket at the gate. Staff/platform-admin only.
-     */
     @PostMapping("/validate")
     @PreAuthorize("hasAnyRole('staff', 'platform-admin')")
     fun validate(
@@ -117,9 +116,6 @@ class TicketController(
         return toResponse(validated)
     }
 
-    /**
-     * List tickets owned by the authenticated user.
-     */
     @GetMapping("/mine")
     @PreAuthorize("isAuthenticated()")
     fun listMine(
@@ -130,9 +126,6 @@ class TicketController(
         return PageEnvelope.of(page) { toResponse(it) }
     }
 
-    /**
-     * List tickets for an event. Staff/platform-admin only.
-     */
     @GetMapping
     @PreAuthorize("hasAnyRole('staff', 'platform-admin')")
     fun listByEvent(
@@ -143,9 +136,6 @@ class TicketController(
         return PageEnvelope.of(page) { toResponse(it) }
     }
 
-    /**
-     * Single-ticket lookup. The caller must be the owner or staff/platform-admin.
-     */
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     fun getOne(
@@ -156,19 +146,36 @@ class TicketController(
         if (!isOwnerOrPrivileged(jwt, existing)) {
             throw AccessDeniedException("You can only access your own tickets.")
         }
-        // Authorization checked against a plain read first — getByIdRefreshed can call
-        // out to Stripe and mutate the ticket, which an unauthorized caller shouldn't
-        // be able to trigger just by guessing an id.
         return toResponse(ticketService.getByIdRefreshed(id))
     }
 
-    /**
-     * Resolve a stable per-user identifier from the JWT. We prefer the
-     * standard `sub` claim, but our Keycloak realm export does not currently
-     * emit it, so we fall back to `preferred_username` (and finally the
-     * session id) to keep the service usable across realms with different
-     * mapper configurations.
-     */
+    @PostMapping("/{id}/wallet-pass")
+    @PreAuthorize("isAuthenticated()")
+    fun walletPass(
+        @PathVariable id: Long,
+        @RequestBody request: WalletPassRequest,
+        @AuthenticationPrincipal jwt: Jwt,
+    ): WalletPassResponse {
+        val ticket = ticketService.getById(id)
+        if (!isOwnerOrPrivileged(jwt, ticket)) {
+            throw AccessDeniedException("You can only add your own tickets to Google Wallet.")
+        }
+        if (ticket.status !in setOf(TicketStatus.PAID, TicketStatus.VALIDATED)) {
+            throw InvalidTicketStatusException("Cannot add a ${ticket.status} ticket to Google Wallet.")
+        }
+        val eventTitle = request.eventTitle ?: throw IllegalArgumentException("eventTitle is required")
+        val saveUrl = googleWalletClient.createSaveUrl(
+            ticketCode = ticket.code.toString(),
+            eventId = ticket.event?.id ?: 0,
+            eventTitle = eventTitle,
+            venue = request.venue,
+            kickoffAt = request.kickoffAt,
+            tierLabel = request.tierLabel ?: "Bilhete",
+        )
+        log.info("Wallet pass created for ticket id={}", ticket.id)
+        return WalletPassResponse(saveUrl)
+    }
+
     private fun userIdOf(jwt: Jwt): String =
         jwt.subject
             ?: jwt.getClaimAsString("preferred_username")

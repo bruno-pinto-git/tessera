@@ -20,8 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +35,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import android.content.Intent
+import android.net.Uri
+import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -41,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -267,15 +273,18 @@ private fun PurchaseBar(
     }
 }
 
-// --- Fluxo de compra ---
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PurchaseSheet(entry: CatalogEntry?, viewModel: EventDetailViewModel, onOpenTickets: () -> Unit) {
     entry ?: return
     val busy = viewModel.submitting || viewModel.awaiting
+    val scrollModifier = if (viewModel.step == PurchaseStep.CHECKOUT) {
+        Modifier
+    } else {
+        Modifier.verticalScroll(rememberScrollState())
+    }
     Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
+        modifier = Modifier.fillMaxWidth().then(scrollModifier).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
@@ -301,7 +310,6 @@ private fun PurchaseSheet(entry: CatalogEntry?, viewModel: EventDetailViewModel,
     }
 }
 
-/** CHECKOUT is still conceptually "Pagamento" — it doesn't get its own dot. */
 private fun stepperIndex(step: PurchaseStep): Int = when (step) {
     PurchaseStep.TIER -> 0
     PurchaseStep.METHOD, PurchaseStep.CHECKOUT -> 1
@@ -415,13 +423,6 @@ private fun MethodStep(viewModel: EventDetailViewModel, busy: Boolean) {
     }
 }
 
-/**
- * Renders the Stripe Checkout hosted page. Watches navigation for the
- * success/cancel redirect (matched by query param, not host — the backend's
- * configured redirect URLs point at the web frontend, which this WebView
- * never actually needs to load; it just intercepts the navigation) and
- * reports the result back to the ViewModel, which owns what happens next.
- */
 @Composable
 private fun CheckoutWebView(url: String, onResult: (Boolean) -> Unit) {
     AndroidView(
@@ -429,6 +430,9 @@ private fun CheckoutWebView(url: String, onResult: (Boolean) -> Unit) {
         factory = { context ->
             WebView(context).apply {
                 settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                CookieManager.getInstance().setAcceptCookie(true)
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val uri = request.url
@@ -472,6 +476,7 @@ private fun SummaryRow(label: String, value: String) {
 @Composable
 private fun DoneStep(viewModel: EventDetailViewModel, onOpenTickets: () -> Unit) {
     val ticket = viewModel.ticket
+    val context = LocalContext.current
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         StatusBadge("PAID")
         if (ticket != null) {
@@ -479,6 +484,24 @@ private fun DoneStep(viewModel: EventDetailViewModel, onOpenTickets: () -> Unit)
             Text(truncateCode(ticket.code), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(stringResource(if (viewModel.supporter) R.string.price_supporter else R.string.price_normal), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+        Button(
+            onClick = {
+                viewModel.addToWallet { url ->
+                    if (url != null) context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                }
+            },
+            enabled = !viewModel.walletLoading,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+        ) {
+            if (viewModel.walletLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(8.dp))
+                Text(stringResource(R.string.tickets_add_to_wallet), color = Color.White)
+            }
+        }
         Button(
             onClick = { viewModel.dismiss(); onOpenTickets() },
             modifier = Modifier.fillMaxWidth(),

@@ -16,11 +16,6 @@ function applyTheme(theme: Theme) {
   document.documentElement.classList.toggle("dark", theme === "dark");
 }
 
-/**
- * Sun/Moon toggle that flips the `.dark` class on <html> and persists to
- * localStorage so the choice survives reloads. Initial state honours the
- * user's OS preference when no preference has been stored yet.
- */
 export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<Theme>(initialTheme);
 

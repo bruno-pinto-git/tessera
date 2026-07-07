@@ -3,12 +3,6 @@ package com.tessera.match.iam
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Component
 
-/**
- * Parses the `groups` claim of a Keycloak JWT into a set of
- * [ClubMembership]s. Group paths that don't match the expected
- * `/clubs/<id>/<role>` shape are silently ignored, so unrelated groups
- * (e.g. an admin's `/platform-admins`) won't blow up the parsing.
- */
 @Component
 class ClubMembershipExtractor {
 

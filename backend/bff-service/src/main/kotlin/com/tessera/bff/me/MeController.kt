@@ -6,16 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-/**
- * Echoes the authenticated user's profile, derived entirely from the
- * bearer token. The SPA and Android apps call this on startup to decide
- * which menu items and routes to show.
- *
- * The `clubMemberships` field is parsed from the Keycloak `groups` claim
- * which carries paths like `/clubs/<id>/managers` (or `/staff`). Anything
- * outside that shape is ignored — unrelated groups won't bleed into the
- * response.
- */
 @RestController
 @RequestMapping("/api/v1/me")
 class MeController {

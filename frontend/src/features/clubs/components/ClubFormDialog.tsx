@@ -16,7 +16,6 @@ import { createClub, updateClub, type Club } from "../api/clubsApi";
 interface ClubFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Pass a club to edit it; omit to create a new one. */
   club?: Club | null;
   onSaved: () => void;
 }
@@ -35,7 +34,6 @@ export function ClubFormDialog({ open, onOpenChange, club, onSaved }: ClubFormDi
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset / hydrate state every time the dialog opens.
   useEffect(() => {
     if (!open) return;
     setError(null);

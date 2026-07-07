@@ -53,15 +53,6 @@ class TicketService(
         ticketRepository.findById(id)
             .orElseThrow { TicketNotFoundException("Ticket not found: $id") }
 
-    /**
-     * Like [getById], but for a PENDING CARD ticket also polls Stripe's
-     * Checkout Session status first. There is no reachable webhook endpoint,
-     * so this is the confirmation path — triggered whenever a client reads
-     * the ticket back (e.g. after returning from Stripe's hosted page). A
-     * Stripe hiccup here just leaves the ticket PENDING for this read; the
-     * caller's next read retries. Not applied to list endpoints (`mine`,
-     * `findByEvent`) to avoid an N+1 Stripe call per row.
-     */
     fun getByIdRefreshed(id: Long): Ticket {
         val ticket = getById(id)
         if (ticket.status != TicketStatus.PENDING || ticket.paymentMethod != "CARD") return ticket
@@ -84,19 +75,6 @@ class TicketService(
 
     data class PayResult(val ticket: Ticket, val checkoutUrl: String? = null)
 
-    /**
-     * Pays a PENDING ticket. Two flavours, both asynchronous:
-     *
-     *  - **MBWAY** — we call [MbwayGatewayClient] to push a request to the
-     *    customer's phone. The ticket stays PENDING (with
-     *    `mbwayTransactionId` stamped). The transition to PAID happens later,
-     *    in `MbwayWebhookService`, when the gateway calls our webhook.
-     *
-     *  - **CARD** — we create a Stripe Checkout Session and return its
-     *    hosted `checkoutUrl` for the caller to send the buyer to. The
-     *    ticket stays PENDING (with `stripeCheckoutSessionId` stamped) until
-     *    [getByIdRefreshed] observes the session as paid.
-     */
     @Transactional
     fun pay(id: Long, paymentMethod: String, phoneNumber: String?, mbwayReference: String?): PayResult {
         val ticket = ticketRepository.findById(id)
@@ -141,17 +119,6 @@ class TicketService(
         publishOnCommit { publisher.publishTicketPaid(saved) }
     }
 
-    /**
-     * Transition PAID → VALIDATED at the gate. Identified by the Keycloak
-     * subject UUID. Publishes `ticket.ticket.validated` once the transaction
-     * commits.
-     *
-     * Authorization (beyond the controller's staff/admin role gate):
-     *  - `platform-admin` may validate any ticket, any time.
-     *  - otherwise the caller must be STAFF of the match's **home** club and
-     *    act inside the activity window (2h before kickoff .. end of match); the
-     *    match must not be CANCELLED.
-     */
     @Transactional
     fun validate(
         code: UUID,
@@ -181,10 +148,6 @@ class TicketService(
         return saved
     }
 
-    /**
-     * A non-admin validator must be staff of the match's home club and act
-     * within the activity window. Throws [AccessDeniedException] (→ 403) otherwise.
-     */
     private fun authorizeStaffValidation(ticket: Ticket, staffClubIds: Set<Long>) {
         val matchId = ticket.event?.matchId
             ?: throw AccessDeniedException("Only platform admins can validate tickets not tied to a match.")
@@ -212,12 +175,6 @@ class TicketService(
         }
     }
 
-    /**
-     * Tickets can't be bought once the match is over or off. Match-less events
-     * (no `matchId`) have no time limit. If the match can't be resolved (deleted
-     * or match-service unreachable) we fail open and allow the sale — the
-     * validation gate stays the strict guard.
-     */
     private fun assertSaleOpen(event: Event) {
         val matchId = event.matchId ?: return
         val match = matchLookup.find(matchId) ?: return
@@ -241,7 +198,6 @@ class TicketService(
     companion object {
         val ALLOWED_PAYMENT_METHODS = setOf("MBWAY", "CARD")
 
-        /** Staff validation opens this many hours before kickoff (admins exempt). */
         const val VALIDATION_OPENS_HOURS_BEFORE = 2L
     }
 }

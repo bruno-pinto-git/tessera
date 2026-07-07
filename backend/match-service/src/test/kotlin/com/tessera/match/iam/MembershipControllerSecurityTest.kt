@@ -21,12 +21,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.OffsetDateTime
 
-/**
- * RBAC web tests for [MembershipController] — the club-scoped member management
- * (point B). Beyond the @clubAuthz gate, it enforces in code that a non-admin
- * (club-manager) may only add/remove STAFF, never managers. Mirrors the member
- * endpoints + negative auth checks of docs/http-tests.
- */
 @WebMvcTest(MembershipController::class)
 @Import(SecurityConfig::class)
 class MembershipControllerSecurityTest {
@@ -45,12 +39,8 @@ class MembershipControllerSecurityTest {
     private fun groupExists() = whenever(kcAdmin.findGroupByPath(any()))
         .thenReturn(KeycloakAdminClient.GroupRepresentation(id = "grp-1"))
 
-    // ----- list (canViewClub) -------------------------------------------------
-
     @Test
     fun `list members without view access is denied`() {
-        // GET /clubs/** is public at the filter, but the method-level
-        // @PreAuthorize still gates it: an anonymous caller is denied (403).
         mvc.perform(get("/api/v1/clubs/1/members")).andExpect(status().isForbidden)
     }
 
@@ -66,8 +56,6 @@ class MembershipControllerSecurityTest {
         clubExists()
         mvc.perform(get("/api/v1/clubs/1/members").with(manager())).andExpect(status().isOk)
     }
-
-    // ----- add (canManageClub + manager-staff-only) ---------------------------
 
     @Test
     fun `add member is 403 without manage access`() {
@@ -109,8 +97,6 @@ class MembershipControllerSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON).content("""{"userId":"u1","role":"MANAGER"}"""),
         ).andExpect(status().isNoContent)
     }
-
-    // ----- remove (canManageClub + manager-staff-only) ------------------------
 
     @Test
     fun `a club manager cannot remove a manager`() {

@@ -6,11 +6,6 @@ import java.time.Instant
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * Pure unit test for the parser that turns a Keycloak `groups` claim into
- * `ClubMembership` records. No Spring context, no mocks — just JWT
- * fixtures and the extractor under test.
- */
 class ClubMembershipExtractorTest {
 
     private val extractor = ClubMembershipExtractor()
@@ -63,12 +58,12 @@ class ClubMembershipExtractorTest {
         val jwt = jwtWith(
             listOf(
                 "/platform-admins",
-                "/clubs",                // missing id + role
-                "/clubs/abc/managers",   // non-numeric id
-                "/clubs/1",              // missing role
-                "/clubs/1/owners",       // unknown subgroup
-                "/other/1/managers",     // wrong root
-                "/clubs/5/managers",     // valid — keep this one
+                "/clubs",
+                "/clubs/abc/managers",
+                "/clubs/1",
+                "/clubs/1/owners",
+                "/other/1/managers",
+                "/clubs/5/managers",
             )
         )
         assertEquals(setOf(ClubMembership(5, ClubRole.MANAGER)), extractor.extract(jwt))
@@ -91,8 +86,6 @@ class ClubMembershipExtractorTest {
             extractor.extract(jwt),
         )
     }
-
-    // -------------------------------------------------------------------------
 
     private fun jwtWith(groups: List<String>?): Jwt {
         val builder = Jwt.withTokenValue("test-token")

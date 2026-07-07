@@ -22,17 +22,9 @@ import { teamCategoryLabel } from "@/features/teams/api/teamsApi";
 
 interface MatchesSectionProps {
   clubId: number;
-  /** Whether the current user can create/edit/delete matches and open the
-   *  box office for this club. The backend enforces it too. */
   canManage: boolean;
 }
 
-/**
- * Per-club "Jogos & Bilheteira" panel embedded in the club detail page.
- * Lists the matches where this club is the HOME side and (for managers /
- * admins) lets them schedule new home matches, edit/delete them, and open
- * the box office.
- */
 export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Match | null>(null);
@@ -46,14 +38,11 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
     size: 50,
   });
 
-  // Only the matches this club hosts.
   const homeMatches = useMemo(
     () => (data?.content ?? []).filter((m) => m.homeClubId === clubId),
     [data, clubId],
   );
 
-  // Resolve all team ids referenced by the listed matches so we can render
-  // their club + category labels.
   useEffect(() => {
     const need = new Set<number>();
     for (const m of homeMatches) {
@@ -63,7 +52,6 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
     for (const id of need) {
       if (!lookups.getCachedTeam(id)) {
         void lookups.resolveTeam(id).catch(() => {
-          /* swallow; the row falls back to the id */
         });
       }
     }

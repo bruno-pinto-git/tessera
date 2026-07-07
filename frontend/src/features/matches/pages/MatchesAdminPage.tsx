@@ -39,8 +39,6 @@ export function MatchesAdminPage() {
     sort: "kickoffAt,desc",
   });
 
-  // Resolve all team ids referenced by the current page, populating the
-  // shared team cache so renders below have club + category info.
   useEffect(() => {
     if (!data) return;
     const need = new Set<number>();
@@ -51,7 +49,6 @@ export function MatchesAdminPage() {
     for (const id of need) {
       if (!lookups.getCachedTeam(id)) {
         void lookups.resolveTeam(id).catch(() => {
-          /* swallow; the row falls back to the id */
         });
       }
     }
@@ -96,7 +93,6 @@ export function MatchesAdminPage() {
         </Button>
       </header>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">Estado</label>

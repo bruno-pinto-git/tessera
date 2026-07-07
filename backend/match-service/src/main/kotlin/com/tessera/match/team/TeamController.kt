@@ -13,8 +13,6 @@ class TeamController(
     private val service: TeamService,
 ) {
 
-    // ----- Collection (nested under club) -----
-
     @GetMapping("/clubs/{clubId}/teams")
     fun listByClub(@PathVariable clubId: Long): List<TeamResponse> =
         service.listByClub(clubId).map { it.toResponse() }
@@ -31,8 +29,6 @@ class TeamController(
             .toUri()
         return ResponseEntity.created(location).body(team.toResponse())
     }
-
-    // ----- Item (flat path) -----
 
     @GetMapping("/teams/{id}")
     fun get(@PathVariable id: Long): TeamResponse =

@@ -23,7 +23,6 @@ interface TeamFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clubId: number;
-  /** Pass a team to edit; omit for create. */
   team?: Team | null;
   onSaved: () => void;
 }

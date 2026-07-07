@@ -47,8 +47,6 @@ class MatchSheetController(
         service.removeLineupEntry(matchId, playerId)
     }
 
-    // ----- Occurrences -----
-
     @PostMapping("/occurrences")
     @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")
     @ResponseStatus(HttpStatus.CREATED)
@@ -67,8 +65,6 @@ class MatchSheetController(
     ) {
         service.removeOccurrence(matchId, occId)
     }
-
-    // ----- Lock / Unlock -----
 
     @PostMapping("/lock")
     @PreAuthorize("@clubAuthz.canEditSheet(authentication, #matchId)")

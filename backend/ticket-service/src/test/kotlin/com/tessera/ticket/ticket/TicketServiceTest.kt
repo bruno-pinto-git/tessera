@@ -24,13 +24,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
-/**
- * Unit tests for [TicketService] — the ticket status machine and the two
- * asynchronous payment flows (MBWAY via webhook, CARD via Stripe Checkout
- * polling), mirroring docs/http-tests/09-tickets.http. Collaborators are
- * mocked; the post-commit publish runs inline because there is no active
- * transaction in a unit test.
- */
 class TicketServiceTest {
 
     private val ticketRepository: TicketRepository = mock()
@@ -42,8 +35,6 @@ class TicketServiceTest {
 
     private val service =
         TicketService(ticketRepository, eventRepository, publisher, mbwayGateway, stripeGateway, matchLookup)
-
-    // ----- create -------------------------------------------------------------
 
     @Test
     fun `create fails when the event does not exist`() {
@@ -118,8 +109,6 @@ class TicketServiceTest {
         verify(matchLookup, never()).find(any())
     }
 
-    // ----- pay ----------------------------------------------------------------
-
     @Test
     fun `pay fails for an unknown ticket`() {
         whenever(ticketRepository.findById(7L)).thenReturn(Optional.empty())
@@ -178,8 +167,6 @@ class TicketServiceTest {
         assertFailsWith<IllegalArgumentException> { service.pay(7L, "MBWAY", "  ", null) }
     }
 
-    // ----- validate -----------------------------------------------------------
-
     @Test
     fun `validate fails for an unknown code`() {
         val code = UUID.randomUUID()
@@ -207,8 +194,6 @@ class TicketServiceTest {
         assertEquals("staff-sub", validated.validatorSub)
         verify(publisher).publishTicketValidated(validated)
     }
-
-    // ----- validate: club + activity-window authorization (staff path) --------
 
     @Test
     fun `staff of the home club can validate within the window`() {
@@ -256,7 +241,6 @@ class TicketServiceTest {
 
     @Test
     fun `validation more than 2h before kickoff is denied`() {
-        // 2h30 before kickoff — the window only opens 2h before.
         val code = UUID.randomUUID()
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
         whenever(matchLookup.find(99L))
@@ -268,7 +252,6 @@ class TicketServiceTest {
 
     @Test
     fun `validation after the match has ended is denied`() {
-        // 2h30 after kickoff — past the end of the match (kickoff + 2h).
         val code = UUID.randomUUID()
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
         whenever(matchLookup.find(99L))
@@ -296,7 +279,6 @@ class TicketServiceTest {
         whenever(ticketRepository.findByCode(code)).thenReturn(t)
         doReturn(t).whenever(ticketRepository).save(any())
 
-        // No matchLookup stubbing needed — admins skip the club/window check.
         val v = service.validate(code, "admin-sub", isPlatformAdmin = true, staffClubIds = emptySet())
 
         assertEquals(TicketStatus.VALIDATED, v.status)
@@ -330,8 +312,6 @@ class TicketServiceTest {
 
         assertNull(t.paymentDate)
     }
-
-    // ----- getByIdRefreshed (Stripe status polling) ----------------------------
 
     @Test
     fun `getByIdRefreshed does not call Stripe for a non-pending ticket`() {
@@ -390,10 +370,6 @@ class TicketServiceTest {
 
         assertEquals(TicketStatus.PENDING, refreshed.status)
     }
-
-    // -------------------------------------------------------------------------
-    // Fixtures
-    // -------------------------------------------------------------------------
 
     private fun event() = Event(
         id = 1L,

@@ -23,7 +23,6 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : "Erro inesperado";
 }
 
-/** Lineup editor for a single team's section of the sheet. */
 export function LineupEditor({
   matchId,
   teamName,

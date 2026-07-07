@@ -18,8 +18,6 @@ import { teamCategoryLabel, type Team } from "../api/teamsApi";
 
 interface TeamsSectionProps {
   clubId: number;
-  /** Whether the current user can manage this club's teams. Controls
-   *  visibility of add/edit/delete actions; the backend enforces it too. */
   canManage: boolean;
 }
 

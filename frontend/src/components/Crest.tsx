@@ -1,12 +1,6 @@
 import type { CrestTone } from "@/features/clubs/clubs";
 import { cn } from "@/lib/utils";
 
-/**
- * Monogram placeholder for a club crest. Renders a tonal background with
- * the club's initials in a mono font. Lives here (not in `components/ui/`)
- * because it carries domain semantics — when real logo assets land, swap
- * this for an `<img>` with a fallback to the monogram.
- */
 const TONE_BG: Record<CrestTone, string> = {
   forest: "oklch(0.45 0.13 152)",
   oxblood: "oklch(0.38 0.13 25)",

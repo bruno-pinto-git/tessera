@@ -30,7 +30,6 @@ interface PlayerFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   teamId: number;
-  /** Pass a player to edit; omit for create. */
   player?: Player | null;
   onSaved: () => void;
 }

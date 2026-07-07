@@ -20,12 +20,10 @@ import java.time.OffsetDateTime
 
 data class CreateEventRequest(
     @field:NotBlank val name: String?,
-    /** Snapshot of the fixture ("Home vs Away") so tickets survive a match deletion. */
     val matchLabel: String? = null,
     val matchId: Long? = null,
     @field:NotNull @field:DecimalMin("0.00") val priceNormal: BigDecimal?,
     @field:NotNull @field:DecimalMin("0.00") val priceSupporter: BigDecimal?,
-    /** Optional. Defaults to PUBLISHED so tickets can be purchased immediately. */
     val status: String? = null,
 )
 
@@ -92,11 +90,6 @@ class EventController(
     @GetMapping("/{id}")
     fun getOne(@PathVariable id: Long): EventResponse = toResponse(service.get(id))
 
-    /**
-     * Open a box office (create a PUBLISHED event). Platform admins may open
-     * one for any match; a club manager may only open one for a match where
-     * their club is the **home** team (resolved via match-service).
-     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("isAuthenticated()")
@@ -104,13 +97,9 @@ class EventController(
         @RequestBody request: CreateEventRequest,
         @AuthenticationPrincipal jwt: Jwt,
     ): EventResponse {
-        // Resolve the match once: its home club authorizes a club manager and is
-        // snapshotted on the event (so paid-ticket events can aggregate sales per
-        // club without a match-service call at payment time).
         val match = request.matchId?.let { matchLookup.find(it) }
         val homeClubId = match?.homeClubId
         authorizeCreate(jwt, request, homeClubId)
-        // No box office for a match that's over or off.
         match?.let { MatchAvailability.closedReason(it) }?.let { reason ->
             throw SaleClosedException("Cannot open a box office: $reason.")
         }

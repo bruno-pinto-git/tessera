@@ -12,11 +12,6 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : "Erro inesperado";
 }
 
-/**
- * Loads the squads of (up to) two teams and exposes a playerId → Player map.
- * Used by both the editor (player pickers) and the public view (names from ids,
- * since the snapshot stores only ids).
- */
 export function useTeamRosters(homeTeamId?: number | null, awayTeamId?: number | null) {
   const [players, setPlayers] = useState<Map<number, Player>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -48,12 +43,6 @@ export function useTeamRosters(homeTeamId?: number | null, awayTeamId?: number |
   return { players, loading, error };
 }
 
-/**
- * Live (editable) sheet from match-service. Distinguishes the two "expected"
- * failures so the editor can show a friendly panel instead of raw error text:
- *  - `forbidden` (403): the user isn't admin/staff/manager of this match's club;
- *  - `notFound` (404): the match doesn't exist (deleted or bad id).
- */
 export function useMatchSheet(matchId: number) {
   const [sheet, setSheet] = useState<MatchSheet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,11 +80,6 @@ export function useMatchSheet(matchId: number) {
   return { sheet, loading, error, forbidden, notFound, refetch };
 }
 
-/**
- * Public snapshot of a CLOSED sheet (statistics read-side). A 404 means the
- * sheet hasn't been closed/published yet — surfaced as `notAvailable` rather
- * than an error.
- */
 export function useMatchSheetHistory(matchId: number | null) {
   const [history, setHistory] = useState<MatchSheetHistory | null>(null);
   const [loading, setLoading] = useState(true);

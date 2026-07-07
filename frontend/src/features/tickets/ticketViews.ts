@@ -1,11 +1,5 @@
 import type { CrestTone } from "@/features/clubs/clubs";
 
-/**
- * Helpers to render real (API-backed) clubs in <Crest> without depending on
- * the hardcoded mock catalog in `features/clubs/clubs.ts`. The monogram and
- * tone are derived deterministically from the club's name + id.
- */
-
 export interface CrestInfo {
   initials: string;
   short: string;
@@ -14,10 +8,6 @@ export interface CrestInfo {
 
 const TONES: CrestTone[] = ["forest", "oxblood", "navy", "ochre", "slate", "cream"];
 
-/**
- * Generic football-club tokens that carry no identifying value. Stripped when
- * deriving initials and the short display name.
- */
 const GENERIC = new Set([
   "futebol",
   "clube",
@@ -69,12 +59,6 @@ export function crestForClub(club: { id: number; name: string } | undefined): Cr
   return { initials, short, tone };
 }
 
-/**
- * Crest derived from a club NAME only (no id available) — used to render a
- * cancelled-match ticket from its `matchLabel` snapshot. Initials follow the
- * same rules as {@link crestForClub}; the tone is hashed from the name so it
- * is stable and varied without an id.
- */
 export function crestFromName(name: string): CrestInfo {
   const clean = name.trim();
   if (!clean) return { initials: "?", short: "—", tone: "slate" };
@@ -88,10 +72,6 @@ export function crestFromName(name: string): CrestInfo {
   return { initials, short: words.length > 0 ? words.join(" ") : clean, tone: TONES[hash % TONES.length] };
 }
 
-/**
- * Split a "Home vs Away" fixture label into the two club names, dropping any
- * trailing "(category)" suffix. Returns null when there's no " vs " separator.
- */
 export function splitFixture(label: string): { home: string; away: string } | null {
   const idx = label.indexOf(" vs ");
   if (idx < 0) return null;

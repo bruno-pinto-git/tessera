@@ -72,13 +72,11 @@ class MatchSheetViewModel(application: Application) : AndroidViewModel(applicati
     fun lineupFor(teamId: Long, role: String): List<LineupEntryDto> =
         sheet?.lineup?.filter { it.teamId == teamId && it.role == role }?.sortedBy { it.shirtNumber ?: 99 } ?: emptyList()
 
-    /** Jogadores da equipa ainda não convocados. */
     fun availableFor(teamId: Long, roster: List<PlayerDto>): List<PlayerDto> {
         val inLineup = sheet?.lineup?.map { it.playerId }?.toSet() ?: emptySet()
         return roster.filter { it.id !in inLineup }
     }
 
-    /** Convocados de uma equipa (para escolher em lances). */
     fun calledUp(teamId: Long): List<LineupEntryDto> =
         sheet?.lineup?.filter { it.teamId == teamId } ?: emptyList()
 

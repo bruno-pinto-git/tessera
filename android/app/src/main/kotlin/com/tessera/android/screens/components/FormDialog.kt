@@ -26,7 +26,6 @@ import com.tessera.android.R
 import com.tessera.android.ui.theme.GlassInk
 import com.tessera.android.ui.theme.GlassInkMuted
 
-/** Cores para campos de pesquisa que assentam sobre o fundo claro. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun searchFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
@@ -43,7 +42,6 @@ fun searchFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     unfocusedPlaceholderColor = GlassInkMuted,
 )
 
-/** Popup de formulário (substitui os bottom sheets de add/edit). */
 @Composable
 fun FormDialog(
     title: String,

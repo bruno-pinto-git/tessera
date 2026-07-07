@@ -206,6 +206,7 @@
     <string name="tickets_type">Tipo</string>
     <string name="tickets_price">Preço</string>
     <string name="tickets_paid_at">Pago em %1$s</string>
+    <string name="tickets_add_to_wallet">Adicionar ao Google Wallet</string>
 
     <string name="event_detail_title">Evento</string>
     <string name="event_detail_error">Não foi possível carregar o evento.</string>

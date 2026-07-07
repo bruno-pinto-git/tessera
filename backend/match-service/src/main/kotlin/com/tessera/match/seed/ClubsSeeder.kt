@@ -18,27 +18,6 @@ import java.net.http.HttpResponse
 import java.nio.charset.StandardCharsets
 import java.time.Duration
 
-/**
- * Optionally populates the `club` table with Portuguese football clubs
- * pulled from Wikidata. Supports the following competitions out of the box:
- *
- *   Q182994    — Primeira Liga                       (~22 clubs)
- *   Q754488    — Segunda Liga / Liga Portugal 2      (~32 clubs)
- *   Q13668768  — Campeonato Nacional de Seniores     (~61 clubs)
- *
- * **DISABLED by default**. The platform treats clubs as tenants — each is
- * onboarded explicitly by the platform admin and bound to a manager via a
- * Keycloak group — so pre-loading arbitrary Wikidata entries is the wrong
- * default. The code is kept for development convenience and can be
- * re-enabled via `tessera.seed.clubs.enabled=true`.
- *
- * When enabled, the seeder is idempotent: it skips automatically if the
- * club table already has rows.
- *
- * Configuration:
- *   tessera.seed.clubs.enabled       (default: false)
- *   tessera.seed.clubs.competitions  (default: Q182994,Q754488,Q13668768)
- */
 @Component
 @Profile("!test")
 @Order(100)

@@ -4,11 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.math.BigDecimal
 import java.time.OffsetDateTime
 
-/**
- * Inbound payload mirrors. We mark these `JsonIgnoreProperties(ignoreUnknown=true)`
- * so adding new optional fields on the producer side does not break the
- * consumer. Contracts live in `docs/events/async-contracts.md`.
- */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MatchSheetClosedEvent(
     val version: Int = 1,
@@ -62,9 +57,7 @@ data class TicketPaidEvent(
     val occurredAt: OffsetDateTime,
     val ticketId: Long,
     val eventId: Long,
-    /** Nullable: an event can sell tickets without being tied to a specific match. */
     val matchId: Long?,
-    /** Home club of the match (for per-club sales aggregation). */
     val homeClubId: Long? = null,
     val price: BigDecimal,
     val paymentMethod: String?,
@@ -78,6 +71,5 @@ data class TicketValidatedEvent(
     val ticketId: Long,
     val matchId: Long?,
     val validatedAt: OffsetDateTime,
-    /** Keycloak subject UUID of the validator (staff/admin). */
     val validatorSub: String?,
 )

@@ -9,10 +9,6 @@ import java.math.BigDecimal
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/**
- * Unit tests for [EventService.create] — the box-office status validation and
- * the default-to-PUBLISHED behaviour. The repository is mocked.
- */
 class EventServiceTest {
 
     private val repo: EventRepository = mock()

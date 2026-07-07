@@ -13,10 +13,6 @@ interface UseUsersResult {
   refetch: () => void;
 }
 
-/**
- * Loads users from Keycloak via the admin endpoint, debounced on the
- * search term so we don't hammer Keycloak on every keystroke.
- */
 export function useUsers({ search, max = 50 }: UseUsersParams): UseUsersResult {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,8 +36,6 @@ export function useUsers({ search, max = 50 }: UseUsersParams): UseUsersResult {
       }
     };
 
-    // Debounce by 250ms on the search term — the search input changes on
-    // every keystroke and Keycloak's /users endpoint is not free.
     void Promise.resolve().then(() => {
       if (!cancelled) setLoading(true);
     });

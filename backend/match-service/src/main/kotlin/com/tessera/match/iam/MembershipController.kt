@@ -11,17 +11,6 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
-/**
- * Manages who is a manager or staff member of a specific club. Both roles
- * are represented by Keycloak group membership under `/clubs/<id>/managers`
- * or `/clubs/<id>/staff`, so changes are persisted to Keycloak only.
- *
- * Authorization is club-scoped (`@clubAuthz.canManageClub`): platform-admins
- * manage any club; a club-manager manages their own club but is limited to
- * the STAFF role (they cannot add/remove other managers, nor grant
- * platform-admin). A manager may also create a brand-new user inline, which
- * is provisioned in Keycloak with a temporary password and the `staff` role.
- */
 @RestController
 @RequestMapping("/api/v1/clubs/{clubId}/members")
 class MembershipController(
@@ -43,16 +32,9 @@ class MembershipController(
         val staff: List<MemberResponse>,
     )
 
-    /**
-     * Either link an existing user (`userId`) or create a new one inline
-     * (`username`/`password`/...). Exactly one path is taken; `userId` wins.
-     */
     data class AddMemberRequest(
         val userId: String? = null,
         val role: ClubRole? = null,
-        // Inline new-user creation (used when userId is absent). Constraints are
-        // null-tolerant — they only bound the values when the inline path is used;
-        // the "required when creating" checks live in createInlineUser.
         @field:Size(min = 3, max = 60) val username: String? = null,
         @field:Email val email: String? = null,
         @field:Size(max = 100) val firstName: String? = null,
@@ -75,7 +57,6 @@ class MembershipController(
     fun add(@PathVariable clubId: Long, @Valid @RequestBody req: AddMemberRequest, authentication: Authentication) {
         ensureClubExists(clubId)
         val role = req.role ?: ClubRole.STAFF
-        // Non-admins (club-managers) may only manage staff.
         if (!authentication.isPlatformAdmin() && role != ClubRole.STAFF) {
             throw AccessDeniedException("Club managers can only add staff members.")
         }
@@ -102,13 +83,6 @@ class MembershipController(
         kcAdmin.removeUserFromGroup(userId, groupId)
     }
 
-    // -------------------------------------------------------------------------
-
-    /**
-     * Provisions a new Keycloak user (temporary password) and assigns the
-     * realm role matching the club role, returning the new user id. Rolls
-     * back the user if the role assignment fails.
-     */
     private fun createInlineUser(req: AddMemberRequest, role: ClubRole): String {
         val username = req.username?.trim()?.takeIf { it.length >= 3 }
             ?: throw IllegalArgumentException("A userId or a new user (username >= 3 chars) is required.")

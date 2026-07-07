@@ -2,8 +2,9 @@
 # demo-network.ps1
 #
 # Prepara a rede para a demo: detecta o IP do PC e o IP do telemovel-hotspot
-# (gateway), escreve o .env com as URLs do MB WAY, e mostra o IP que deves
-# introduzir no POS (MainMenu -> Configuracoes).
+# (gateway), atualiza no .env so as 4 variaveis do MB WAY (preservando tudo o
+# resto - Stripe, Google Wallet, etc.), e mostra o IP que deves introduzir no
+# POS (MainMenu -> Configuracoes).
 #
 # Topologia assumida:
 #   - O teu telemovel faz hotspot E corre a app mock-mbway  -> IP = gateway
@@ -50,13 +51,32 @@ if (-not $PcIp -or -not $MockIp) {
     Write-Host "Interface detectada: $($iface.InterfaceAlias)" -ForegroundColor DarkGray
 }
 
-# --- Escreve o .env (UTF8 sem BOM) ---
-$content = @"
-MBWAY_GATEWAY_URL=http://${MockIp}:8443
-MBWAY_WEBHOOK_BASE_URL=http://${PcIp}:8081
-MBWAY_TERMINAL_ID=47215
-MBWAY_CLIENT_ID=tessera-mock
-"@
+# --- Atualiza so as variaveis do MB WAY no .env, preservando o resto ---
+# (Stripe, Google Wallet, etc. ficam intactos - o script so mexe nestas 4 linhas.)
+$mbwayVars = [ordered]@{
+    MBWAY_GATEWAY_URL      = "http://${MockIp}:8443"
+    MBWAY_WEBHOOK_BASE_URL = "http://${PcIp}:8081"
+    MBWAY_TERMINAL_ID      = "47215"
+    MBWAY_CLIENT_ID        = "tessera-mock"
+}
+
+$lines = [System.Collections.Generic.List[string]]::new()
+if (Test-Path $envPath) {
+    [System.IO.File]::ReadAllLines($envPath, [System.Text.Encoding]::UTF8) | ForEach-Object { $lines.Add($_) }
+}
+
+foreach ($key in $mbwayVars.Keys) {
+    $newLine = "$key=$($mbwayVars[$key])"
+    $idx = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match "^$key=") { $idx = $i; break }
+    }
+    if ($idx -ge 0) { $lines[$idx] = $newLine } else { $lines.Add($newLine) }
+}
+
+# Junta sempre com \n e garante uma quebra de linha final, para nunca colar
+# a proxima variavel que outra ferramenta venha a acrescentar por baixo.
+$content = ($lines -join "`n") + "`n"
 [System.IO.File]::WriteAllText($envPath, $content, (New-Object System.Text.UTF8Encoding $false))
 
 Write-Host ""

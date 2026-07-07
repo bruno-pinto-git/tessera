@@ -67,6 +67,32 @@ class TicketRepository(context: Context) {
             parseTicket(JSONObject(resp.bodyString()))
         }
 
+    suspend fun walletSaveUrl(
+        id: Long,
+        eventTitle: String,
+        venue: String?,
+        kickoffAt: String?,
+        tierLabel: String,
+    ): String = withContext(Dispatchers.IO) {
+        val token = keycloak.freshAccessToken()
+        val body = JSONObject()
+            .put("eventTitle", eventTitle)
+            .apply {
+                if (venue != null) put("venue", venue)
+                if (kickoffAt != null) put("kickoffAt", kickoffAt)
+                put("tierLabel", tierLabel)
+            }
+            .toString()
+        val url = "${ServerConfig.baseUrl}/api/v1/tickets/$id/wallet-pass"
+        val resp = client(
+            authed(Request(Method.POST, url), token)
+                .header("Content-Type", "application/json")
+                .body(body),
+        )
+        if (!resp.status.successful) throw IllegalStateException("Erro ${resp.status.code}")
+        JSONObject(resp.bodyString()).getString("saveUrl")
+    }
+
     private fun authed(req: Request, token: String?): Request =
         if (token != null) req.header("Authorization", "Bearer $token") else req
 

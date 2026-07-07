@@ -5,11 +5,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-/**
- * Teams have two roots:
- *   - /api/v1/clubs/{clubId}/teams   (collection nested under club)
- *   - /api/v1/teams/{id}             (item)
- */
 @RestController
 class TeamProxyController(
     private val proxy: ProxyService,

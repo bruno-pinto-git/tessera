@@ -20,15 +20,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-/**
- * Unit tests for [MatchSheetService] business rules — the JUnit counterpart of
- * docs/http-tests/06-match-sheets.http and 07-sheet-rules.http:
- *   - roster limits (max 11 starters, max 12 substitutes per team)
- *   - max 5 substitutions per team per match
- *   - a player sent off (RED_CARD) cannot author further occurrences
- *   - lineup/occurrence validation and sheet lock state
- * All collaborators are mocked; no Spring context or DB is involved.
- */
 class MatchSheetServiceTest {
 
     private val sheetRepo: MatchSheetRepository = mock()
@@ -46,8 +37,6 @@ class MatchSheetServiceTest {
     private val SHEET_ID = 100L
     private val HOME_TEAM = 1L
     private val AWAY_TEAM = 2L
-
-    // ----- addLineupEntry -----------------------------------------------------
 
     @Test
     fun `lineup add fails when player does not exist`() {
@@ -141,8 +130,6 @@ class MatchSheetServiceTest {
         }
     }
 
-    // ----- sheet editability --------------------------------------------------
-
     @Test
     fun `editing a locked sheet is rejected`() {
         whenever(matchRepo.findActiveById(MATCH_ID)).thenReturn(match(MatchStatus.LIVE))
@@ -160,8 +147,6 @@ class MatchSheetServiceTest {
             service.addLineupEntry(MATCH_ID, lineupReq(7L, LineupRole.STARTER))
         }
     }
-
-    // ----- addOccurrence ------------------------------------------------------
 
     @Test
     fun `occurrence author must be in the lineup`() {
@@ -309,8 +294,6 @@ class MatchSheetServiceTest {
         assertEquals(11L, occ.replacedPlayerId)
     }
 
-    // ----- lock / unlock ------------------------------------------------------
-
     @Test
     fun `lock marks the sheet locked and publishes the closed event`() {
         whenever(matchRepo.findActiveById(MATCH_ID)).thenReturn(match(MatchStatus.FINISHED))
@@ -366,11 +349,6 @@ class MatchSheetServiceTest {
         verify(publisher).publishMatchSheetClosed(sheet)
     }
 
-    // -------------------------------------------------------------------------
-    // Fixtures / helpers
-    // -------------------------------------------------------------------------
-
-    /** Stub a SCHEDULED match with an existing unlocked sheet (editable). */
     private fun editableSheet() {
         whenever(matchRepo.findActiveById(MATCH_ID)).thenReturn(match(MatchStatus.SCHEDULED))
         whenever(sheetRepo.findByMatchId(MATCH_ID)).thenReturn(sheet(locked = false))

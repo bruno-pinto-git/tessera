@@ -17,10 +17,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-/**
- * Web test for [MatchHistoryController]: match-sheet history is public (fans
- * browse it without authentication).
- */
 @WebMvcTest(MatchHistoryController::class)
 @Import(SecurityConfig::class)
 class MatchHistoryControllerSecurityTest {

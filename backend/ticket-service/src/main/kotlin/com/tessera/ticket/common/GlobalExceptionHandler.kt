@@ -4,6 +4,7 @@ import com.tessera.ticket.ticket.EventNotFoundException
 import com.tessera.ticket.ticket.InvalidTicketStatusException
 import com.tessera.ticket.ticket.SaleClosedException
 import com.tessera.ticket.ticket.TicketNotFoundException
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -16,13 +17,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
-/**
- * Maps domain exceptions to RFC 7807 Problem Details responses.
- *
- * Mirrors match-service GlobalExceptionHandler.
- */
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @ExceptionHandler(value = [
         TicketNotFoundException::class,
@@ -41,14 +39,16 @@ class GlobalExceptionHandler {
         InvalidTicketStatusException::class,
         SaleClosedException::class,
     ])
-    fun handleConflict(ex: RuntimeException, req: WebRequest): ResponseEntity<Problem> =
-        problem(
+    fun handleConflict(ex: RuntimeException, req: WebRequest): ResponseEntity<Problem> {
+        log.warn("Conflict: {}", ex.message)
+        return problem(
             HttpStatus.CONFLICT,
             "https://tessera/api/errors/conflict",
             "Conflict",
             ex.message ?: "Conflict",
             req,
         )
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException, req: WebRequest): ResponseEntity<Problem> {

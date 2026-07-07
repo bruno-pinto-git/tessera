@@ -2,6 +2,7 @@ package com.tessera.ticket.ticket
 
 import com.tessera.ticket.config.SecurityConfig
 import com.tessera.ticket.event.Event
+import com.tessera.ticket.wallet.GoogleWalletClient
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -24,11 +25,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
 import java.util.UUID
 
-/**
- * RBAC web tests for [TicketController] — the real Spring Security filter chain
- * + method security, plus the in-code owner-or-staff check on pay/get. Mirrors
- * docs/http-tests/09-tickets.http and 99-rbac-checks.http.
- */
 @WebMvcTest(TicketController::class)
 @Import(SecurityConfig::class)
 class TicketControllerSecurityTest {
@@ -37,13 +33,11 @@ class TicketControllerSecurityTest {
 
     @MockitoBean private lateinit var ticketService: TicketService
     @MockitoBean private lateinit var jwtDecoder: JwtDecoder
+    @MockitoBean private lateinit var googleWalletClient: GoogleWalletClient
 
-    // jwt() defaults the `sub` claim to "user".
     private fun fan() = jwt().authorities(SimpleGrantedAuthority("ROLE_fan"))
     private fun staff() = jwt().authorities(SimpleGrantedAuthority("ROLE_staff"))
     private fun platformAdmin() = jwt().authorities(SimpleGrantedAuthority("ROLE_platform-admin"))
-
-    // ----- create (isAuthenticated) -------------------------------------------
 
     @Test
     fun `create ticket without a token is 401`() {
@@ -58,8 +52,6 @@ class TicketControllerSecurityTest {
             post("/api/v1/tickets").with(fan()).contentType(MediaType.APPLICATION_JSON).content("""{"eventId":1}"""),
         ).andExpect(status().isCreated)
     }
-
-    // ----- pay (owner or staff/platform-admin) --------------------------------
 
     @Test
     fun `owner can pay their own ticket`() {
@@ -80,8 +72,6 @@ class TicketControllerSecurityTest {
                 .contentType(MediaType.APPLICATION_JSON).content("""{"paymentMethod":"CARD"}"""),
         ).andExpect(status().isForbidden)
     }
-
-    // ----- validate (staff/platform-admin only) -------------------------------
 
     @Test
     fun `validate is 403 for a fan`() {
@@ -117,8 +107,6 @@ class TicketControllerSecurityTest {
         ).andExpect(status().isUnauthorized)
     }
 
-    // ----- list by event (staff/platform-admin only) --------------------------
-
     @Test
     fun `list tickets by event is 403 for a fan`() {
         mvc.perform(get("/api/v1/tickets").param("eventId", "1").with(fan()))
@@ -133,8 +121,6 @@ class TicketControllerSecurityTest {
             .andExpect(status().isOk)
     }
 
-    // ----- mine (any authenticated) -------------------------------------------
-
     @Test
     fun `list mine succeeds for any authenticated user`() {
         val page: Page<Ticket> = PageImpl(emptyList())
@@ -142,15 +128,11 @@ class TicketControllerSecurityTest {
         mvc.perform(get("/api/v1/tickets/mine").with(fan())).andExpect(status().isOk)
     }
 
-    // ----- getOne (owner or staff/platform-admin) -----------------------------
-
     @Test
     fun `a fan cannot read someone else's ticket`() {
         doReturn(ticket(ownerSub = "another-user")).whenever(ticketService).getById(1L)
         mvc.perform(get("/api/v1/tickets/1").with(fan())).andExpect(status().isForbidden)
     }
-
-    // -------------------------------------------------------------------------
 
     private fun ticket(ownerSub: String) = Ticket(
         id = 1L,

@@ -11,13 +11,6 @@ class MatchHistoryController(
     private val service: MatchHistoryService,
 ) {
 
-    /**
-     * Filters:
-     *   - clubId: matches where the club was home or away
-     *   - playerId: matches where the player was in the lineup
-     *   - season: "YYYY-YY" (e.g. "2026-27")
-     *   - status: FINISHED | ABANDONED | POSTPONED | CANCELLED
-     */
     @GetMapping
     fun list(
         @RequestParam(required = false) clubId: Long?,

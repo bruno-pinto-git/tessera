@@ -17,7 +17,6 @@ class TicketSale(
     @Column(name = "match_id")
     val matchId: Long?,
 
-    /** Home club of the match — lets us aggregate sales per club. */
     @Column(name = "home_club_id")
     val homeClubId: Long? = null,
 

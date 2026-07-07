@@ -4,21 +4,11 @@ import { ChevronRight } from "lucide-react";
 interface MatchdayBannerProps {
   home: string;
   away: string;
-  /** Day label, e.g. "Hoje" / "Amanhã". */
   label: string;
-  /** Human-readable countdown, e.g. "3h 22min". */
   kickoff: string;
   href: string;
 }
 
-/**
- * Thin (h-9) primary-tinted strip rendered above the header when there is
- * a match in the next 24h. Clickable; takes the user to the event detail
- * (or the user's paid ticket if one already exists).
- *
- * Visually it uses `color-mix()` so the tint follows the active theme
- * without needing a dedicated `--primary-soft` token.
- */
 export function MatchdayBanner({ home, away, label, kickoff, href }: MatchdayBannerProps) {
   return (
     <Link

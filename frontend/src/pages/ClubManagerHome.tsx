@@ -5,12 +5,6 @@ import { useMe } from "@/auth/useMe";
 import { getClub, type Club } from "@/features/clubs/api/clubsApi";
 import { ApiError } from "@/api/client";
 
-/**
- * Landing page for users with `club-manager` or `staff`. Fetches /me, takes
- * every club the user belongs to (as MANAGER or STAFF) and resolves each one
- * against the real club record. From there the user drills into the per-club
- * area: managers manage it, staff get a read-only view.
- */
 export function ClubManagerHome() {
   const { me, loading: meLoading, error: meError } = useMe();
   const [clubs, setClubs] = useState<Club[]>([]);

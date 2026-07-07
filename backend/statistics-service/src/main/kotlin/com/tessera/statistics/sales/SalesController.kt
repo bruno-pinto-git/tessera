@@ -16,7 +16,7 @@ data class SalesSummaryResponse(
     val sold: Long,
     val validated: Long,
     val revenue: BigDecimal,
-    val validationRate: BigDecimal,    // 0.000 .. 1.000
+    val validationRate: BigDecimal,
 )
 
 data class SalesByMatchResponse(
@@ -30,9 +30,8 @@ data class SalesByClubResponse(
     val clubId: Long,
     val sold: Long,
     val validated: Long,
-    /** Null for staff: they may see counts but not revenue. */
     val revenue: BigDecimal?,
-    val validationRate: BigDecimal,    // 0.000 .. 1.000
+    val validationRate: BigDecimal,
 )
 
 @Service
@@ -72,16 +71,10 @@ class SalesService(
         require(from.isBefore(to)) { "'from' must be earlier than 'to'." }
         val sold = repo.countSoldInRange(from, to)
         val revenue = repo.revenueInRange(from, to)
-        // Validation in a date range is intentionally not exposed: validation
-        // happens later than payment and would skew the rate. Keep it 0 for now.
         return SalesSummaryResponse(sold, 0, revenue, BigDecimal.ZERO)
     }
 }
 
-/**
- * Sales reports are admin-only — they expose revenue and ticket counts that
- * are not for public consumption.
- */
 @RestController
 @RequestMapping("/api/v1/stats/sales")
 class SalesController(
@@ -105,13 +98,6 @@ class SalesController(
         to: OffsetDateTime,
     ): SalesSummaryResponse = service.inRange(from, to)
 
-    /**
-     * Club-scoped sales. Unlike the other reports this is NOT platform-admin
-     * only:
-     *   - a platform-admin or a MANAGER of the club sees everything (incl. revenue);
-     *   - STAFF of the club may see the sold/validated counts but NOT the revenue.
-     * Authorized in code because the allowed club id depends on the path variable.
-     */
     @GetMapping("/by-club/{clubId}")
     @PreAuthorize("isAuthenticated()")
     fun byClub(
@@ -125,7 +111,6 @@ class SalesController(
             throw AccessDeniedException("Not allowed to read sales for club $clubId.")
         }
         val result = service.byClub(clubId)
-        // Staff (not admin, not manager) get counts but not revenue.
         return if (isAdmin || isManager) result else result.copy(revenue = null)
     }
 }

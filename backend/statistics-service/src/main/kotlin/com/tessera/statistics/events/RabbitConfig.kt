@@ -13,30 +13,18 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-/**
- * Consumer-side AMQP topology for statistics-service.
- *
- * We declare:
- *   - the shared `tessera.events` topic exchange (idempotent if the producer
- *     already declared it)
- *   - one durable queue per event type we care about
- *   - the bindings between queue and exchange
- *
- * Consumers are wired via @RabbitListener with the queue names from
- * application.yml.
- */
 @Configuration
 class RabbitConfig {
 
     @Bean
     fun eventsExchange(
         @Value("\${tessera.events.exchange}") name: String,
-    ): TopicExchange = TopicExchange(name, /* durable */ true, /* autoDelete */ false)
+    ): TopicExchange = TopicExchange(name, true, false)
 
     @Bean
     fun matchSheetClosedQueue(
         @Value("\${tessera.events.match-sheet-closed-queue}") name: String,
-    ): Queue = Queue(name, /* durable */ true)
+    ): Queue = Queue(name, true)
 
     @Bean
     fun matchSheetClosedBinding(
@@ -50,7 +38,7 @@ class RabbitConfig {
     @Bean
     fun matchSheetReopenedQueue(
         @Value("\${tessera.events.match-sheet-reopened-queue}") name: String,
-    ): Queue = Queue(name, /* durable */ true)
+    ): Queue = Queue(name, true)
 
     @Bean
     fun matchSheetReopenedBinding(
@@ -64,7 +52,7 @@ class RabbitConfig {
     @Bean
     fun ticketPaidQueue(
         @Value("\${tessera.events.ticket-paid-queue}") name: String,
-    ): Queue = Queue(name, /* durable */ true)
+    ): Queue = Queue(name, true)
 
     @Bean
     fun ticketPaidBinding(
@@ -78,7 +66,7 @@ class RabbitConfig {
     @Bean
     fun ticketValidatedQueue(
         @Value("\${tessera.events.ticket-validated-queue}") name: String,
-    ): Queue = Queue(name, /* durable */ true)
+    ): Queue = Queue(name, true)
 
     @Bean
     fun ticketValidatedBinding(

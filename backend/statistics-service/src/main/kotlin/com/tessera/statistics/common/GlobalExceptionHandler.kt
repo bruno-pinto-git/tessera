@@ -11,10 +11,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
-/**
- * Mirrors the RFC 7807 Problem handling used in match-service / bff-service
- * so all backend services produce identical error payloads.
- */
 @RestControllerAdvice
 class GlobalExceptionHandler {
 

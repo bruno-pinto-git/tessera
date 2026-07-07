@@ -31,10 +31,6 @@ interface OccurrenceSnapshotRepository : JpaRepository<OccurrenceSnapshot, Long>
     fun deleteByMatchId(matchId: Long)
 }
 
-/**
- * Composable predicates for MatchSummary filtering, mirroring the pattern
- * used by match-service for live Match queries.
- */
 object MatchSummarySpecs {
 
     fun season(season: String?): Specification<MatchSummary>? =
@@ -43,9 +39,6 @@ object MatchSummarySpecs {
     fun status(status: String?): Specification<MatchSummary>? =
         status?.let { Specification { root, _, cb -> cb.equal(root.get<String>("matchStatus"), it) } }
 
-    /**
-     * Match is "by club" if either home_club_id or away_club_id matches.
-     */
     fun byClub(clubId: Long?): Specification<MatchSummary>? =
         clubId?.let { id ->
             Specification { root, _, cb ->
@@ -56,10 +49,6 @@ object MatchSummarySpecs {
             }
         }
 
-    /**
-     * Match has the given player in the lineup snapshot. Uses a JPQL subquery
-     * via `criteriaBuilder.exists`.
-     */
     fun byPlayer(playerId: Long?): Specification<MatchSummary>? =
         playerId?.let { id ->
             Specification { root, query, cb ->

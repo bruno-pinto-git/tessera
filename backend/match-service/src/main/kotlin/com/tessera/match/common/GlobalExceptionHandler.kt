@@ -32,10 +32,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
-/**
- * Maps domain exceptions to RFC 7807 Problem Details responses, matching the
- * OpenAPI contract (application/problem+json).
- */
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
@@ -156,7 +152,6 @@ class GlobalExceptionHandler {
             req,
         )
 
-    /** Catch-all so unexpected exceptions still produce Problem JSON. */
     @ExceptionHandler(Exception::class)
     fun handleUnknown(ex: Exception, req: WebRequest): ResponseEntity<Problem> =
         problem(

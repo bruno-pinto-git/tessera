@@ -14,10 +14,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/**
- * Unit tests for [TeamService] — one team per (club, category) and club
- * existence checks. Repositories are mocked.
- */
 class TeamServiceTest {
 
     private val repo: TeamRepository = mock()
@@ -109,8 +105,6 @@ class TeamServiceTest {
         whenever(clubRepo.findActiveById(99L)).thenReturn(null)
         assertFailsWith<ClubNotFoundException> { service.listByClub(99L) }
     }
-
-    // -------------------------------------------------------------------------
 
     private fun club(id: Long) = Club(id = id, name = "Club $id", createdAt = OffsetDateTime.now())
 

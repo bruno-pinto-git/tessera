@@ -35,13 +35,11 @@ fun kickoffParts(iso: String?): KickoffParts? {
     }
 }
 
-/** "Sáb, 16/05 · 16:00" or fallback. */
 fun formatKickoffFull(iso: String?): String {
     val p = kickoffParts(iso) ?: return "Data por confirmar"
     return "${p.day}, ${p.date} · ${p.time}"
 }
 
-/** "16/05 16:00" or null. */
 fun formatShortDateTime(iso: String?): String? {
     val p = kickoffParts(iso) ?: return null
     return "${p.date} ${p.time}"
@@ -50,21 +48,18 @@ fun formatShortDateTime(iso: String?): String? {
 private val localDate = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 private val localTime = DateTimeFormatter.ofPattern("HH:mm")
 
-/** ISO instant -> local "yyyy-MM-dd". */
 fun isoToLocalDate(iso: String?): String = try {
     OffsetDateTime.parse(iso).atZoneSameInstant(ZoneId.systemDefault()).format(localDate)
 } catch (e: Exception) {
     ""
 }
 
-/** ISO instant -> local "HH:mm". */
 fun isoToLocalTime(iso: String?): String = try {
     OffsetDateTime.parse(iso).atZoneSameInstant(ZoneId.systemDefault()).format(localTime)
 } catch (e: Exception) {
     ""
 }
 
-/** Local date "yyyy-MM-dd" + time "HH:mm" -> ISO instant (UTC), or null if invalid. */
 fun localDateTimeToIso(date: String, time: String): String? = try {
     val t = if (time.length == 5) time else "00:00"
     LocalDateTime.parse("${date}T$t").atZone(ZoneId.systemDefault()).toInstant().toString()
@@ -72,10 +67,8 @@ fun localDateTimeToIso(date: String, time: String): String? = try {
     null
 }
 
-/** Price as pt-PT euros: 10,00 €. */
 fun formatEur(value: Double): String = String.format(Locale.US, "%.2f", value).replace('.', ',') + " €"
 
-/** Capacity with pt-PT thousands: "60.000 lugares". */
 fun formatCapacity(capacity: Int): String = String.format(PT, "%,d", capacity) + " lugares"
 
 fun prettyEventStatus(status: String): String = when (status) {
@@ -86,7 +79,6 @@ fun prettyEventStatus(status: String): String = when (status) {
     else -> status
 }
 
-// --- Crest helpers (iniciais + tom de cor, derivados do nome do clube) ---
 private val CREST_STOPWORDS = setOf(
     "fc", "sc", "ad", "cd", "gd", "ac", "ud", "af", "sad", "su",
     "de", "da", "do", "dos", "das", "e", "del",

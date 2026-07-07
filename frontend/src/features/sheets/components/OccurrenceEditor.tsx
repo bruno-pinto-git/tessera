@@ -21,7 +21,6 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : "Erro inesperado";
 }
 
-/** Records in-game occurrences (goals, cards, subs, fouls). */
 export function OccurrenceEditor({
   matchId,
   lineup,

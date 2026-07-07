@@ -68,6 +68,11 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:8000/events/{eventId}?stripe_ticket_id={id}}
       STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:8000/events/{eventId}?stripe_cancelled=1}
+      # Google Wallet ("Add to Google Wallet" on paid tickets). Issuer ID from
+      # pay.google.com/business/console; service account JSON key (Cloud
+      # Console > IAM > Service Accounts) Base64-encoded into one line.
+      GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
+      GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_BASE64: ${GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_BASE64:-}
       # match-service URL, used to resolve a match's home club when a club
       # manager opens a box office (scoped authorization in EventController).
       MATCH_SERVICE_URL: http://match-service:8082

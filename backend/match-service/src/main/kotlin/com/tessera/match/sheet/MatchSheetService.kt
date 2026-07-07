@@ -23,10 +23,6 @@ class MatchSheetService(
     private val publisher: MatchEventPublisher,
 ) {
 
-    /**
-     * Lazy fetch-or-create. Returns the sheet for the given match, creating
-     * an empty one if it does not yet exist.
-     */
     @Transactional
     fun getOrCreate(matchId: Long): MatchSheet {
         val match = matchRepo.findActiveById(matchId) ?: throw MatchNotFoundException(matchId)
@@ -43,25 +39,21 @@ class MatchSheetService(
         val player = playerRepo.findActiveById(req.playerId)
             ?: throw PlayerNotFoundException(req.playerId)
 
-        // Player's team must be one of the match's teams
         if (player.teamId != match.homeTeamId && player.teamId != match.awayTeamId) {
             throw IllegalArgumentException(
                 "Player ${player.id} (team ${player.teamId}) does not belong to match $matchId."
             )
         }
-        // Already in lineup?
         val existingId = LineupEntryId(matchSheetId = sheet.id, playerId = player.id)
         if (lineupRepo.findById(existingId).isPresent) {
             throw LineupConflictException("Player ${player.id} is already in the lineup.")
         }
-        // Shirt number unique per team within the sheet
         val shirt = req.shirtNumber ?: player.shirtNumber
         if (shirt != null && lineupRepo.existsBySheetTeamShirt(sheet.id, player.teamId, shirt)) {
             throw LineupConflictException(
                 "Shirt $shirt already assigned in this match for team ${player.teamId}."
             )
         }
-        // Enforce roster limits per role
         ensureRoleHasRoom(sheet.id, player.teamId, req.role)
 
         val entry = LineupEntry(
@@ -89,8 +81,6 @@ class MatchSheetService(
             entry.shirtNumber = newShirt
         }
         req.role?.let { newRole ->
-            // Moving SUBSTITUTE -> STARTER (or vice-versa) counts against the
-            // new role's budget. Same-role assignments are no-ops here.
             if (newRole != entry.role) {
                 ensureRoleHasRoom(sheet.id, entry.teamId, newRole)
             }
@@ -109,10 +99,6 @@ class MatchSheetService(
         lineupRepo.deleteById(key)
     }
 
-    // -------------------------------------------------------------------
-    //  Occurrences
-    // -------------------------------------------------------------------
-
     @Transactional(readOnly = true)
     fun listOccurrences(sheetId: Long): List<Occurrence> = occurrenceRepo.findBySheet(sheetId)
 
@@ -120,7 +106,6 @@ class MatchSheetService(
     fun addOccurrence(matchId: Long, req: OccurrenceCreateRequest): Occurrence {
         val (sheet, _) = lockedAwareSheet(matchId)
 
-        // The author player must be in the lineup of this sheet
         val authorEntry = lineupRepo.findById(LineupEntryId(sheet.id, req.playerId))
             .orElseThrow {
                 IllegalArgumentException(
@@ -128,12 +113,10 @@ class MatchSheetService(
                 )
             }
 
-        // A player sent off (RED_CARD) cannot author further occurrences.
         if (occurrenceRepo.playerHasRedCard(sheet.id, req.playerId)) {
             throw PlayerSentOffException(req.playerId)
         }
 
-        // SUBSTITUTION rules
         when (req.type) {
             OccurrenceType.SUBSTITUTION -> {
                 val replacedId = req.replacedPlayerId
@@ -156,7 +139,6 @@ class MatchSheetService(
                         "Both players in a substitution must belong to the same team."
                     )
                 }
-                // Max 5 substitutions per team per match (FIFA rule).
                 val used = occurrenceRepo.countBySheetTeamType(
                     sheet.id, authorEntry.teamId, OccurrenceType.SUBSTITUTION,
                 )
@@ -191,17 +173,11 @@ class MatchSheetService(
             OccurrenceNotFoundException(matchId, occId)
         }
         if (occ.matchSheetId != sheet.id) {
-            // Defensive: occ exists but belongs to a different sheet
             throw OccurrenceNotFoundException(matchId, occId)
         }
         occurrenceRepo.delete(occ)
     }
 
-    // -------------------------------------------------------------------
-    //  Lock / Unlock
-    // -------------------------------------------------------------------
-
-    /** Manual lock by staff/admin. Idempotent. */
     @Transactional
     fun lock(matchId: Long): MatchSheet {
         val match = matchRepo.findActiveById(matchId) ?: throw MatchNotFoundException(matchId)
@@ -211,13 +187,10 @@ class MatchSheetService(
             sheet.locked = true
             sheet.lockedAt = OffsetDateTime.now()
         }
-        // Publish AFTER the transaction commits — otherwise the consumer
-        // could race ahead and see the old DB state.
         publishOnCommit(sheet)
         return sheet
     }
 
-    /** Manual unlock by admin. Idempotent. */
     @Transactional
     fun unlock(matchId: Long): MatchSheet {
         val match = matchRepo.findActiveById(matchId) ?: throw MatchNotFoundException(matchId)
@@ -226,8 +199,6 @@ class MatchSheetService(
         if (sheet.locked) {
             sheet.locked = false
             sheet.lockedAt = null
-            // Reopening retracts the published snapshot from the read-side; a
-            // later lock re-publishes match.sheet.closed and rebuilds it.
             publishReopenOnCommit(match.id)
         }
         return sheet
@@ -247,10 +218,6 @@ class MatchSheetService(
         }
     }
 
-    /**
-     * Auto-lock hook called by MatchService when a match transitions into a
-     * terminal status. Silent no-op if the sheet does not exist yet.
-     */
     @Transactional
     fun autoLockIfPresent(matchId: Long) {
         val sheet = sheetRepo.findByMatchId(matchId) ?: return
@@ -261,12 +228,6 @@ class MatchSheetService(
         publishOnCommit(sheet)
     }
 
-    /**
-     * Registers a transaction-synchronization that publishes the
-     * MatchSheetClosed event after the current transaction commits. This
-     * prevents the consumer from seeing a snapshot that the producer hasn't
-     * persisted yet.
-     */
     private fun publishOnCommit(sheet: MatchSheet) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(
@@ -281,16 +242,6 @@ class MatchSheetService(
         }
     }
 
-    // -------------------------------------------------------------------
-    //  Business rules
-    // -------------------------------------------------------------------
-
-    /**
-     * Enforces roster limits per role on a team:
-     *   - max 11 STARTERs (the number that can be on the pitch)
-     *   - max 12 SUBSTITUTEs (typical professional bench)
-     * Throws LineupRoleLimitException with status 409 if the limit is reached.
-     */
     private fun ensureRoleHasRoom(sheetId: Long, teamId: Long, role: LineupRole) {
         val limit = when (role) {
             LineupRole.STARTER    -> MAX_STARTERS_PER_TEAM
@@ -302,11 +253,6 @@ class MatchSheetService(
         }
     }
 
-    /**
-     * Returns (sheet, match) and validates that the sheet is editable:
-     *   - sheet not locked
-     *   - match status ∈ {SCHEDULED, LIVE}
-     */
     private fun lockedAwareSheet(matchId: Long): Pair<MatchSheet, Match> {
         val match = matchRepo.findActiveById(matchId) ?: throw MatchNotFoundException(matchId)
         val sheet = sheetRepo.findByMatchId(matchId)
@@ -321,13 +267,10 @@ class MatchSheetService(
     companion object {
         private val EDITABLE_STATUSES = setOf(MatchStatus.SCHEDULED, MatchStatus.LIVE)
 
-        /** Max players on the pitch per team. */
         const val MAX_STARTERS_PER_TEAM = 11
 
-        /** Bench limit per team (typical professional benches hold ~7–12). */
         const val MAX_SUBSTITUTES_PER_TEAM = 12
 
-        /** FIFA-style cap on substitutions used per team per match. */
         const val MAX_SUBSTITUTIONS_PER_TEAM = 5L
     }
 }
@@ -346,14 +289,11 @@ class SheetNotEditableException(matchId: Long, status: MatchStatus)
 class OccurrenceNotFoundException(matchId: Long, occId: Long)
     : RuntimeException("Occurrence $occId not found in match $matchId.")
 
-/** Roster limit hit when adding/upgrading a lineup entry. */
 class LineupRoleLimitException(val role: LineupRole, val teamId: Long, val limit: Int)
     : RuntimeException("Team $teamId already has the maximum of $limit $role players on this sheet.")
 
-/** Team has used all the substitutions allowed per match. */
 class TooManySubstitutionsException(val teamId: Long, val limit: Long)
     : RuntimeException("Team $teamId has reached the maximum of $limit substitutions for this match.")
 
-/** Player previously sent off (RED_CARD) cannot be the author of further occurrences. */
 class PlayerSentOffException(val playerId: Long)
     : RuntimeException("Player $playerId has been sent off and cannot record further occurrences.")

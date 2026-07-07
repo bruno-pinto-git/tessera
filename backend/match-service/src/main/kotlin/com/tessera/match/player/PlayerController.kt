@@ -16,8 +16,6 @@ class PlayerController(
     private val service: PlayerService,
 ) {
 
-    // ----- Collection (nested under team) -----
-
     @GetMapping("/teams/{teamId}/players")
     fun listByTeam(
         @PathVariable teamId: Long,
@@ -33,11 +31,6 @@ class PlayerController(
         )
     }
 
-    /**
-     * Lists all active players across all active teams of the given club.
-     * Useful for screens that show a club's full squad without exposing the
-     * team structure.
-     */
     @GetMapping("/clubs/{clubId}/players")
     fun listByClub(
         @PathVariable clubId: Long,
@@ -65,8 +58,6 @@ class PlayerController(
             .toUri()
         return ResponseEntity.created(location).body(player.toResponse())
     }
-
-    // ----- Item (flat path) -----
 
     @GetMapping("/players/{id}")
     fun get(@PathVariable id: Long): PlayerResponse =

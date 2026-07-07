@@ -5,16 +5,6 @@ import { PastTicketRow } from "../components/PastTicketRow";
 import { useMyTickets } from "../hooks/useMyTickets";
 import { cn } from "@/lib/utils";
 
-/**
- * "Os meus bilhetes" — grouped by status. Three sections:
- *
- *  - Prontos a usar (PAID) — large QR + perforated stub
- *  - Aguarda pagamento (PENDING) — "concluir pagamento" CTA
- *  - Histórico (VALIDATED) — rows, faded
- *
- * Data comes from `listMyTickets()` enriched with the related event / match /
- * club / venue, partitioned by status (see `useMyTickets`).
- */
 export function MyTicketsPage() {
   const { paid, pending, past, loading, error } = useMyTickets();
 

@@ -5,7 +5,6 @@ import java.io.Serializable
 
 enum class LineupRole { STARTER, SUBSTITUTE }
 
-/** Composite primary key: (match_sheet_id, player_id). */
 @Embeddable
 data class LineupEntryId(
     @Column(name = "match_sheet_id")

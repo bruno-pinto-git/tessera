@@ -25,7 +25,6 @@ const ROLE_LABELS: Record<string, string> = {
   fan: "Adepto",
 };
 
-/** Most-significant app role for the user, rendered as a single badge. */
 function RoleBadge({ roles }: { roles: string[] }) {
   const order = ["platform-admin", "staff", "club-manager", "fan"];
   const top = order.find((r) => roles.includes(r));

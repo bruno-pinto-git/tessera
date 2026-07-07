@@ -18,11 +18,6 @@ interface ForcePasswordResetDialogProps {
   onDone: () => void;
 }
 
-/**
- * Confirmation for forcing a password change on next login. Adds the
- * Keycloak `UPDATE_PASSWORD` required action to the user — they keep their
- * current password until they log in, then must choose a new one.
- */
 export function ForcePasswordResetDialog({
   open,
   onOpenChange,

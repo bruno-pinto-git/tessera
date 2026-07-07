@@ -1,11 +1,5 @@
 import { cn } from "@/lib/utils";
 
-/**
- * Renders a status pill with the design-system semantic colour and the
- * Portuguese user-facing label for each backend enum value. Use this
- * everywhere a ticket / match status appears so the visual treatment
- * stays consistent.
- */
 type DomainStatus =
   | "PENDING"
   | "PAID"

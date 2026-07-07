@@ -9,19 +9,13 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
-/**
- * AMQP setup for ticket-service as a *producer*. We declare the shared
- * `tessera.events` topic exchange so it exists when the first message is
- * published, regardless of which service starts first. Consumers declare
- * their own queues bound to this exchange.
- */
 @Configuration
 class RabbitConfig {
 
     @Bean
     fun eventsExchange(
         @Value("\${tessera.events.exchange}") name: String,
-    ): TopicExchange = TopicExchange(name, /* durable */ true, /* autoDelete */ false)
+    ): TopicExchange = TopicExchange(name, true, false)
 
     @Bean
     fun jacksonMessageConverter(mapper: ObjectMapper): Jackson2JsonMessageConverter =
