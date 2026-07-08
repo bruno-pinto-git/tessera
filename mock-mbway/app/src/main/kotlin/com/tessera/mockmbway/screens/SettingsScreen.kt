@@ -89,7 +89,7 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.error,
             )
             viewModel.saved -> Text(
-                text = stringResource(R.string.settings_resolve_ok, RelayConfig.baseUrl),
+                text = stringResource(R.string.settings_resolve_ok, "${RelayConfig.baseUrl}/api/v1"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

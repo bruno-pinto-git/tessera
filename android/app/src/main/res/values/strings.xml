@@ -272,9 +272,9 @@
     <string name="menu_logout">Terminar sessão</string>
 
     <string name="settings_title">Configuração do servidor</string>
-    <string name="settings_help">Introduz o IP do servidor local (ex: ipconfig no PC) ou o endereço do servidor publicado — a app deteta sozinha qual dos dois é.</string>
-    <string name="settings_host_label">Endereço do servidor</string>
-    <string name="settings_host_hint">ex: 192.168.43.5 ou tessera.exemplo.com</string>
+    <string name="settings_help">Introduz o IP do servidor local (ex: ipconfig no PC) — só para desenvolvimento/demo na mesma rede. O servidor publicado é detetado automaticamente, não precisas de o configurar aqui.</string>
+    <string name="settings_host_label">IP do servidor local</string>
+    <string name="settings_host_hint">ex: 192.168.43.5</string>
     <string name="settings_save">Guardar</string>
     <string name="settings_saved">Configuração guardada.</string>
     <string name="settings_back">Voltar</string>

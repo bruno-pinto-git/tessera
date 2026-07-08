@@ -67,11 +67,13 @@ fun WelcomeScreen(onContinue: () -> Unit) {
         onContinue()
     }
 
-    // Runs alongside the splash timing above, not blocking it — by the time the
-    // user reaches a screen that needs the network, ServerConfig.mode should
-    // already be resolved (or the app falls back to the local-style guess).
+    // Fire-and-forget: this screen navigates itself away (and cancels its own
+    // LaunchedEffects) after a fixed delay that can be shorter than the probe
+    // takes, so the resolve itself runs in ServerConfig's own scope instead of
+    // this one — otherwise it can get cancelled mid-probe before ever
+    // resolving, permanently stranding mode at UNKNOWN for the session.
     LaunchedEffect(Unit) {
-        ServerConfig.resolveMode()
+        ServerConfig.resolveModeInBackground()
     }
 
     Column(

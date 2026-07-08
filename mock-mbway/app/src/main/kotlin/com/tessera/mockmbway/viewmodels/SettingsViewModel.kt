@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    var host by mutableStateOf(RelayConfig.host)
+    var host by mutableStateOf(RelayConfig.localHost)
         private set
 
     var secret by mutableStateOf(RelayConfig.secret)
@@ -39,7 +39,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun save() {
         RelayConfig.update(getApplication(), host, secret)
-        host = RelayConfig.host
+        host = RelayConfig.localHost
         secret = RelayConfig.secret
         viewModelScope.launch {
             resolving = true

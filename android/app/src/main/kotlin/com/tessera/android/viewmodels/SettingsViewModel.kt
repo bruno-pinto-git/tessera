@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    var host by mutableStateOf(ServerConfig.host)
+    var host by mutableStateOf(ServerConfig.localHost)
         private set
 
     var saved by mutableStateOf(false)
@@ -30,7 +30,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun save() {
         ServerConfig.update(getApplication(), host)
-        host = ServerConfig.host
+        host = ServerConfig.localHost
         viewModelScope.launch {
             resolving = true
             resolvedMode = ServerConfig.resolveMode()
