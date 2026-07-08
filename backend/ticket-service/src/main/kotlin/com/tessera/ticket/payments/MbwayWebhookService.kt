@@ -12,18 +12,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
-/**
- * Processes MB WAY gateway callbacks.
- *
- * State transitions:
- *   - paymentStatus="Success"  → PENDING ticket becomes PAID + publishes
- *                                ticket.ticket.paid (post-commit)
- *   - paymentStatus="Declined" → no-op; ticket stays PENDING, user can retry
- *   - paymentStatus="Expired"  → no-op; ticket stays PENDING, user can retry
- *
- * Idempotent: if the ticket is already PAID/VALIDATED when the webhook
- * arrives, the call is a no-op (defends against duplicate gateway deliveries).
- */
 @Service
 class MbwayWebhookService(
     private val ticketRepository: TicketRepository,

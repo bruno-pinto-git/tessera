@@ -13,7 +13,6 @@ class PaymentsViewModel : ViewModel() {
 
     val pending = PendingPaymentsState.pending
     val history = PendingPaymentsState.history
-    val serverEndpoint = PendingPaymentsState.serverEndpoint
 
     fun accept(payment: PendingPayment) = resolve(payment, Resolution.ACCEPTED)
     fun decline(payment: PendingPayment) = resolve(payment, Resolution.DECLINED)

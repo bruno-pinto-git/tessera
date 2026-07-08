@@ -19,10 +19,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.hamcrest.Matchers.nullValue
 import java.math.BigDecimal
 
-/**
- * RBAC web tests for [SalesController] — the sales/revenue reports are
- * platform-admin only (they expose figures not for public consumption).
- */
 @WebMvcTest(SalesController::class)
 @Import(SecurityConfig::class)
 class SalesControllerSecurityTest {
@@ -63,17 +59,12 @@ class SalesControllerSecurityTest {
         mvc.perform(get("/api/v1/stats/sales/by-match/5").with(admin())).andExpect(status().isOk)
     }
 
-    // ---- by-club: admin OR the club's own manager ----
-
-    /** A token carrying the realm `roles` claim (consumed by isPlatformAdmin). */
     private fun withRoles(vararg roles: String) =
         jwt().jwt { it.claim("roles", roles.toList()) }
 
-    /** A token whose `groups` claim makes the holder a MANAGER of [clubId]. */
     private fun managerOf(clubId: Long) =
         jwt().jwt { it.claim("groups", listOf("/clubs/$clubId/managers")) }
 
-    /** A token whose `groups` claim makes the holder STAFF of [clubId]. */
     private fun staffOf(clubId: Long) =
         jwt().jwt { it.claim("groups", listOf("/clubs/$clubId/staff")) }
 
@@ -118,7 +109,7 @@ class SalesControllerSecurityTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.sold").value(7))
             .andExpect(jsonPath("$.validated").value(4))
-            .andExpect(jsonPath("$.revenue").value(nullValue()))   // hidden from staff
+            .andExpect(jsonPath("$.revenue").value(nullValue()))
     }
 
     @Test

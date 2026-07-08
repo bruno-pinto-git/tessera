@@ -19,9 +19,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -35,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.mockmbway.R
 import com.tessera.mockmbway.shared.PendingPayment
+import com.tessera.mockmbway.shared.RelayConfig
 import com.tessera.mockmbway.shared.Resolution
 import com.tessera.mockmbway.shared.ResolvedPayment
 import com.tessera.mockmbway.ui.theme.Neutral500
@@ -43,10 +46,9 @@ import com.tessera.mockmbway.ui.theme.TesseraForest
 import com.tessera.mockmbway.viewmodels.PaymentsViewModel
 
 @Composable
-fun PaymentsScreen(viewModel: PaymentsViewModel = viewModel()) {
+fun PaymentsScreen(onOpenSettings: () -> Unit = {}, viewModel: PaymentsViewModel = viewModel()) {
     val pending = viewModel.pending
     val history = viewModel.history
-    val endpoint = viewModel.serverEndpoint.value
 
     Column(
         modifier = Modifier
@@ -54,7 +56,7 @@ fun PaymentsScreen(viewModel: PaymentsViewModel = viewModel()) {
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 20.dp, vertical = 24.dp),
     ) {
-        Header(endpoint = endpoint)
+        Header(onOpenSettings = onOpenSettings)
         Spacer(Modifier.height(20.dp))
 
         LazyColumn(
@@ -85,36 +87,46 @@ fun PaymentsScreen(viewModel: PaymentsViewModel = viewModel()) {
 }
 
 @Composable
-private fun Header(endpoint: String?) {
-    Column {
-        Text(
-            text = stringResource(R.string.header_eyebrow).uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.header_title),
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        if (!endpoint.isNullOrBlank()) {
+private fun Header(onOpenSettings: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.header_eyebrow).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.header_title),
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
             Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(R.string.server_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.size(6.dp))
-                Text(
-                    text = endpoint,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
+            ConnectionStatus()
+        }
+        IconButton(onClick = onOpenSettings) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.settings_title),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
+}
+
+@Composable
+private fun ConnectionStatus() {
+    val connected = RelayConfig.mode != RelayConfig.Mode.UNKNOWN && RelayConfig.lastPollOk != false
+    val label = when {
+        RelayConfig.mode == RelayConfig.Mode.UNKNOWN -> stringResource(R.string.status_not_connected)
+        RelayConfig.lastPollOk == false -> stringResource(R.string.status_lost, RelayConfig.host)
+        else -> stringResource(R.string.status_connected, RelayConfig.host)
+    }
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        color = if (connected) TesseraForest else StatusInvalid,
+    )
 }
 
 @Composable

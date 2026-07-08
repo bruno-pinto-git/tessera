@@ -5,9 +5,7 @@ import androidx.compose.ui.graphics.Color
 val TesseraForest = Color(0xFF2E7D40)
 val TesseraForestSoft = Color(0xFFE6F2E8)
 
-// Glass palette (variante #9) — tema escuro esverdeado
 val GlassBg = Color(0xFF0E1F17)
-// Esquema Warm Paper (#15) — tema claro
 val GlassBgLight = Color(0xFFF7F3EC)
 val GlassInk = Color(0xFF1C1917)
 val GlassInkMuted = Color(0xFF78716C)
@@ -38,7 +36,6 @@ val StatusUsedSoft = Color(0xFFFFEDD5)
 val StatusNetwork = Color(0xFF64748B)
 val StatusNetworkSoft = Color(0xFFE2E8F0)
 
-// Tons de emblema (crest) — círculos coloridos com iniciais do clube
 val CrestForest = Color(0xFF2E7D40)
 val CrestOxblood = Color(0xFF8C2F39)
 val CrestNavy = Color(0xFF2D4A7A)

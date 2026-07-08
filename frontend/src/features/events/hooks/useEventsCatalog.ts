@@ -13,15 +13,6 @@ interface UseCatalogResult {
   refetch: () => void;
 }
 
-/**
- * Loads PUBLISHED events from ticket-service, then hydrates each with its
- * match (kickoff, teams, venue) and the club / venue / team caches it
- * needs to render. Returns flat `CatalogEntry`s consumed directly by the
- * EventsPage card grid.
- *
- * Filtering is client-side because the backend doesn't (yet) accept a
- * `status` query param on `/events`. Cheap for academic-scale data.
- */
 export function useEventsCatalog(): UseCatalogResult {
   const [entries, setEntries] = useState<CatalogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +24,6 @@ export function useEventsCatalog(): UseCatalogResult {
 
     const run = async () => {
       try {
-        // 1. Bootstrap caches + event list in parallel.
         const [eventsPage, clubsPage, venuesPage] = await Promise.all([
           listEvents({ size: 100 }),
           listClubs({ size: 200 }),
@@ -44,18 +34,15 @@ export function useEventsCatalog(): UseCatalogResult {
         const clubMap = new Map<number, Club>(clubsPage.content.map((c) => [c.id, c]));
         const venueMap = new Map<number, Venue>(venuesPage.content.map((v) => [v.id, v]));
 
-        // 2. Keep only events with a linked match and status PUBLISHED.
         const published = eventsPage.content.filter(
           (e) => e.status === "PUBLISHED" && e.matchId != null,
         );
 
-        // 3. Fetch all matches in parallel.
         const matchResults = await Promise.allSettled(
           published.map((e) => getMatch(e.matchId as number)),
         );
         if (cancelled) return;
 
-        // 4. Collect unique team ids referenced by the matches, fetch in parallel.
         const teamIds = new Set<number>();
         matchResults.forEach((r) => {
           if (r.status === "fulfilled") {
@@ -71,13 +58,9 @@ export function useEventsCatalog(): UseCatalogResult {
           teamPairs.flatMap((r) => (r.status === "fulfilled" ? [r.value] : [])),
         );
 
-        // 5. Stitch.
         const built: CatalogEntry[] = published.flatMap((event, i) => {
           const matchRes = matchResults[i];
           const match: Match | null = matchRes.status === "fulfilled" ? matchRes.value : null;
-          // The event points at a match that no longer resolves (e.g. the admin
-          // deleted it) — hide it from the catalog instead of rendering a
-          // nameless "Casa vs Visitante" card.
           if (match == null) return [];
           const homeTeam = match ? (teamMap.get(match.homeTeamId) ?? null) : null;
           const awayTeam = match ? (teamMap.get(match.awayTeamId) ?? null) : null;
@@ -98,7 +81,6 @@ export function useEventsCatalog(): UseCatalogResult {
           })];
         });
 
-        // 6. Sort by kickoff ascending (upcoming first), with no-kickoff at the end.
         built.sort((a, b) => {
           if (a.kickoffAt == null) return 1;
           if (b.kickoffAt == null) return -1;
@@ -133,13 +115,6 @@ export function useEventsCatalog(): UseCatalogResult {
   };
 }
 
-// -----------------------------------------------------------------------------
-
-/**
- * Single-event variant for `EventDetailPage`. Same join, but scoped to one
- * event id. Returns `null` while loading or if the event doesn't exist
- * (the caller renders 404).
- */
 export function useEventCatalog(eventId: number) {
   const [entry, setEntry] = useState<CatalogEntry | null>(null);
   const [loading, setLoading] = useState(true);
@@ -160,8 +135,6 @@ export function useEventCatalog(eventId: number) {
           event.matchId != null ? await getMatch(event.matchId).catch(() => null) : null;
         if (cancelled) return;
 
-        // The event points at a match that no longer exists (deleted) — treat the
-        // page as not-found rather than rendering a nameless, still-buyable event.
         if (event.matchId != null && match == null) {
           setNotFound(true);
           return;
@@ -209,7 +182,6 @@ export function useEventCatalog(eventId: number) {
         setError(null);
       } catch (err) {
         if (cancelled) return;
-        // 404 from the event lookup means the id doesn't exist.
         const status = (err as { status?: number })?.status;
         if (status === 404) {
           setNotFound(true);

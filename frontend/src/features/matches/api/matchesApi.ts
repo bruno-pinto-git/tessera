@@ -1,11 +1,6 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/api/client";
 import type { components } from "@/api/schema.gen";
 
-/**
- * The match payload as returned by the API. The generated schema is not yet
- * regenerated to include `homeClubId`/`awayClubId`, but the backend returns
- * them (nullable), so we widen the type here.
- */
 export type Match = components["schemas"]["Match"] & {
   homeClubId: number | null;
   awayClubId: number | null;

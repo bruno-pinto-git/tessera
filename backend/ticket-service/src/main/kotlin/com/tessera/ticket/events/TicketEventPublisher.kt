@@ -9,16 +9,6 @@ import org.springframework.stereotype.Component
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
-/**
- * Publishes ticket domain events.
- *
- * Called from inside service-layer transactions via `publishOnCommit`
- * so the broker only sees the event after the DB write commits — this
- * guarantees statistics-service never builds a sale row for a ticket
- * whose payment rolled back.
- *
- * Routing keys follow `docs/events/async-contracts.md`.
- */
 @Component
 class TicketEventPublisher(
     private val rabbit: RabbitTemplate,
@@ -38,9 +28,6 @@ class TicketEventPublisher(
             ticketId      = ticket.id,
             eventId       = ev.id,
             matchId       = ev.matchId,
-            // Prefer the home club snapshotted on the event when the box office
-            // was opened; only fall back to a match-service lookup for legacy
-            // events created before that snapshot existed.
             homeClubId    = ev.homeClubId ?: ev.matchId?.let { matchLookup.homeClubId(it) },
             price         = ticket.price,
             paymentMethod = ticket.paymentMethod,

@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tessera.android.R
+import com.tessera.android.shared.ServerConfig
 import com.tessera.android.ui.theme.GlassInkMuted
 import kotlinx.coroutines.delay
 
@@ -64,6 +65,13 @@ fun WelcomeScreen(onContinue: () -> Unit) {
         leaving = true
         delay(FADE_OUT_MS.toLong())
         onContinue()
+    }
+
+    // Runs alongside the splash timing above, not blocking it — by the time the
+    // user reaches a screen that needs the network, ServerConfig.mode should
+    // already be resolved (or the app falls back to the local-style guess).
+    LaunchedEffect(Unit) {
+        ServerConfig.resolveMode()
     }
 
     Column(

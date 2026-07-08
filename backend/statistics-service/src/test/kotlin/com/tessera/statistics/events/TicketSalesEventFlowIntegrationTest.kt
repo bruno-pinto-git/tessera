@@ -18,15 +18,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
-/**
- * End-to-end integration test of the asynchronous read-side seam: a domain
- * event published to the real RabbitMQ exchange is routed to the consumer's
- * queue, deserialized, and projected into the Postgres read-side — none of
- * which the mocked EventConsumerTest exercises.
- *
- * Boots the full statistics-service context against Testcontainers Postgres
- * (Flyway-managed schema) + RabbitMQ.
- */
 @Tag("integration")
 @SpringBootTest
 @Testcontainers
@@ -105,8 +96,6 @@ class TicketSalesEventFlowIntegrationTest {
         assertNotNull(stamped.validatedAt)
     }
 
-    // Poll the read-side until the projection catches up (the consumer runs
-    // asynchronously on its own thread/transaction).
     private fun awaitSale(ticketId: Long): TicketSale = awaitCondition(ticketId) { true }
 
     private fun awaitCondition(ticketId: Long, predicate: (TicketSale) -> Boolean): TicketSale {

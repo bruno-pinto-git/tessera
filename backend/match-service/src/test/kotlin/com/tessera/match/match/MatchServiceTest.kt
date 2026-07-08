@@ -18,11 +18,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/**
- * Unit tests for [MatchService]. Repositories and the (lazy) sheet service are
- * mocked — the focus is the create validation and the match status state
- * machine, mirroring the scenarios in docs/http-tests/05-matches.http.
- */
 class MatchServiceTest {
 
     private val repo: MatchRepository = mock()
@@ -31,8 +26,6 @@ class MatchServiceTest {
     private val sheetService: MatchSheetService = mock()
 
     private val service = MatchService(repo, teamRepo, venueRepo, sheetService)
-
-    // ----- create -------------------------------------------------------------
 
     @Test
     fun `create rejects identical home and away team`() {
@@ -77,8 +70,6 @@ class MatchServiceTest {
         verify(repo).save(any())
     }
 
-    // ----- update: status state machine ---------------------------------------
-
     @Test
     fun `valid transition scheduled to live is applied`() {
         val match = match(id = 5L, status = MatchStatus.SCHEDULED)
@@ -114,8 +105,6 @@ class MatchServiceTest {
         val match = match(id = 5L, status = MatchStatus.FINISHED, homeScore = 1, awayScore = 0)
         whenever(repo.findActiveById(5L)).thenReturn(match)
 
-        // FINISHED -> FINISHED would be illegal as a transition, but the service
-        // skips the check when the status is unchanged.
         val updated = service.update(5L, MatchUpdateRequest(status = MatchStatus.FINISHED))
         assertEquals(MatchStatus.FINISHED, updated.status)
     }
@@ -172,8 +161,6 @@ class MatchServiceTest {
         }
     }
 
-    // ----- delete / get -------------------------------------------------------
-
     @Test
     fun `delete soft-deletes the match`() {
         val match = match(id = 5L, status = MatchStatus.SCHEDULED)
@@ -189,10 +176,6 @@ class MatchServiceTest {
         whenever(repo.findActiveById(404L)).thenReturn(null)
         assertFailsWith<MatchNotFoundException> { service.get(404L) }
     }
-
-    // -------------------------------------------------------------------------
-    // Fixtures
-    // -------------------------------------------------------------------------
 
     private fun createReq(home: Long, away: Long, venueId: Long? = null) = MatchCreateRequest(
         homeTeamId = home,

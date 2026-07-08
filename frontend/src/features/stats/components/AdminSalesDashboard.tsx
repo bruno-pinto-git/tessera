@@ -16,7 +16,6 @@ import { useDailyRevenue, useSalesSummary } from "../hooks/useStats";
 import { CHART, formatRate, formatRevenue } from "./statsFormat";
 import { StatCard } from "./StatCard";
 
-/** Platform-admin view: global sales KPIs + revenue trend + sold/validated. */
 export function AdminSalesDashboard() {
   const summary = useSalesSummary();
   const daily = useDailyRevenue(7);

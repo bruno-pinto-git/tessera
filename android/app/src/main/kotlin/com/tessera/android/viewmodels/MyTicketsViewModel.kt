@@ -1,6 +1,7 @@
 package com.tessera.android.viewmodels
 
 import android.app.Application
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -37,8 +38,28 @@ class MyTicketsViewModel(application: Application) : AndroidViewModel(applicatio
     var state by mutableStateOf<MyTicketsState>(MyTicketsState.Loading)
         private set
 
-    init {
-        load()
+    var walletLoadingId by mutableStateOf<Long?>(null)
+        private set
+
+    fun addToWallet(v: TicketView, onResult: (String?) -> Unit) {
+        val e = v.entry
+        viewModelScope.launch {
+            walletLoadingId = v.ticket.id
+            val url = try {
+                tickets.walletSaveUrl(
+                    id = v.ticket.id,
+                    eventTitle = e?.let { "${it.homeShort} vs ${it.awayShort}" } ?: v.ticket.code,
+                    venue = e?.venueName,
+                    kickoffAt = e?.kickoffAt,
+                    tierLabel = if (v.supporter) "Sócio" else "Normal",
+                )
+            } catch (ex: Exception) {
+                Log.e("MyTicketsViewModel", "addToWallet() failed", ex)
+                null
+            }
+            walletLoadingId = null
+            onResult(url)
+        }
     }
 
     fun load() {

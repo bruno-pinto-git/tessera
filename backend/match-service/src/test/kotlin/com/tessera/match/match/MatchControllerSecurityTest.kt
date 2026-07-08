@@ -21,11 +21,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.OffsetDateTime
 
-/**
- * RBAC web tests for [MatchController]. Writes are gated by the club-scoped
- * `@clubAuthz` bean (canManageTeam for create, canManageMatch for update/delete).
- * Mirrors docs/http-tests/99-rbac-checks.http for /matches.
- */
 @WebMvcTest(MatchController::class)
 @Import(SecurityConfig::class)
 class MatchControllerSecurityTest {
@@ -35,7 +30,6 @@ class MatchControllerSecurityTest {
     @MockitoBean private lateinit var service: MatchService
     @MockitoBean private lateinit var jwtDecoder: JwtDecoder
 
-    // The @PreAuthorize SpEL resolves a bean literally named "clubAuthz".
     @MockitoBean(name = "clubAuthz") private lateinit var clubAuthz: ClubAuthorizationService
 
     private val createBody = """{"homeTeamId":1,"awayTeamId":2,"kickoffAt":"2026-12-15T20:00:00Z"}"""

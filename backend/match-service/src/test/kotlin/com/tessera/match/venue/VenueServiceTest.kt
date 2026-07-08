@@ -14,10 +14,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/**
- * Unit tests for [VenueService] — name-uniqueness rules and CRUD validation.
- * The repository is mocked.
- */
 class VenueServiceTest {
 
     private val repo: VenueRepository = mock()
@@ -95,8 +91,6 @@ class VenueServiceTest {
         whenever(repo.findActiveByNameLike("Alva", Pageable.unpaged())).thenReturn(page)
         assertEquals(1, service.list("Alva", Pageable.unpaged()).totalElements.toInt())
     }
-
-    // -------------------------------------------------------------------------
 
     private fun venue(id: Long, name: String) =
         Venue(id = id, name = name, capacity = 50000, createdAt = OffsetDateTime.now())

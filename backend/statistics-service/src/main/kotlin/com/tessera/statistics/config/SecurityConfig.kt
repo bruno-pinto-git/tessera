@@ -20,11 +20,6 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
 
-/**
- * Stateless OAuth2 resource server.
- * Read endpoints under /api/v1/stats are public; the few admin-only stats
- * (e.g. sales summaries) are guarded via @PreAuthorize on the controller.
- */
 @Configuration
 @EnableMethodSecurity
 class SecurityConfig(
@@ -35,12 +30,10 @@ class SecurityConfig(
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
-            .cors { /* keep CorsConfig */ }
+            .cors { }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // Reads on match-sheet history are public (fans browsing history).
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/stats/match-sheets/**").permitAll()
-                // Sales endpoints are admin-only — declared via @PreAuthorize.
                 auth.anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth ->

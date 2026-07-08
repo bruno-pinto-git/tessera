@@ -20,7 +20,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.OffsetDateTime
 
-/** RBAC web tests for [PlayerController] (club-scoped via @clubAuthz). */
 @WebMvcTest(PlayerController::class)
 @Import(SecurityConfig::class)
 class PlayerControllerSecurityTest {

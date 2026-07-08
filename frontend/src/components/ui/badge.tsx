@@ -11,7 +11,6 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         destructive: "border-transparent bg-destructive text-destructive-foreground shadow",
         outline: "text-foreground",
-        // Semantic variants tied to domain status colours.
         pending: "border-transparent bg-status-pending/15 text-status-pending",
         paid: "border-transparent bg-status-paid/15 text-status-paid",
         validated: "border-transparent bg-status-validated/15 text-status-validated",

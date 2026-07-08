@@ -35,10 +35,6 @@ class ClubService(
             foundedYear = req.foundedYear,
             crestUrl = req.crestUrl,
         )
-        // Save first to obtain the DB-assigned id, then provision the
-        // Keycloak groups. If Keycloak fails, the @Transactional rollback
-        // un-persists the club and the caller gets a 5xx — keeps the two
-        // sides in sync without a transactional outbox.
         val saved = repo.save(club)
         try {
             keycloakGroups.ensureClubGroups(saved.id)
@@ -52,9 +48,6 @@ class ClubService(
     @Transactional
     fun update(id: Long, req: ClubUpdateRequest): Club {
         val club = repo.findActiveById(id) ?: throw ClubNotFoundException(id)
-        // Kotlin nullable params can't distinguish "omitted" from "explicit null"
-        // without JsonNullable. PATCH semantics here: null/missing = leave alone.
-        // To clear a value, send DELETE or use a future PUT endpoint.
         req.name?.let { newName ->
             val trimmed = newName.trim()
             if (!trimmed.equals(club.name, ignoreCase = true) &&
@@ -71,10 +64,6 @@ class ClubService(
     @Transactional
     fun delete(id: Long) {
         val club = repo.findActiveById(id) ?: throw ClubNotFoundException(id)
-        // Soft delete only — the Keycloak groups are intentionally left in
-        // place so memberships are preserved if the club is later restored.
-        // On a hard delete the caller should also call
-        // `keycloakGroups.deleteClubGroups(id)` to clean up.
         club.deletedAt = OffsetDateTime.now()
     }
 }

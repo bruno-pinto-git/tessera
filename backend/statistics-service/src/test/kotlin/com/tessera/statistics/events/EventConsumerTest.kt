@@ -19,12 +19,6 @@ import java.time.OffsetDateTime
 import java.util.Optional
 import kotlin.test.assertEquals
 
-/**
- * Unit tests for [EventConsumer] — the read-side projection built from RabbitMQ
- * events. Focus on idempotency (delete-then-reinsert) and out-of-order
- * resilience (a validated event before its paid event is dropped). Repositories
- * are mocked; no broker or DB is involved.
- */
 class EventConsumerTest {
 
     private val summaryRepo: MatchSummaryRepository = mock()
@@ -40,11 +34,9 @@ class EventConsumerTest {
     fun `match sheet closed wipes prior snapshots then re-inserts`() {
         consumer.onMatchSheetClosed(matchSheetClosed())
 
-        // Idempotency: prior rows are deleted before re-insertion.
         verify(lineupRepo).deleteByIdMatchId(5L)
         verify(occurrenceRepo).deleteByMatchId(5L)
         verify(summaryRepo).deleteById(5L)
-        // Re-inserted.
         verify(summaryRepo).save(any())
         verify(lineupRepo).save(any())
         verify(occurrenceRepo).save(any())
@@ -132,10 +124,6 @@ class EventConsumerTest {
         verify(occurrenceRepo).deleteByMatchId(5L)
         verify(summaryRepo).deleteById(5L)
     }
-
-    // -------------------------------------------------------------------------
-    // Fixtures
-    // -------------------------------------------------------------------------
 
     private fun matchSheetClosed() = MatchSheetClosedEvent(
         occurredAt = OffsetDateTime.parse("2026-05-01T22:00:00Z"),

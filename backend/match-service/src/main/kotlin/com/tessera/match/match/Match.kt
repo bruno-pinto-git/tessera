@@ -4,17 +4,11 @@ import jakarta.persistence.*
 import java.time.OffsetDateTime
 
 enum class MatchStatus {
-    /** Match is on the calendar but hasn't kicked off yet. */
     SCHEDULED,
-    /** Match is currently being played. */
     LIVE,
-    /** Match completed normally; scores recorded. Terminal. */
     FINISHED,
-    /** Match was rescheduled; will go back to SCHEDULED when a new date is set. */
     POSTPONED,
-    /** Match started but had to be stopped (weather, safety, ...). Terminal. */
     ABANDONED,
-    /** Match was called off before kickoff; no intention to reschedule. Terminal. */
     CANCELLED,
 }
 

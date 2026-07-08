@@ -17,7 +17,6 @@ interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
-  /** When provided, the dialog edits this user instead of creating one. */
   user?: UserSummary | null;
 }
 
@@ -42,23 +41,10 @@ const EMPTY: FormState = {
 const selectClass =
   "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-/** Picks the editable role to preselect; defaults to club-manager. */
 function manageableRoleOf(user?: UserSummary | null): "club-manager" | "staff" {
   return user?.roles?.includes("staff") ? "staff" : "club-manager";
 }
 
-/**
- * Create / edit user dialog used by the admin /admin/users page.
- *
- * Create mode: the initial password is always *temporary* — Keycloak forces
- * the user to choose a new one on first login. The user can be attached to a
- * club afterwards from the club's member panel.
- *
- * Edit mode: profile fields + role + account status are editable; an optional
- * new (temporary) password can be set, and "force password change" adds the
- * UPDATE_PASSWORD required action. Platform admins keep their role (we only
- * manage club-manager / staff here).
- */
 export function UserFormDialog({ open, onOpenChange, onSaved, user }: UserFormDialogProps) {
   const isEdit = !!user;
   const isAdmin = !!user?.roles?.includes("platform-admin");
@@ -88,7 +74,6 @@ export function UserFormDialog({ open, onOpenChange, onSaved, user }: UserFormDi
       return "Username com pelo menos 3 caracteres.";
     if (!form.firstName.trim()) return "Primeiro nome obrigatório.";
     if (!form.lastName.trim()) return "Apelido obrigatório.";
-    // Password is only set on create (temporary). Editing never touches it.
     if (!isEdit && form.password.length < 6) return "Password com pelo menos 6 caracteres.";
     return null;
   }
@@ -108,7 +93,6 @@ export function UserFormDialog({ open, onOpenChange, onSaved, user }: UserFormDi
           email: form.email.trim() || undefined,
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
-          // Don't touch the role of a platform-admin.
           role: isAdmin ? undefined : form.role,
         });
       } else {

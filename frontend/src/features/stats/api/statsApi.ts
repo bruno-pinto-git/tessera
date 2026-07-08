@@ -14,18 +14,15 @@ export interface PageEnvelope<T> {
   totalPages: number;
 }
 
-/** Global sales summary — platform-admin only. */
 export function getSalesSummary() {
   return apiGet<SalesSummary>("/stats/sales/summary");
 }
 
-/** Sales over a date range — platform-admin only. `from`/`to` are ISO instants. */
 export function getSalesRange(from: string, to: string) {
   const q = new URLSearchParams({ from, to });
   return apiGet<SalesSummary>(`/stats/sales/range?${q.toString()}`);
 }
 
-/** Club-scoped sales — platform-admin or a manager of the club. */
 export function getSalesByClub(clubId: number) {
   return apiGet<SalesByClub>(`/stats/sales/by-club/${clubId}`);
 }
@@ -39,7 +36,6 @@ export interface MatchHistoryParams {
   sort?: string;
 }
 
-/** Historical match-sheet snapshots — public. Newest first when sorted desc. */
 export function listMatchHistory(params: MatchHistoryParams = {}) {
   const q = new URLSearchParams();
   if (params.page != null) q.set("page", String(params.page));

@@ -18,10 +18,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-/**
- * RBAC web tests for [MatchSheetController]: sheet edits require canEditSheet
- * (manager/staff of either club), while unlocking is platform-admin only.
- */
 @WebMvcTest(MatchSheetController::class)
 @Import(SecurityConfig::class)
 class MatchSheetControllerSecurityTest {

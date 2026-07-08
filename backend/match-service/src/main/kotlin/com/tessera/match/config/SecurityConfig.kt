@@ -22,16 +22,6 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
 
-/**
- * Stateless OAuth2 resource server. JWT signature is verified against Keycloak
- * via the JWKS endpoint configured in application.yml. We translate the custom
- * `roles` claim (populated by our Keycloak mapper) into Spring Security
- * authorities prefixed with `ROLE_` so that `@PreAuthorize("hasRole('admin')")`
- * works as expected.
- *
- * Read access (GET) on most resources is public. Writes require the appropriate
- * role, declared per-method via `@PreAuthorize`.
- */
 @Configuration
 @EnableMethodSecurity
 class SecurityConfig(
@@ -42,26 +32,20 @@ class SecurityConfig(
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
-            .cors { /* keep our CorsConfig */ }
+            .cors { }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // Public read endpoints
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/clubs/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/venues/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/teams/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/players/**").permitAll()
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/matches/**").permitAll()
-                // Anything else needs authentication; method-level @PreAuthorize
-                // narrows down to specific roles.
                 auth.anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth ->
                 oauth.jwt { jwt ->
                     jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())
                 }
-                // Filter-stage failures (no token / bad token) bypass
-                // @RestControllerAdvice. Wire custom handlers so they still
-                // produce RFC 7807 Problem JSON.
                 oauth.authenticationEntryPoint(problemAuthenticationEntryPoint())
                 oauth.accessDeniedHandler(problemAccessDeniedHandler())
             }
@@ -102,17 +86,6 @@ class SecurityConfig(
         mapper.writeValue(res.outputStream, body)
     }
 
-    /**
-     * Maps JWT claims to Spring Security authorities.
-     *
-     * Token shape (from our Keycloak realm):
-     *   {
-     *     "roles": ["admin", "default-roles-tessera"],
-     *     ...
-     *   }
-     *
-     * We expose the realm-level roles as `ROLE_admin`, `ROLE_staff`, `ROLE_fan`.
-     */
     private fun jwtAuthenticationConverter(): JwtAuthenticationConverter {
         val converter = JwtAuthenticationConverter()
         converter.setJwtGrantedAuthoritiesConverter(realmRolesConverter())

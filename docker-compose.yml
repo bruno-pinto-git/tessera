@@ -40,8 +40,6 @@ services:
     build: ./backend/ticket-service
     ports:
       - "8081:8081"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-tickets:5432/tessera_tickets
       SPRING_DATASOURCE_USERNAME: postgres
@@ -51,16 +49,14 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: tessera
       SPRING_RABBITMQ_PASSWORD: tessera
-      # MB WAY gateway (mock-mbway Android app in dev, SIBS in prod). The
-      # defaults point at host.docker.internal so it works out of the box
-      # when the mock runs on the same machine as Docker. For a real device
-      # on the LAN, override with the device's IP:
-      #   MBWAY_GATEWAY_URL=http://192.168.1.42:8443
+      # MB WAY: mock-mbway (or real SIBS) polls us for pending payments and
+      # calls this webhook back with the result — we never call out to it.
+      # For a phone on the LAN, override with the host's LAN IP:
       #   MBWAY_WEBHOOK_BASE_URL=http://192.168.1.10:8081
-      MBWAY_GATEWAY_URL: ${MBWAY_GATEWAY_URL:-http://host.docker.internal:8443}
       MBWAY_WEBHOOK_BASE_URL: ${MBWAY_WEBHOOK_BASE_URL:-http://host.docker.internal:8081}
       MBWAY_TERMINAL_ID: ${MBWAY_TERMINAL_ID:-47215}
-      MBWAY_CLIENT_ID: ${MBWAY_CLIENT_ID:-tessera-mock}
+      # Shared secret the poller must present (X-Relay-Secret header).
+      MBWAY_RELAY_SECRET: ${MBWAY_RELAY_SECRET:-dev-secret}
       # Stripe Checkout (CARD payments). Test-mode secret key from
       # dashboard.stripe.com (Developers > API keys, with "Test mode" on).
       # Success/cancel URLs point at the web frontend; {id}/{eventId} are
@@ -68,6 +64,11 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-http://localhost:8000/events/{eventId}?stripe_ticket_id={id}}
       STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-http://localhost:8000/events/{eventId}?stripe_cancelled=1}
+      # Google Wallet ("Add to Google Wallet" on paid tickets). Issuer ID from
+      # pay.google.com/business/console; service account JSON key (Cloud
+      # Console > IAM > Service Accounts) Base64-encoded into one line.
+      GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
+      GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_BASE64: ${GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_BASE64:-}
       # match-service URL, used to resolve a match's home club when a club
       # manager opens a box office (scoped authorization in EventController).
       MATCH_SERVICE_URL: http://match-service:8082

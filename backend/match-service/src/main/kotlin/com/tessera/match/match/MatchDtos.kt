@@ -11,7 +11,6 @@ data class MatchResponse(
     val id: Long,
     val homeTeamId: Long,
     val awayTeamId: Long,
-    /** Club of the home/away team. Null if the team can't be resolved. */
     val homeClubId: Long?,
     val awayClubId: Long?,
     val venueId: Long?,

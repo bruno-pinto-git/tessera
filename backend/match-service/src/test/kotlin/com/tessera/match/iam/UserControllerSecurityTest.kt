@@ -20,11 +20,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-/**
- * RBAC web tests for [UserController] (every endpoint is platform-admin only),
- * plus a create happy-path that drives the create() logic end-to-end through
- * the mocked Keycloak admin client.
- */
 @WebMvcTest(UserController::class)
 @Import(SecurityConfig::class)
 class UserControllerSecurityTest {

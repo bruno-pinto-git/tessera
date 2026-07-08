@@ -15,7 +15,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const initStarted = useRef(false);
 
   useEffect(() => {
-    // Prevent double-init under React 18+ StrictMode (mounts twice in dev).
     if (initStarted.current) return;
     initStarted.current = true;
 

@@ -10,11 +10,9 @@ object NsdkRepository {
 
     private const val TAG = "NsdkRepository"
 
-    /** True apenas num dispositivo Newland onde o NSDK arrancou com sucesso. */
     var available: Boolean = false
         private set
 
-    /** Null num dispositivo sem o hardware/SDK Newland (ex: telemóvel normal). */
     val barcodeScanner: BarcodeScanner? by lazy {
         if (!available) {
             null
@@ -29,8 +27,6 @@ object NsdkRepository {
     }
 
     fun init(context: Context) {
-        // catch Throwable: num telemóvel sem Newland o NSDK pode lançar Error
-        // (UnsatisfiedLinkError/NoClassDefFoundError), que catch(Exception) não apanha.
         available = try {
             NSDKModuleManagerImpl.getInstance().init(context)
             true

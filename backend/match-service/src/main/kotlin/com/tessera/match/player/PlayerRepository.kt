@@ -19,10 +19,6 @@ interface PlayerRepository : JpaRepository<Player, Long> {
     """)
     fun findActiveByTeam(@Param("teamId") teamId: Long, pageable: Pageable): Page<Player>
 
-    /**
-     * Returns active players belonging to any active team of the given club.
-     * Joins Player → Team (via team_id) and filters by club_id.
-     */
     @Query("""
         SELECT p FROM Player p, com.tessera.match.team.Team t
          WHERE p.teamId = t.id

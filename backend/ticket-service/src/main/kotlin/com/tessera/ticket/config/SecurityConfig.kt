@@ -20,16 +20,6 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.access.AccessDeniedHandler
 
-/**
- * Stateless OAuth2 resource server for the ticket-service.
- *
- * - Public read endpoints (catalog browsing): GET on /api/v1/events.
- * - All other endpoints require a valid JWT; method-level @PreAuthorize
- *   narrows down per-role (fan/staff/platform-admin).
- *
- * Mirrors the match-service SecurityConfig pattern: realm-level roles claim
- * (`roles`) is translated to Spring authorities prefixed `ROLE_`.
- */
 @Configuration
 @EnableMethodSecurity
 class SecurityConfig(
@@ -40,16 +30,12 @@ class SecurityConfig(
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
-            .cors { /* keep our CorsConfig */ }
+            .cors { }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // Public reads (browsing the event catalog before login)
                 auth.requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
-                // MB WAY gateway calls our webhook server-to-server with no JWT.
-                // In production-SIBS the payload is AES-GCM-signed; verification
-                // would happen in MbwayWebhookController before delegating.
                 auth.requestMatchers(HttpMethod.POST, "/api/v1/webhooks/mbway").permitAll()
-                // Anything else needs authentication; @PreAuthorize handles roles.
+                auth.requestMatchers(HttpMethod.POST, "/api/v1/mbway/relay/poll").permitAll()
                 auth.anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth ->

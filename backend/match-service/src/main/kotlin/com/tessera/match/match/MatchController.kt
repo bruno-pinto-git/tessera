@@ -68,7 +68,6 @@ class MatchController(
         service.delete(id)
     }
 
-    /** Maps a single match to a response, resolving its home/away club ids. */
     private fun Match.withClubs(): MatchResponse {
         val clubIds = service.clubIdsForTeams(listOf(homeTeamId, awayTeamId))
         return toResponse(clubIds[homeTeamId], clubIds[awayTeamId])

@@ -23,12 +23,6 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : "Erro inesperado";
 }
 
-/**
- * Match-sheet editor at /matches/:matchId/sheet. Lets admins and the home
- * club's managers/staff build the lineup, record occurrences, and close
- * (lock) the sheet. The backend enforces @clubAuthz.canEditSheet, so a
- * non-authorized user gets 403s on the actions.
- */
 export function MatchSheetEditorPage() {
   const navigate = useNavigate();
   const { matchId: param } = useParams<{ matchId: string }>();

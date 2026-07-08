@@ -16,19 +16,9 @@ class Event(
 
     val name: String? = null,
 
-    /**
-     * Snapshot of the fixture ("Home vs Away") captured when the box office is
-     * opened. Persists on the event so tickets keep showing the teams even if
-     * the match is later deleted in match-service.
-     */
     @Column(name = "match_label", length = 255)
     val matchLabel: String? = null,
 
-    /**
-     * Home club of the match, snapshotted when the box office is opened. Lets
-     * `ticket.ticket.paid` carry the club for per-club sales aggregation without
-     * a fragile match-service call at payment time (and survives match deletion).
-     */
     @Column(name = "home_club_id")
     val homeClubId: Long? = null,
 

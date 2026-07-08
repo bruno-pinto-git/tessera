@@ -39,24 +39,12 @@ class Ticket(
     @Column(name = "mbway_reference")
     var mbwayReference: String? = null,
 
-    /**
-     * Gateway-side transaction id returned by the MB WAY gateway (SIBS in
-     * production; mock-mbway in dev) when a payment is initiated. Lets the
-     * webhook handler correlate the asynchronous callback back to this ticket.
-     */
     @Column(name = "mbway_transaction_id")
     var mbwayTransactionId: String? = null,
 
-    /**
-     * Stripe Checkout Session id returned when a CARD payment is initiated.
-     * Lets [com.tessera.ticket.ticket.TicketService.getByIdRefreshed] poll
-     * Stripe for the session's status — there is no reachable webhook
-     * endpoint, so this is the confirmation path.
-     */
     @Column(name = "stripe_checkout_session_id")
     var stripeCheckoutSessionId: String? = null,
 
-    /** Keycloak subject UUID of the buyer. Null only for legacy rows. */
     @Column(name = "owner_sub")
     val ownerSub: String? = null,
 
@@ -69,7 +57,6 @@ class Ticket(
     @Column(name = "validation_date")
     var validationDate: OffsetDateTime? = null,
 
-    /** Keycloak subject UUID of the staff member that validated the ticket. */
     @Column(name = "validator_sub")
     var validatorSub: String? = null,
 )

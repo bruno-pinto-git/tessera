@@ -15,11 +15,6 @@ import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 import kotlin.test.assertEquals
 
-/**
- * Unit tests for [MbwayWebhookService] — the asynchronous MB WAY callback that
- * completes (or doesn't) a PENDING ticket. Covers the correlation-by-transaction
- * id, the Success/Declined/Expired branches, and idempotency.
- */
 class MbwayWebhookServiceTest {
 
     private val ticketRepository: TicketRepository = mock()
@@ -93,8 +88,6 @@ class MbwayWebhookServiceTest {
         assertEquals(TicketStatus.PENDING, t.status)
         verify(ticketRepository, never()).save(any())
     }
-
-    // -------------------------------------------------------------------------
 
     private fun payload(status: String, txn: String) =
         MbwayWebhookPayload(paymentStatus = status, transactionID = txn)

@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.OffsetDateTime
 
-/** RBAC web tests for [TeamController] (club-scoped via @clubAuthz). */
 @WebMvcTest(TeamController::class)
 @Import(SecurityConfig::class)
 class TeamControllerSecurityTest {

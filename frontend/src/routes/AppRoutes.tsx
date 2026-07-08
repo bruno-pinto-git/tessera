@@ -25,11 +25,9 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
 
-        {/* Public catalog */}
         <Route path="events" element={<EventsPage />} />
         <Route path="events/:id" element={<EventDetailPage />} />
 
-        {/* Authenticated users */}
         <Route
           path="tickets/mine"
           element={
@@ -39,7 +37,6 @@ export function AppRoutes() {
           }
         />
 
-        {/* Staff / admin */}
         <Route
           path="club"
           element={

@@ -16,12 +16,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * Integration test for [ClubRepository] against a real Postgres (Testcontainers),
- * with the schema built by the actual Flyway migrations (V1..V10). This verifies
- * the custom @Query JPQL that the service-layer unit tests only mocked:
- * case-insensitive name matching and the soft-delete (deletedAt IS NULL) filters.
- */
 @Tag("integration")
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -51,13 +45,11 @@ class ClubRepositoryIntegrationTest {
         val club = repo.save(Club(name = "Porto"))
         val id = club.id
 
-        // Soft delete.
         club.deletedAt = OffsetDateTime.now()
         repo.save(club)
 
         assertNull(repo.findActiveById(id))
         assertFalse(repo.findAllActive(PageRequest.of(0, 50)).content.any { it.id == id })
-        // A soft-deleted name should no longer count as a conflict.
         assertFalse(repo.existsActiveByNameIgnoreCase("Porto"))
     }
 
@@ -75,7 +67,6 @@ class ClubRepositoryIntegrationTest {
     fun `existsActiveByNameIgnoreCaseExcluding ignores the row being updated`() {
         val club = repo.save(Club(name = "Maritimo"))
 
-        // Same row excluded -> no conflict; a different id -> conflict.
         assertFalse(repo.existsActiveByNameIgnoreCaseExcluding("maritimo", club.id))
         assertTrue(repo.existsActiveByNameIgnoreCaseExcluding("maritimo", club.id + 999))
     }

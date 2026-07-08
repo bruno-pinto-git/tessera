@@ -22,15 +22,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * Unit test for the SpEL-callable `clubAuthz` bean. All collaborators
- * (repositories) are mocked — the test focuses on the decision logic:
- *
- *   1. platform-admin -> always allowed
- *   2. club-manager + ClubMembership(MANAGER) -> allowed for management
- *   3. either manager or staff -> allowed for sheet operations
- *   4. anything else -> denied
- */
 class ClubAuthorizationServiceTest {
 
     private val teamRepo: TeamRepository = mock()
@@ -42,8 +33,6 @@ class ClubAuthorizationServiceTest {
         matchRepo,
         ClubMembershipExtractor(),
     )
-
-    // ----- canManageClub ------------------------------------------------------
 
     @Test
     fun `platform admin can manage any club`() {
@@ -72,8 +61,6 @@ class ClubAuthorizationServiceTest {
         assertFalse(authz.canManageClub(anon, 1L))
     }
 
-    // ----- canManageTeam ------------------------------------------------------
-
     @Test
     fun `team not found means access denied for non-admins`() {
         whenever(teamRepo.findActiveById(7L)).thenReturn(null)
@@ -89,12 +76,8 @@ class ClubAuthorizationServiceTest {
 
     @Test
     fun `platform admin doesn't need to hit the repo for team management`() {
-        // No stubbing of teamRepo — platform-admin should short-circuit before
-        // the lookup.
         assertTrue(authz.canManageTeam(platformAdmin(), 7L))
     }
-
-    // ----- canManagePlayer ----------------------------------------------------
 
     @Test
     fun `player management follows the player team club chain`() {
@@ -106,8 +89,6 @@ class ClubAuthorizationServiceTest {
         assertTrue(authz.canManagePlayer(manager(clubId = 1L), 11L))
         assertFalse(authz.canManagePlayer(manager(clubId = 2L), 11L))
     }
-
-    // ----- canEditSheet -------------------------------------------------------
 
     @Test
     fun `sheet edit allowed for managers of either club involved`() {
@@ -131,10 +112,6 @@ class ClubAuthorizationServiceTest {
         assertTrue(authz.canEditSheet(staff(clubId = 2L), 99L))
         assertFalse(authz.canEditSheet(staff(clubId = 999L), 99L))
     }
-
-    // -------------------------------------------------------------------------
-    // Fixtures
-    // -------------------------------------------------------------------------
 
     private fun platformAdmin(): Authentication = jwtAuth(
         roles = listOf("platform-admin"),

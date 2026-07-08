@@ -25,12 +25,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.OffsetDateTime
 
-/**
- * Web-layer (@WebMvcTest) tests for [ClubController]'s RBAC. The whole point is
- * to exercise the real Spring Security filter chain + method security, so the
- * @PreAuthorize("hasRole('platform-admin')") rules are actually enforced — the
- * JUnit counterpart of docs/http-tests/99-rbac-checks.http for /clubs.
- */
 @WebMvcTest(ClubController::class)
 @Import(SecurityConfig::class)
 class ClubControllerSecurityTest {
@@ -39,9 +33,6 @@ class ClubControllerSecurityTest {
 
     @MockitoBean private lateinit var service: ClubService
 
-    // Mocked beans the security slice needs to start: the resource server wires
-    // a BearerTokenAuthenticationFilter that requires a JwtDecoder, and the
-    // ClubService constructor needs a KeycloakGroupService.
     @MockitoBean private lateinit var jwtDecoder: JwtDecoder
     @MockitoBean private lateinit var keycloakGroups: KeycloakGroupService
 

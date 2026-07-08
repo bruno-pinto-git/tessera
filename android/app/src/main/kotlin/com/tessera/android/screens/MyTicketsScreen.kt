@@ -1,5 +1,7 @@
 package com.tessera.android.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,21 +11,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -49,7 +59,18 @@ fun MyTicketsScreen(
     onOpenEvent: (Long) -> Unit = {},
     viewModel: MyTicketsViewModel = viewModel(),
 ) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) { viewModel.load() }
     RefreshOnResume { viewModel.load() }
+
+    fun addToWallet(v: TicketView) {
+        viewModel.addToWallet(v) { url ->
+            if (url != null) {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            }
+        }
+    }
+
     when (val s = viewModel.state) {
         MyTicketsState.Loading -> Centered {
             CircularProgressIndicator()
@@ -61,12 +82,17 @@ fun MyTicketsScreen(
             Spacer(Modifier.height(16.dp))
             Button(onClick = viewModel::load) { Text(stringResource(R.string.common_retry)) }
         }
-        is MyTicketsState.Success -> TicketsList(s, onOpenEvent)
+        is MyTicketsState.Success -> TicketsList(s, onOpenEvent, viewModel.walletLoadingId, ::addToWallet)
     }
 }
 
 @Composable
-private fun TicketsList(s: MyTicketsState.Success, onOpenEvent: (Long) -> Unit) {
+private fun TicketsList(
+    s: MyTicketsState.Success,
+    onOpenEvent: (Long) -> Unit,
+    walletLoadingId: Long?,
+    onAddToWallet: (TicketView) -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -83,7 +109,9 @@ private fun TicketsList(s: MyTicketsState.Success, onOpenEvent: (Long) -> Unit) 
         if (s.paid.isEmpty()) {
             item { EmptyHint(stringResource(R.string.tickets_paid_empty)) }
         } else {
-            items(s.paid, key = { it.ticket.id }) { PaidTicketCard(it) }
+            items(s.paid, key = { it.ticket.id }) {
+                PaidTicketCard(it, isWalletLoading = walletLoadingId == it.ticket.id, onAddToWallet = onAddToWallet)
+            }
         }
 
         if (s.pending.isNotEmpty()) {
@@ -111,7 +139,7 @@ private fun SectionTitle(title: String, subtitle: String? = null) {
 }
 
 @Composable
-private fun PaidTicketCard(v: TicketView) {
+private fun PaidTicketCard(v: TicketView, isWalletLoading: Boolean, onAddToWallet: (TicketView) -> Unit) {
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -134,6 +162,21 @@ private fun PaidTicketCard(v: TicketView) {
 
             formatShortDateTime(v.ticket.paymentDate)?.let {
                 Text(stringResource(R.string.tickets_paid_at, it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            Button(
+                onClick = { onAddToWallet(v) },
+                enabled = !isWalletLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+            ) {
+                if (isWalletLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.tickets_add_to_wallet), color = Color.White)
+                }
             }
         }
     }

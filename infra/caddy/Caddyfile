@@ -1,7 +1,13 @@
 # Caddy fronts the whole stack on the public FQDN with automatic Let's Encrypt
 # TLS. One hostname, one certificate:
-#   - /auth/*  -> Keycloak  (Keycloak runs under the /auth relative path)
-#   - /*       -> nginx      (the SPA + its /api proxy to the BFF)
+#   - /auth/*                 -> Keycloak     (Keycloak runs under the /auth relative path)
+#   - /api/v1/webhooks/mbway* -> ticket-service (mock-mbway's payment webhook)
+#   - /api/v1/mbway/*         -> ticket-service (mock-mbway polls this for pending payments)
+#   - /*                      -> nginx         (the SPA + its /api proxy to the BFF)
+#
+# The mbway routes bypass nginx/BFF on purpose — they're mock-only scaffolding
+# for the SIBS simulator, not part of the real documented API surface, and this
+# way they ride the existing TLS/443 without opening any new port.
 #
 # TESSERA_FQDN comes from the environment (.env). For Let's Encrypt to issue a
 # cert, this hostname must resolve to this machine and ports 80/443 must be open.
@@ -12,6 +18,14 @@
 	# Keycloak (auth) — keep the /auth prefix; Keycloak serves under it.
 	handle /auth/* {
 		reverse_proxy keycloak:8180
+	}
+
+	# mock-mbway's webhook callback and relay-poll endpoint.
+	handle /api/v1/webhooks/mbway* {
+		reverse_proxy ticket-service:8081
+	}
+	handle /api/v1/mbway/* {
+		reverse_proxy ticket-service:8081
 	}
 
 	# Everything else — the SPA and /api (nginx proxies /api to the BFF).

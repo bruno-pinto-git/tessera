@@ -23,7 +23,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.OffsetDateTime
 
-/** RBAC web tests for [VenueController] (writes are platform-admin only). */
 @WebMvcTest(VenueController::class)
 @Import(SecurityConfig::class)
 class VenueControllerSecurityTest {

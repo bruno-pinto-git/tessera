@@ -12,11 +12,6 @@ export interface ResultCardMatch {
   kickoffAt: string;
 }
 
-/**
- * Compact recent-result card: the scoreline plus a chronological strip of the
- * headline events (goals + cards) with the player's name, drawn from the
- * match-sheet snapshot. Home events sit on the left, away on the right.
- */
 export function MatchResultCard({
   match,
   homeName,
@@ -84,7 +79,6 @@ function EventRow({ o, isHome, player }: { o: Occurrence; isHome: boolean; playe
       <span className="truncate">{player}</span>
     </span>
   );
-  // Home events on the left half, away events mirrored on the right.
   return (
     <li className="grid grid-cols-2 gap-2 text-sm">
       {isHome ? <div className="text-left">{cell}</div> : <div />}

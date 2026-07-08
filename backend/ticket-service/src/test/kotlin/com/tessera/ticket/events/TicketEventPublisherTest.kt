@@ -18,11 +18,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/**
- * Unit tests for [TicketEventPublisher] — focused on the `homeClubId` snapshot
- * carried by `ticket.ticket.paid`, which is what lets statistics-service
- * aggregate sales per club without calling back into match-service.
- */
 class TicketEventPublisherTest {
 
     private val rabbit: RabbitTemplate = mock()
@@ -47,7 +42,6 @@ class TicketEventPublisherTest {
 
         val ev = capturePaid()
         assertNull(ev.homeClubId)
-        // No match → no lookup attempted.
         verify(matchLookup, never()).homeClubId(any())
     }
 

@@ -18,19 +18,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-/**
- * Unit tests for the box-office authorization rules in [EventController]
- * (plus the JWT claim helpers it relies on). Mirrors docs/http-tests/99-rbac-checks.http
- * for the /events endpoint: a platform admin may open a box office for any
- * match; a club manager only for a match where their club is the home team.
- */
 class BoxOfficeAuthorizationTest {
 
     private val service: EventService = mock()
     private val matchLookup: MatchLookupClient = mock()
     private val controller = EventController(service, matchLookup)
-
-    // ----- JWT claim helpers --------------------------------------------------
 
     @Test
     fun `realmRoles reads the roles claim`() {
@@ -52,8 +44,6 @@ class BoxOfficeAuthorizationTest {
         )
         assertEquals(setOf(5L), jwt.managedClubIds())
     }
-
-    // ----- EventController.create authorization -------------------------------
 
     @Test
     fun `platform admin can open a box office for any match`() {
@@ -123,8 +113,6 @@ class BoxOfficeAuthorizationTest {
         }
         verify(service, never()).create(any(), anyOrNull())
     }
-
-    // -------------------------------------------------------------------------
 
     private fun matchView(homeClubId: Long, status: String = "SCHEDULED") =
         MatchLookupClient.MatchView(

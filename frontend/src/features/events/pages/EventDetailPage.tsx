@@ -21,13 +21,6 @@ export function EventDetailPage() {
   const [resumeTicketId, setResumeTicketId] = useState<number | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Returning from Stripe Checkout: reopen the purchase modal straight into
-  // the awaiting-confirmation poll, then strip the query params so a refresh
-  // doesn't re-trigger this. Waits for `initialized` because this is a full
-  // page load (we navigated away to Stripe and back) — Keycloak's check-sso
-  // re-authentication runs through a hidden iframe and resolves
-  // asynchronously; firing the poll before it settles sends the request
-  // with no Authorization header at all (401), not a bad token.
   useEffect(() => {
     if (!initialized) return;
     const stripeTicketId = searchParams.get("stripe_ticket_id");
@@ -77,9 +70,6 @@ export function EventDetailPage() {
           <div
             className="relative px-6 md:px-10 pt-10 pb-8"
             style={{
-              // Theme-aware hero: a subtle brand glow over the card colour, so
-              // it stays readable in both light and dark mode (was a hardcoded
-              // white gradient that broke dark mode).
               background:
                 "radial-gradient(1100px 360px at 50% -120%, oklch(0.72 0.19 152 / 0.20), transparent 60%), linear-gradient(180deg, color-mix(in oklch, var(--primary) 8%, var(--card)), var(--card))",
             }}
@@ -305,7 +295,6 @@ function PurchaseSticky({
 }) {
   const ended = matchEnded(entry);
   const notPublished = entry.eventStatus !== "PUBLISHED";
-  // A logged-out user can still click — onBuy sends them to login first.
   const disabled = notPublished || ended;
   const label = ended
     ? "Jogo terminado"
@@ -339,11 +328,6 @@ function PurchaseSticky({
   );
 }
 
-/**
- * Sales close once the match is over or off — mirrors the ticket-service rule
- * (CLOSED_FOR_SALE_STATUSES + kickoff + ~2h match duration). The backend is
- * the source of truth; this just stops the user clicking into a 409.
- */
 function matchEnded(entry: CatalogEntry): boolean {
   if (entry.matchStatus && ["CANCELLED", "FINISHED", "ABANDONED"].includes(entry.matchStatus)) {
     return true;

@@ -5,7 +5,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.tessera.android.shared.ServerConfig
+import kotlinx.coroutines.launch
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -15,11 +17,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     var saved by mutableStateOf(false)
         private set
 
-    val previewBaseUrl: String
-        get() = "http://${ServerConfig.sanitize(host)}:${ServerConfig.PORT_GATEWAY}"
+    var resolving by mutableStateOf(false)
+        private set
 
-    val previewIssuer: String
-        get() = "http://${ServerConfig.sanitize(host)}:${ServerConfig.PORT_KEYCLOAK}/realms/tessera"
+    var resolvedMode by mutableStateOf(ServerConfig.mode)
+        private set
 
     fun onHostChange(value: String) {
         host = value
@@ -29,6 +31,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun save() {
         ServerConfig.update(getApplication(), host)
         host = ServerConfig.host
-        saved = true
+        viewModelScope.launch {
+            resolving = true
+            resolvedMode = ServerConfig.resolveMode()
+            resolving = false
+            saved = true
+        }
     }
 }

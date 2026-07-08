@@ -16,13 +16,6 @@ interface MatchRepository : JpaRepository<Match, Long>, JpaSpecificationExecutor
     fun findActiveById(@Param("id") id: Long): Match?
 }
 
-/**
- * Builds dynamic predicates for the matches list endpoint, filtering by any
- * combination of from / to / status / clubId. Always excludes soft-deleted.
- *
- * `clubId` requires joining team to find clubs of both home and away teams;
- * we keep it scoped to the SQL produced by the repository (no extra JPQL).
- */
 object MatchSpecs {
 
     fun active(): Specification<Match> = Specification { root, _, cb ->
@@ -44,11 +37,6 @@ object MatchSpecs {
             cb.equal(root.get<MatchStatus>("status"), it)
         } }
 
-    /**
-     * Subquery: match.home_team_id OR match.away_team_id is in the set of team
-     * ids whose club_id = :clubId AND team is active. Subquery is the cleanest
-     * way without modeling Match→Team as an association.
-     */
     fun involvesClub(clubId: Long?): Specification<Match>? =
         clubId?.let { Specification { root, query, cb ->
             val homeSub = query!!.subquery(java.lang.Long::class.java)

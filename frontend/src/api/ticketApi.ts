@@ -1,17 +1,5 @@
 import { apiGet, apiPost } from "./client";
 
-/**
- * Ticket-service API client. After running `npm run codegen:api`, prefer
- * importing types from `@/api/schema.gen` instead of redeclaring them here
- * — e.g.:
- *
- *   import type { components } from "@/api/schema.gen";
- *   type Ticket = components["schemas"]["Ticket"];
- *
- * For now we keep slim hand-written types so the project compiles before
- * the first codegen run.
- */
-
 export type TicketStatus = "PENDING" | "PAID" | "VALIDATED";
 
 export interface Ticket {
@@ -20,14 +8,13 @@ export interface Ticket {
   eventId: number;
   matchId: number | null;
   ownerSub: string | null;
-  price: number | string; // Jackson emits number; spec says string. Accept both.
+  price: number | string;
   status: TicketStatus;
   paymentMethod: "MBWAY" | "CARD" | null;
   createdAt: string;
   paymentDate: string | null;
   validationDate: string | null;
   validatorSub: string | null;
-  /** Stripe Checkout hosted-page URL. Only present in the pay() response for a fresh CARD payment. */
   checkoutUrl: string | null;
 }
 
@@ -47,12 +34,22 @@ export interface CreateTicketRequest {
 export interface PayTicketRequest {
   paymentMethod: "MBWAY" | "CARD";
   mbwayReference?: string;
-  /** Required when paymentMethod === "MBWAY". Format: "351912345678". */
   phoneNumber?: string;
 }
 
 export interface ValidateTicketRequest {
   code: string;
+}
+
+export interface WalletPassRequest {
+  eventTitle: string;
+  venue?: string | null;
+  kickoffAt?: string | null;
+  tierLabel?: string;
+}
+
+export interface WalletPassResponse {
+  saveUrl: string;
 }
 
 export function createTicket(body: CreateTicketRequest) {
@@ -84,4 +81,8 @@ export function listTicketsByEvent(eventId: number, params: { page?: number; siz
 
 export function getTicket(id: number) {
   return apiGet<Ticket>(`/tickets/${id}`);
+}
+
+export function getWalletSaveUrl(id: number, body: WalletPassRequest) {
+  return apiPost<WalletPassRequest, WalletPassResponse>(`/tickets/${id}/wallet-pass`, body);
 }

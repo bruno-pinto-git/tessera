@@ -15,18 +15,11 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/**
- * Unit tests for [ClubService] — name-uniqueness rules and the
- * save-then-provision-Keycloak flow (with its rollback-on-failure path).
- * Repositories and the Keycloak group service are mocked.
- */
 class ClubServiceTest {
 
     private val repo: ClubRepository = mock()
     private val keycloakGroups: KeycloakGroupService = mock()
     private val service = ClubService(repo, keycloakGroups)
-
-    // ----- create -------------------------------------------------------------
 
     @Test
     fun `create rejects a duplicate name`() {
@@ -55,8 +48,6 @@ class ClubServiceTest {
         assertFailsWith<ClubProvisioningException> { service.create(ClubCreateRequest(name = "Sporting")) }
     }
 
-    // ----- update -------------------------------------------------------------
-
     @Test
     fun `update fails for an unknown club`() {
         whenever(repo.findActiveById(404L)).thenReturn(null)
@@ -82,8 +73,6 @@ class ClubServiceTest {
         assertEquals(1906, updated.foundedYear)
         verify(repo, never()).existsActiveByNameIgnoreCaseExcluding(any(), any())
     }
-
-    // ----- delete / get / list ------------------------------------------------
 
     @Test
     fun `delete soft-deletes the club`() {
@@ -112,8 +101,6 @@ class ClubServiceTest {
         whenever(repo.findActiveByNameLike("Spor", Pageable.unpaged())).thenReturn(page)
         assertEquals(1, service.list("Spor", Pageable.unpaged()).totalElements.toInt())
     }
-
-    // -------------------------------------------------------------------------
 
     private fun club(id: Long, name: String) = Club(
         id = id,

@@ -1,7 +1,6 @@
 package com.tessera.mockmbway.shared
 
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 
 data class PendingPayment(
     val transactionId: String,
@@ -39,14 +38,6 @@ object PendingPaymentsState {
 
     val pending = mutableStateListOf<PendingPayment>()
     val history = mutableStateListOf<ResolvedPayment>()
-    val serverEndpoint = mutableStateOf<String?>(null)
-
-    fun upsertPhone(transactionId: String, customerPhone: String) {
-        val index = pending.indexOfFirst { it.transactionId == transactionId }
-        if (index >= 0) {
-            pending[index] = pending[index].copy(customerPhone = customerPhone)
-        }
-    }
 
     fun find(transactionId: String): PendingPayment? =
         pending.firstOrNull { it.transactionId == transactionId }

@@ -14,20 +14,10 @@ import { AddMemberDialog } from "./AddMemberDialog";
 
 interface MembersSectionProps {
   clubId: number;
-  /** Whether the current user can add/remove members. Defaults to true
-   *  (admin behaviour); the backend enforces it regardless. */
   canManage?: boolean;
-  /** Manager (non-admin) mode: managers list is read-only, only staff is
-   *  editable, and new users are created inline as STAFF. */
   managerMode?: boolean;
 }
 
-/**
- * Members panel embedded inside the platform-admin's club detail page.
- * Lists managers and staff side by side, allows adding (existing or new
- * user) and removing. Removing only revokes the Keycloak group membership
- * — it doesn't delete the user.
- */
 export function MembersSection({
   clubId,
   canManage = true,

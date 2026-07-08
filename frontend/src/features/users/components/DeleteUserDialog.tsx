@@ -32,7 +32,6 @@ export function DeleteUserDialog({ open, onOpenChange, user, onDeleted }: Delete
       onOpenChange(false);
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
-        // Already gone — treat as success.
         onDeleted();
         onOpenChange(false);
       } else {

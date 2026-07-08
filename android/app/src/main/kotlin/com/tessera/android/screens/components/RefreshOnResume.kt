@@ -6,11 +6,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 
-/**
- * Executa [onResume] sempre que o ecrã volta a ficar visível — exceto na
- * primeira vez (essa já é coberta pelo load inicial do ViewModel). Permite
- * que uma lista reflita alterações feitas noutro ecrã ao voltar atrás.
- */
 @Composable
 fun RefreshOnResume(onResume: () -> Unit) {
     val owner = LocalLifecycleOwner.current

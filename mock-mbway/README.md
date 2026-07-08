@@ -4,132 +4,82 @@ Android app that simulates the **SIBS Payment Gateway + MB WAY** end of the
 payment flow, so the Tessera ticket-service can be developed against the real
 protocol without a SIBS merchant contract. The app does two things at once:
 
-1. **Embedded HTTP server** (Ktor on the device) exposing endpoints with the
-   same shapes as the real SIBS Payment Gateway. The ticket-service talks to
-   the device's IP+port as if it were `api.sibsgateway.com`.
+1. **Polls the ticket-service** for pending payments (`POST
+   /api/v1/mbway/relay/poll`, every ~3s) instead of hosting a server the
+   backend calls into — the phone may be on a network the backend can't
+   reach (its own hotspot, mobile data), but the reverse direction (phone →
+   backend) always works, since the backend has a stable, reachable address.
 2. **Compose UI** showing pending payments and offering **Aceitar** / **Recusar**
    buttons — the device plays the role of the customer's phone receiving the
    MB WAY push.
 
-When the operator taps Aceitar/Recusar, the embedded server makes an HTTPS
-callback to the merchant URL (the ticket-service `/webhooks/mbway/...`)
-exactly like SIBS does in production.
+When the operator taps Aceitar/Recusar, the app makes an HTTP callback to the
+merchant URL supplied with the payment (the ticket-service
+`/api/v1/webhooks/mbway`) exactly like SIBS does in production.
 
-## Why "fiel ao protocolo SIBS"
+## Why "fiel ao protocolo SIBS" (with one deliberate exception)
 
-The intent is that swapping mock-mbway for the real SIBS gateway in production
-should be **only a URL change** in the ticket-service config
-(`MBWAY_GATEWAY_URL`). To honour that, the endpoint paths, request/response
-shapes, and field names below mirror the real SIBS docs as published on
-[docs.pay.sibs.com](https://www.docs.pay.sibs.com).
+The webhook leg (phone → backend confirmation) keeps full protocol fidelity —
+same shapes, same idea as the real SIBS callback. The **poll leg is a
+deliberate, scoped exception**: the real SIBS gateway is push-based and will
+never poll us, so swapping mock-mbway for the real thing in production is a
+config change to `MbwayGatewayClient` on the backend (which would go back to
+calling out to SIBS's API), not a drop-in replacement on the mock's side —
+that trade-off is intentional, made so mock-mbway keeps working regardless of
+which network the phone and the backend happen to be on.
 
 Things deliberately **not** replicated (mock-only simplifications):
 
 - AES-GCM webhook payload encryption (SIBS encrypts the notification body
   with a shared key; mock sends plain JSON for ease of debugging)
-- OAuth bearer-token issuance for the merchant client (we accept any `Bearer`
-  value)
-- The `transactionSignature` Digest scheme (we accept any value here too)
-- `X-IBM-Client-Id` header validation (we read it for parity but don't check)
-- TLS — the mock listens on plain HTTP on the LAN
+- The `transactionSignature` Digest scheme (kept in the wire shape for
+  parity, but never validated)
+- TLS between the mock and the backend on a LAN (plain HTTP); TLS is used
+  automatically once the backend is a deployed HTTPS origin
 
-## Protocol — endpoints exposed by the mock
+## Protocol
 
-Base path: `/api/v1`
+### 1. Poll for pending payments (mock → ticket-service)
 
-### 1. Create checkout
-
-`POST /api/v1/payments`
+`POST {backend}/api/v1/mbway/relay/poll`
 
 Headers:
-- `Content-Type: application/json`
-- `Authorization: Bearer <anything>`
-- `X-IBM-Client-Id: <anything>`
+- `X-Relay-Secret: <shared secret>` — must match `MBWAY_RELAY_SECRET` on the
+  backend; the endpoint is public once the backend is deployed, unlike the
+  old LAN-only embedded server.
 
-Request body (subset we use):
+Response 200 (possibly empty array — this is a normal "nothing pending" tick,
+not an error):
 ```json
-{
-  "merchant": {
+[
+  {
+    "transactionID": "...",
+    "transactionSignature": "...",
+    "merchantTransactionId": "ticket-1234",
     "terminalId": 47215,
-    "channel": "web",
-    "merchantTransactionId": "ticket-1234"
-  },
-  "transaction": {
-    "transactionTimestamp": "2026-05-24T12:00:00.000Z",
     "description": "Tessera · SU 1º Dezembro vs Praiense",
-    "moto": false,
-    "paymentType": "PURS",
-    "paymentMethod": ["MBWAY"],
-    "amount": { "value": 8.00, "currency": "EUR" }
+    "amount": { "value": 8.00, "currency": "EUR" },
+    "customerPhone": "351#912345678",
+    "callbackUrl": "https://<backend>/api/v1/webhooks/mbway"
   }
-}
+]
 ```
 
-Response 200:
-```json
-{
-  "returnStatus": {
-    "statusCode": "000",
-    "statusMsg": "SUCCESS",
-    "statusDescription": "TRANSACTION CREATED SUCCESSFULLY"
-  },
-  "transactionID": "<server-side uuid>",
-  "transactionSignature": "<server-side opaque token>",
-  "amount": { "value": 8.00, "currency": "EUR" },
-  "merchant": { "terminalId": 47215, "channel": "web",
-                "merchantTransactionId": "ticket-1234" },
-  "paymentMethodList": ["MBWAY"],
-  "expiry": "<+5min>"
-}
-```
+Each item is removed from the backend's queue the moment it's handed back in
+a poll response (no delivery confirmation / redelivery — if the response is
+lost, the payment is lost too, same best-effort spirit as the rest of this
+project; the fan just retries `pay()`, which mints a fresh one). Polled every
+~3s while the app is running (see `RelayPoller`).
 
-The mock additionally accepts a `callbackUrl` field inside `merchant` so the
-ticket-service can pass its webhook URL per-payment (SIBS uses a Backoffice
-config instead; for the mock, per-request is simpler).
-
-### 2. Trigger MB WAY purchase
-
-`POST /api/v1/payments/{transactionID}/mbway/purchase`
-
-Headers:
-- `Content-Type: application/json`
-- `Authorization: <transactionSignature>` (any value, mock doesn't verify)
-
-Request body:
-```json
-{ "customerPhone": "351#912345678" }
-```
-
-Response 200:
-```json
-{
-  "returnStatus": { "statusCode": "000", "statusMsg": "Pending" },
-  "paymentStatus": "Pending",
-  "transactionID": "..."
-}
-```
-
-Side effect: the payment appears in the Compose UI as a card with Aceitar /
+Side effect: each item appears in the Compose UI as a card with Aceitar /
 Recusar buttons.
 
-### 3. Status query (optional polling)
-
-`GET /api/v1/payments/{transactionID}/status`
-
-Response 200:
-```json
-{
-  "returnStatus": { "statusCode": "000", "statusMsg": "Success" },
-  "paymentStatus": "Pending" | "Success" | "Declined" | "Expired",
-  "transactionID": "..."
-}
-```
-
-### 4. Merchant webhook (server → merchant)
+### 2. Merchant webhook (mock → ticket-service)
 
 When the operator taps Aceitar / Recusar in the UI, the mock makes:
 
-`POST <merchant.callbackUrl>`
+`POST <callbackUrl>` (from the polled item — always
+`{backend}/api/v1/webhooks/mbway`)
 
 Body (plain JSON in the mock; production SIBS sends AES-GCM-encrypted):
 ```json
@@ -146,26 +96,22 @@ Body (plain JSON in the mock; production SIBS sends AES-GCM-encrypted):
 ```
 
 The ticket-service correlates the `transactionID` with its
-`ticket.mbway_transaction_id` column (Flyway V3) and transitions the ticket
-from PENDING to PAID (Success) or to CANCELLED (Declined).
+`ticket.mbway_transaction_id` column and transitions the ticket from PENDING
+to PAID (Success) or leaves it PENDING (Declined/Expired).
 
 ## Networking
 
-The mock listens on TCP `:8443` of the device (configurable). For the
-ticket-service running in Docker to reach it, the device's LAN IP must be
-reachable from the host. On the demo device the app shows that IP+port in
-the header so the operator can paste it into the ticket-service env config:
+The mock never listens for inbound connections — it only ever dials out to
+the backend, so it works on any network (its own hotspot, mobile data,
+whatever), including one entirely unrelated to the backend's. Open
+**Definições** in the app and set:
 
-```
-MBWAY_GATEWAY_URL=http://192.168.X.Y:8443
-```
-
-The callback the ticket-service passes in `merchant.callbackUrl` must be
-reachable from the device. For local dev:
-
-```
-http://<docker-host-ip>:8081/api/v1/webhooks/mbway/{transactionId}
-```
+- **Endereço do backend** — just the host, no scheme/port
+  (e.g. `192.168.1.10` for local dev, or the deployed FQDN). The app tries
+  `http://<host>:8081` first, then `https://<host>` — whichever answers is
+  remembered.
+- **Segredo partilhado** — must match `MBWAY_RELAY_SECRET` in the backend's
+  `.env` (defaults to `dev-secret` on both sides for local dev).
 
 ## Running
 
@@ -173,4 +119,6 @@ http://<docker-host-ip>:8081/api/v1/webhooks/mbway/{transactionId}
 ./gradlew :app:installDebug
 ```
 
-then launch the app on a device on the same Wi-Fi as the Docker host.
+then launch the app on any device with internet/LAN access to the backend —
+same Wi-Fi as the Docker host for local dev, or just mobile data if the
+backend is deployed.

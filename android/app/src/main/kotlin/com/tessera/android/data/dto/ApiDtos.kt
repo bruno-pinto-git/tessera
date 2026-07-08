@@ -20,6 +20,5 @@ data class TicketDto(
     val paymentMethod: String?,
     val paymentDate: String?,
     val validationDate: String?,
-    /** Stripe Checkout hosted-page URL. Only present in the pay() response for a fresh CARD payment. */
     val checkoutUrl: String? = null,
 )

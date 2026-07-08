@@ -1,18 +1,35 @@
+import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Download, Share2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Crest } from "@/components/Crest";
+import { getWalletSaveUrl } from "@/api/ticketApi";
 import type { TicketView } from "../hooks/useMyTickets";
 
 export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
   const { home, away } = ticket;
+  const [addingToWallet, setAddingToWallet] = useState(false);
+
+  async function addToWallet() {
+    setAddingToWallet(true);
+    try {
+      const { saveUrl } = await getWalletSaveUrl(Number(ticket.id), {
+        eventTitle: ticket.title,
+        venue: ticket.venue,
+        kickoffAt: ticket.kickoffIso,
+        tierLabel: ticket.tier,
+      });
+      window.location.href = saveUrl;
+    } catch {
+      setAddingToWallet(false);
+    }
+  }
 
   return (
     <Card className="overflow-hidden">
       <div className="grid grid-cols-[1fr_auto]">
-        {/* Left: match info */}
         <div className="p-6 space-y-5">
           <div className="flex items-center justify-between">
             <StatusBadge status="PAID" />
@@ -43,9 +60,18 @@ export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
               <Share2 className="size-3.5" /> Partilhar
             </Button>
           </div>
+
+          <button
+            type="button"
+            onClick={addToWallet}
+            disabled={addingToWallet}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white disabled:opacity-60"
+          >
+            <WalletGlyph />
+            {addingToWallet ? "A preparar…" : "Adicionar ao Google Wallet"}
+          </button>
         </div>
 
-        {/* Right: perforated stub + QR */}
         <div
           className="relative flex flex-col items-center justify-center gap-3 px-6 py-6 bg-secondary/40 border-l"
           style={{ borderLeftStyle: "dashed" }}
@@ -78,5 +104,15 @@ function DL({ k, v }: { k: string; v: string }) {
       <span className="text-muted-foreground">{k}</span>
       <span className="text-right">{v}</span>
     </div>
+  );
+}
+
+function WalletGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2" y="6" width="20" height="14" rx="2" stroke="white" strokeWidth="1.6" />
+      <path d="M2 10h20" stroke="white" strokeWidth="1.6" />
+      <circle cx="17" cy="15" r="1.4" fill="white" />
+    </svg>
   );
 }

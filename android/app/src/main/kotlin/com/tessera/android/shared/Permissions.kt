@@ -37,7 +37,6 @@ object Permissions {
         ),
     )
 
-    // Capacidades acessíveis sem sessão (browse público, como no frontend).
     private val publicCapabilities = setOf(Capability.BROWSE_EVENTS)
 
     fun capabilities(roles: List<String> = AuthSession.roles): Set<Capability> =

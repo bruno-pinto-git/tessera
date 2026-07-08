@@ -13,18 +13,6 @@ import java.time.Month
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 
-/**
- * Publishes domain events for the match-service.
- *
- * Designed to be called from inside service-layer transactions: AMQP send
- * will only become visible after the surrounding transaction commits (Spring
- * defers the publish via the transaction's resource holder when AMQP is
- * configured with `setChannelTransacted` — we accept best-effort delivery
- * here, which is sufficient for the academic project; production-grade
- * setups should add the transactional outbox pattern).
- *
- * Routing keys follow `docs/events/async-contracts.md`.
- */
 @Component
 class MatchEventPublisher(
     private val rabbit: RabbitTemplate,
@@ -90,14 +78,10 @@ class MatchEventPublisher(
             rabbit.convertAndSend(exchange, ROUTING_SHEET_CLOSED, event)
             log.info("Published match.sheet.closed for matchId={}", match.id)
         } catch (e: Exception) {
-            // Best-effort delivery — we log but don't fail the caller's
-            // business transaction. Statistics will be eventually rebuilt
-            // when a future MatchSheetClosed for the same match arrives.
             log.error("Failed to publish match.sheet.closed for matchId={}", match.id, e)
         }
     }
 
-    /** Tells the read-side to drop its snapshot for a sheet that was reopened. */
     fun publishMatchSheetReopened(matchId: Long) {
         val event = MatchSheetReopenedEvent(
             occurredAt = OffsetDateTime.now(ZoneOffset.UTC),
@@ -115,11 +99,6 @@ class MatchEventPublisher(
         const val ROUTING_SHEET_CLOSED = "match.sheet.closed"
         const val ROUTING_SHEET_REOPENED = "match.sheet.reopened"
 
-        /**
-         * European football season runs roughly July-June. A match in
-         * August 2026 belongs to season "2026-27"; one in March 2027 also
-         * "2026-27"; one in July 2027 belongs to "2027-28".
-         */
         internal fun seasonOf(kickoffAt: OffsetDateTime): String {
             val date = kickoffAt.toLocalDate()
             val startYear = if (date.month >= Month.JULY) date.year else date.year - 1

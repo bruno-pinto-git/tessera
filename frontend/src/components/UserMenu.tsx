@@ -9,11 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/**
- * Pill button with the user's initials + caret. Opens a dropdown with the
- * user's full name, role, and a list of actions. Replaces the inline
- * username + "Sair" button that used to live in the header.
- */
 export function UserMenu() {
   const { authenticated, username, roles, logout, login } = useAuth();
 

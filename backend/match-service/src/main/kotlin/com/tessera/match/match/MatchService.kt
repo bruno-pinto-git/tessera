@@ -17,8 +17,6 @@ class MatchService(
     private val repo: MatchRepository,
     private val teamRepo: TeamRepository,
     private val venueRepo: VenueRepository,
-    // @Lazy avoids a potential circular dependency: MatchSheetService depends
-    // on MatchRepository (and indirectly on MatchService via the publisher).
     @Lazy private val sheetService: MatchSheetService,
 ) {
 
@@ -35,7 +33,6 @@ class MatchService(
     fun get(id: Long): Match =
         repo.findActiveById(id) ?: throw MatchNotFoundException(id)
 
-    /** Resolves team id -> club id for the given team ids (single query). */
     @Transactional(readOnly = true)
     fun clubIdsForTeams(teamIds: Collection<Long>): Map<Long, Long> {
         if (teamIds.isEmpty()) return emptyMap()
@@ -78,11 +75,6 @@ class MatchService(
             }
             val previous = match.status
             match.status = newStatus
-            // Auto-lock match-sheet when match enters a terminal status.
-            // We must flush the new match status to the DB before the sheet
-            // service publishes its event, otherwise consumers would see a
-            // stale matchStatus. Spring auto-flushes inside the transaction
-            // when MatchSheetService.autoLockIfPresent reads the entity.
             if (newStatus in TERMINAL_STATUSES && previous !in TERMINAL_STATUSES) {
                 sheetService.autoLockIfPresent(match.id)
             }
@@ -98,7 +90,6 @@ class MatchService(
         req.awayScore?.let { match.awayScore = it }
         req.refereeName?.let { match.refereeName = it }
 
-        // Enforce: FINISHED requires both scores set.
         if (match.status == MatchStatus.FINISHED &&
             (match.homeScore == null || match.awayScore == null)) {
             throw IllegalArgumentException(

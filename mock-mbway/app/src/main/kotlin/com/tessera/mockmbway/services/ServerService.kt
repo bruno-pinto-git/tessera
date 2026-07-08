@@ -16,9 +16,9 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.tessera.mockmbway.R
 import com.tessera.mockmbway.activities.MainActivity
-import com.tessera.mockmbway.data.MockSibsServer
 import com.tessera.mockmbway.data.PaymentExpiryScheduler
 import com.tessera.mockmbway.data.PaymentNotifications
+import com.tessera.mockmbway.data.RelayPoller
 import com.tessera.mockmbway.data.Sounder
 
 class ServerService : Service() {
@@ -28,13 +28,13 @@ class ServerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(tag, "onCreate — starting foreground SIBS server")
+        Log.i(tag, "onCreate — starting foreground relay poller")
         createChannel()
         startForegroundCompat()
         acquireWakeLock()
         PaymentNotifications.init(applicationContext)
         Sounder.init()
-        MockSibsServer.start(applicationContext)
+        RelayPoller.start(applicationContext)
         PaymentExpiryScheduler.start()
     }
 
@@ -43,10 +43,10 @@ class ServerService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        Log.i(tag, "onDestroy — stopping foreground SIBS server")
+        Log.i(tag, "onDestroy — stopping foreground relay poller")
         super.onDestroy()
         PaymentExpiryScheduler.stop()
-        MockSibsServer.stop()
+        RelayPoller.stop()
         Sounder.destroy()
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = null

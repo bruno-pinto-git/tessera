@@ -7,12 +7,6 @@ import jakarta.persistence.Table
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.OffsetDateTime
 
-/**
- * A `ticket.ticket.validated` that arrived before its `ticket.ticket.paid`.
- * Parked here until the paid event creates the sale, at which point the
- * validation timestamp is drained onto it. Avoids permanently losing a
- * validation on out-of-order delivery.
- */
 @Entity
 @Table(name = "pending_validation")
 class PendingValidation(

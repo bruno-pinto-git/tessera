@@ -21,12 +21,6 @@ interface OpenBoxOfficeDialogProps {
   onCreated: () => void;
 }
 
-/**
- * Admin shortcut to create a `PUBLISHED` event in ticket-service tied to
- * the given match. Pragmatic alternative to a full Event admin page —
- * the bottle-necked beta flow is: admin agendas match -> click "Abrir
- * bilheteira" -> bilhetes a partir desse momento aparecem em /events.
- */
 export function OpenBoxOfficeDialog({
   open,
   onOpenChange,
@@ -67,8 +61,6 @@ export function OpenBoxOfficeDialog({
     try {
       await createEvent({
         name: name.trim() || defaultLabel,
-        // Snapshot the fixture so a ticket keeps showing the teams even if the
-        // match is later deleted (the live match would then 404).
         matchLabel: defaultLabel,
         matchId,
         priceNormal: pn.toFixed(2),

@@ -51,16 +51,12 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.core:core-ktx:1.13.1")
 
-    // Ktor server embedded in the app — receives calls from ticket-service.
-    implementation("io.ktor:ktor-server-core:2.3.12")
-    implementation("io.ktor:ktor-server-cio:2.3.12")
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.12")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
-
-    // Ktor client — posts the merchant webhook back to ticket-service.
+    // Ktor client — polls ticket-service for pending payments and posts the
+    // merchant webhook back. No embedded server: the phone always dials out.
     implementation("io.ktor:ktor-client-core:2.3.12")
     implementation("io.ktor:ktor-client-okhttp:2.3.12")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
 
     // Kotlinx serialization (json)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")

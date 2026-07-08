@@ -6,13 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-/**
- * Soft-delete is filtered explicitly in queries — we do NOT use Hibernate's
- * @Where filter so admins/audits can still reach deleted rows when needed.
- *
- * We split queries by parameter shape to avoid Postgres type inference issues
- * when a JPQL parameter is null (it gets bound as `bytea` and breaks `LOWER`).
- */
 interface ClubRepository : JpaRepository<Club, Long> {
 
     @Query("SELECT c FROM Club c WHERE c.deletedAt IS NULL")

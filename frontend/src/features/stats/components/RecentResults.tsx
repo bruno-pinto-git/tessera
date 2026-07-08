@@ -4,12 +4,6 @@ import { useMatchLookups } from "@/features/matches/hooks/useMatchLookups";
 import { MatchResultCard } from "@/features/sheets/components/MatchResultCard";
 import { useMatchHistory } from "../hooks/useStats";
 
-/**
- * Recent closed-match results. Each match is a small card showing the
- * scoreline plus its headline events (goals + cards with the player's name),
- * read from the match-sheet snapshot. Shown to fans on the homepage and
- * reused inside the manager/staff dashboard scoped to a single club.
- */
 export function RecentResults({ clubId, title = "Resultados recentes" }: { clubId?: number; title?: string }) {
   const { data, loading, error } = useMatchHistory({
     size: 4,

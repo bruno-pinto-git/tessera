@@ -206,6 +206,7 @@
     <string name="tickets_type">Tipo</string>
     <string name="tickets_price">Preço</string>
     <string name="tickets_paid_at">Pago em %1$s</string>
+    <string name="tickets_add_to_wallet">Adicionar ao Google Wallet</string>
 
     <string name="event_detail_title">Evento</string>
     <string name="event_detail_error">Não foi possível carregar o evento.</string>
@@ -271,12 +272,14 @@
     <string name="menu_logout">Terminar sessão</string>
 
     <string name="settings_title">Configuração do servidor</string>
-    <string name="settings_help">No PC, corre ipconfig e introduz aqui o endereço IPv4 da rede do hotspot.</string>
-    <string name="settings_host_label">Endereço IP do servidor</string>
-    <string name="settings_host_hint">ex: 192.168.43.5</string>
+    <string name="settings_help">Introduz o IP do servidor local (ex: ipconfig no PC) ou o endereço do servidor publicado — a app deteta sozinha qual dos dois é.</string>
+    <string name="settings_host_label">Endereço do servidor</string>
+    <string name="settings_host_hint">ex: 192.168.43.5 ou tessera.exemplo.com</string>
     <string name="settings_save">Guardar</string>
     <string name="settings_saved">Configuração guardada.</string>
     <string name="settings_back">Voltar</string>
+    <string name="settings_resolving">A verificar ligação…</string>
+    <string name="settings_resolve_failed">Não foi possível ligar a este endereço. Confirma-o e tenta outra vez.</string>
 
     <string name="validate_eyebrow">Tessera · Portão</string>
     <string name="validate_title">Validação de bilhetes</string>

@@ -9,11 +9,6 @@ import java.time.OffsetDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/**
- * Unit tests for [SalesService] aggregation math — the validation-rate
- * calculation (with its zero-division guard) and the date-range guard.
- * Mirrors docs/http-tests/08-statistics.http (sales read-side).
- */
 class SalesServiceTest {
 
     private val repo: TicketSaleRepository = mock()

@@ -31,24 +31,6 @@ import kotlin.test.assertNotNull
 
 private const val CAPTURE_QUEUE = "test.capture.ticket-validated"
 
-/**
- * Producer-side integration test of the event seam: validating a ticket must
- * transition it to VALIDATED and publish `ticket.ticket.validated` to the
- * real exchange — crucially *after* the transaction commits (the transaction
- * synchronization in TicketService.publishOnCommit). The unit tests can only
- * take the no-active-transaction branch, so this is the path they cannot
- * reach.
- *
- * `validate()` is used here rather than `pay()`: both payment methods are now
- * asynchronous (MBWAY needs a real gateway/phone, CARD needs a real Stripe
- * account), so there is no synchronous PAID transition reachable through
- * `pay()` without a live external dependency. `validate()` exercises the
- * exact same @Transactional + publishOnCommit mechanics with none of that —
- * the PAID precondition is set up directly via the repository.
- *
- * Boots the full ticket-service against Testcontainers Postgres + RabbitMQ and
- * binds a throwaway queue to capture the published message.
- */
 @Tag("integration")
 @SpringBootTest
 @Testcontainers
@@ -67,7 +49,6 @@ class TicketPaymentEventFlowIntegrationTest {
         val rabbit = RabbitMQContainer("rabbitmq:3.13-management-alpine")
     }
 
-    /** Binds a capture queue to the shared exchange for the validated routing key. */
     @TestConfiguration
     class TestQueueConfig {
         @Bean
@@ -95,11 +76,6 @@ class TicketPaymentEventFlowIntegrationTest {
             ),
         )
         val created: Ticket = ticketService.create(event.id, supporter = false, ownerSub = "owner-sub")
-        // Both payment methods need a live external gateway (an MB WAY phone,
-        // a real Stripe account) to reach PAID through pay() — set up the
-        // precondition directly via the repository instead; what's under test
-        // here is validate()'s publish-after-commit behaviour, not how a
-        // ticket gets to PAID.
         created.status = TicketStatus.PAID
         created.paymentDate = OffsetDateTime.now(ZoneOffset.UTC)
         created.paymentMethod = "CARD"

@@ -9,14 +9,6 @@ import { MembersSection } from "@/features/members/components/MembersSection";
 import { TeamsSection } from "@/features/teams/components/TeamsSection";
 import { MatchesSection } from "@/features/matches/components/MatchesSection";
 
-/**
- * Per-club management area opened from `/club/<id>` (managers) or
- * `/admin/clubs/<id>` (admins). Shows the club header, its members
- * (admin-only) and its teams. Players are managed per team — open a team
- * from the teams panel to reach its squad. Match sheets are still under
- * construction. The scope-aware backend `@PreAuthorize` checks are in
- * place, so management actions "just work" for both roles.
- */
 export function ClubDetailPage() {
   const { id } = useParams<{ id: string }>();
   const clubId = Number(id);
@@ -46,7 +38,6 @@ export function ClubDetailPage() {
   const isManagerOfThis = me?.clubMemberships?.some(
     (m) => m.clubId === clubId && m.role === "MANAGER",
   );
-  // Manager OR staff of this club — staff get the same dashboard, read-only.
   const isMemberOfThis = me?.clubMemberships?.some((m) => m.clubId === clubId);
   const canManage = isPlatformAdmin || !!isManagerOfThis;
   const backTo = isPlatformAdmin ? "/admin/clubs" : isMemberOfThis ? "/club" : "/admin/clubs";
@@ -68,18 +59,12 @@ export function ClubDetailPage() {
 
       {error && <p className="text-sm text-destructive">Falha a carregar: {error}</p>}
 
-      {/* Members panel - admins, managers and staff of this club. Managers see
-          a scoped mode (staff-only editing); staff get it read-only. */}
       {!Number.isNaN(clubId) && (isPlatformAdmin || isMemberOfThis) && (
         <MembersSection clubId={clubId} canManage={canManage} managerMode={!isPlatformAdmin} />
       )}
 
-      {/* Teams panel - visible to everyone reading the page, manage actions
-          gated by canManage. */}
       {!Number.isNaN(clubId) && <TeamsSection clubId={clubId} canManage={canManage} />}
 
-      {/* Jogos & Bilheteira - home matches for this club. The match-sheet
-          editor is opened per match from the "Ficha técnica" action there. */}
       {!Number.isNaN(clubId) && <MatchesSection clubId={clubId} canManage={canManage} />}
 
       <Card>

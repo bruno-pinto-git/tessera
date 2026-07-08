@@ -21,9 +21,6 @@ interface AddMemberDialogProps {
   clubId: number;
   role: ClubMembershipRole;
   onAdded: () => void;
-  /** When true, only the "create new staff user" form is shown — the global
-   *  user directory is hidden, and the new user is created inline (no
-   *  platform-admin `createUser` call). Managers get this mode. */
   managerMode?: boolean;
 }
 
@@ -35,7 +32,6 @@ export function AddMemberDialog({
   onAdded,
   managerMode = false,
 }: AddMemberDialogProps) {
-  // Managers can only ever create STAFF.
   const effectiveRole: ClubMembershipRole = managerMode ? "STAFF" : role;
   const title = effectiveRole === "MANAGER" ? "Adicionar gestor" : "Adicionar staff";
 
@@ -99,7 +95,6 @@ function ExistingUserPanel({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
 
-  // Debounce-free search: fire on Enter or click.
   async function doSearch() {
     setError(null);
     try {
@@ -113,7 +108,6 @@ function ExistingUserPanel({
   }
 
   useEffect(() => {
-    // Initial load — first 20 users in the realm.
     void Promise.resolve().then(() => setSearching(true));
     void doSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -240,8 +234,6 @@ function NewUserPanel({
     setError(null);
     try {
       if (managerMode) {
-        // Managers can't touch the platform-admin `createUser` endpoint.
-        // The members POST creates the user inline (server forces STAFF).
         await addMember(clubId, {
           role,
           username: form.username.trim(),
@@ -251,8 +243,6 @@ function NewUserPanel({
           password: form.password,
         });
       } else {
-        // The realm role for new users is determined by the club role:
-        // MANAGER -> realm role "club-manager", STAFF -> "staff".
         const realmRole = role === "MANAGER" ? "club-manager" : "staff";
         const user = await createUser({
           username: form.username.trim(),

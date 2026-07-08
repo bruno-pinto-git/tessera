@@ -48,7 +48,6 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
     private val keycloak = KeycloakClient(application)
     private var resetJob: Job? = null
 
-    /** False num dispositivo sem o leitor dedicado Newland. */
     val hardwareScannerAvailable: Boolean = NsdkRepository.available
 
     init {
@@ -99,7 +98,6 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /** Validação a partir de um código lido pela câmara (fallback ZXing). */
     fun submitCode(code: String) {
         val trimmed = code.trim()
         if (trimmed.isNotEmpty()) onCodeScanned(trimmed)
@@ -119,11 +117,6 @@ class ValidateViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
-     * Acquires a fresh Keycloak token (refreshes if expiring) and POSTs to
-     * `/api/v1/tickets/validate`. Returns the HTTP status code so the caller
-     * maps it to a UI state.
-     */
     private suspend fun callValidate(code: String): Int {
         val token = keycloak.freshAccessToken()
         return withContext(Dispatchers.IO) {

@@ -10,13 +10,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
-/**
- * Consumes domain events from RabbitMQ and updates the read-side tables.
- *
- * Handlers are idempotent: re-receiving the same event reconciles to the
- * same final state. This is achieved by deleting and re-inserting the
- * dependent rows for the affected aggregate before saving.
- */
 @Component
 class EventConsumer(
     private val summaryRepo: MatchSummaryRepository,
@@ -34,7 +27,6 @@ class EventConsumer(
         log.info("Received match.sheet.closed matchId={} status={}",
             event.matchId, event.matchStatus)
 
-        // Idempotency: wipe any previous snapshot for this match.
         lineupRepo.deleteByIdMatchId(event.matchId)
         occurrenceRepo.deleteByMatchId(event.matchId)
         summaryRepo.deleteById(event.matchId)
@@ -81,8 +73,6 @@ class EventConsumer(
     @Transactional
     fun onMatchSheetReopened(event: MatchSheetReopenedEvent) {
         log.info("Received match.sheet.reopened matchId={}", event.matchId)
-        // The sheet is being edited again, so the published snapshot is no
-        // longer valid. Drop it; a later match.sheet.closed rebuilds it.
         lineupRepo.deleteByIdMatchId(event.matchId)
         occurrenceRepo.deleteByMatchId(event.matchId)
         if (summaryRepo.existsById(event.matchId)) summaryRepo.deleteById(event.matchId)
@@ -93,12 +83,8 @@ class EventConsumer(
     fun onTicketPaid(event: TicketPaidEvent) {
         log.info("Received ticket.ticket.paid ticketId={} matchId={}",
             event.ticketId, event.matchId)
-        // Carry over a validation that arrived before this paid event
-        // (out-of-order delivery), and preserve one already stamped on a row
-        // we're replacing, so we never lose a validation.
         val pending = pendingValidationRepo.findById(event.ticketId).orElse(null)
         val existingValidatedAt = saleRepo.findById(event.ticketId).orElse(null)?.validatedAt
-        // Upsert via delete-or-merge: if a row already exists, replace.
         saleRepo.findById(event.ticketId).ifPresent { saleRepo.delete(it) }
         saleRepo.flush()
         saleRepo.save(TicketSale(
@@ -120,8 +106,6 @@ class EventConsumer(
         log.info("Received ticket.ticket.validated ticketId={}", event.ticketId)
         val sale = saleRepo.findById(event.ticketId).orElse(null)
         if (sale == null) {
-            // Out-of-order delivery: the paid event hasn't landed yet. Park the
-            // validation so onTicketPaid can drain it instead of losing it.
             log.warn("ticket.ticket.validated before ticket.paid for ticketId={}; parking it",
                 event.ticketId)
             pendingValidationRepo.save(PendingValidation(event.ticketId, event.validatedAt))

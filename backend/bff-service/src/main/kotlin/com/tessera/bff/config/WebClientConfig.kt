@@ -24,14 +24,6 @@ class WebClientConfig {
         @Value("\${services.statistics-url}") statisticsUrl: String
     ): String = statisticsUrl
 
-    /**
-     * Uses Apache HttpClient 5 (via [HttpComponentsClientHttpRequestFactory])
-     * instead of the default `SimpleClientHttpRequestFactory`. The default is
-     * backed by `HttpURLConnection`, which CANNOT send `PATCH` requests
-     * (throws `ProtocolException: Invalid HTTP method: PATCH`). Since the BFF
-     * proxies `PATCH` edits (matches, teams, players, clubs, venues) to the
-     * downstream services, it must use a factory that supports PATCH.
-     */
     @Bean
     fun restTemplate(): RestTemplate = RestTemplate(HttpComponentsClientHttpRequestFactory())
 }

@@ -23,14 +23,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/**
- * Integration test for the match-sheet repositories against a real Postgres
- * (Testcontainers + Flyway schema). These custom @Query methods back the most
- * important business rules (roster limits, shirt uniqueness, red-card and
- * substitution caps) that the service unit tests only mocked. Here the actual
- * JPQL runs against the real schema, with the real FK chain
- * (club -> team -> player -> match -> match_sheet -> lineup/occurrence).
- */
 @Tag("integration")
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -50,7 +42,7 @@ class MatchSheetRepositoryIntegrationTest {
 
     private var teamId = 0L
     private var sheetId = 0L
-    private val players = mutableMapOf<Int, Long>()  // shirt -> playerId
+    private val players = mutableMapOf<Int, Long>()
 
     @BeforeEach
     fun setup() {
@@ -87,7 +79,6 @@ class MatchSheetRepositoryIntegrationTest {
 
         assertTrue(lineupRepo.existsBySheetTeamShirt(sheetId, teamId, 1))
         assertFalse(lineupRepo.existsBySheetTeamShirt(sheetId, teamId, 99))
-        // The player wearing #1 excluded -> no clash; a different player -> clash.
         assertFalse(lineupRepo.existsBySheetTeamShirtExcluding(sheetId, teamId, 1, players.getValue(1)))
         assertTrue(lineupRepo.existsBySheetTeamShirtExcluding(sheetId, teamId, 1, players.getValue(2)))
     }
@@ -108,8 +99,6 @@ class MatchSheetRepositoryIntegrationTest {
         assertEquals(2, occurrenceRepo.countBySheetTeamType(sheetId, teamId, OccurrenceType.SUBSTITUTION))
         assertEquals(0, occurrenceRepo.countBySheetTeamType(sheetId, teamId, OccurrenceType.GOAL))
     }
-
-    // ----- persistence helpers ------------------------------------------------
 
     private fun starter(shirt: Int) = lineupEntry(shirt, LineupRole.STARTER)
     private fun substitute(shirt: Int) = lineupEntry(shirt, LineupRole.SUBSTITUTE)

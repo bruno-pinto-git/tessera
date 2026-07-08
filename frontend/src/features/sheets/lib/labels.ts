@@ -21,7 +21,6 @@ export function occurrenceTypeLabel(t: OccurrenceType): string {
   }
 }
 
-/** Emoji used in the occurrence timeline (kept simple, no icon deps). */
 export function occurrenceIcon(t: OccurrenceType): string {
   switch (t) {
     case "GOAL":
@@ -39,10 +38,8 @@ export function occurrenceIcon(t: OccurrenceType): string {
   }
 }
 
-/** Occurrence types that count toward the scoreline. */
 export const SCORING_TYPES: OccurrenceType[] = ["GOAL", "OWN_GOAL"];
 
-/** The "headline" events shown in a recent-result summary card. */
 export const KEY_EVENT_TYPES: OccurrenceType[] = [
   "GOAL",
   "OWN_GOAL",

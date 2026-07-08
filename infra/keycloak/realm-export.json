@@ -225,6 +225,7 @@
   ],
   "users": [
     {
+      "id": "064b4dac-9d51-4f6a-848f-81da2d4af905",
       "username": "admin",
       "email": "admin@tessera.pt",
       "firstName": "Platform",
@@ -241,6 +242,7 @@
       "realmRoles": ["platform-admin"]
     },
     {
+      "id": "0fcc0ef3-7bcb-4b57-8556-1db0e957ce0c",
       "username": "gestor",
       "email": "gestor@tessera.pt",
       "firstName": "Gestor",
@@ -257,6 +259,7 @@
       "realmRoles": ["club-manager"]
     },
     {
+      "id": "5854e2eb-d458-4973-91bd-d3c6b03c28fd",
       "username": "service-account-tessera-bff",
       "enabled": true,
       "serviceAccountClientId": "tessera-bff",
@@ -273,6 +276,7 @@
       }
     },
     {
+      "id": "94375755-3f61-4a62-b0dd-98d20da6c058",
       "username": "staff",
       "email": "staff@tessera.pt",
       "firstName": "Staff",
@@ -289,6 +293,7 @@
       "realmRoles": ["staff"]
     },
     {
+      "id": "2628fdfa-9493-4369-af55-3569af84601d",
       "username": "adepto",
       "email": "adepto@tessera.pt",
       "firstName": "Adepto",

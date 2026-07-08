@@ -21,7 +21,6 @@ export function useMatches(params: ListMatchesParams): UseMatchesResult {
 
   const refetch = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  // Stable key so the effect only refetches when filters actually change.
   const key = JSON.stringify(params);
 
   useEffect(() => {

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tessera.android.R
 import com.tessera.android.screens.components.searchFieldColors
+import com.tessera.android.shared.ServerConfig
 import com.tessera.android.ui.theme.GlassInkMuted
 import com.tessera.android.viewmodels.SettingsViewModel
 
@@ -73,19 +74,25 @@ fun SettingsScreen(
         )
         Spacer(Modifier.height(16.dp))
 
-        Text(
-            text = viewModel.previewBaseUrl,
-            style = MaterialTheme.typography.bodySmall,
-            color = GlassInkMuted,
-        )
-        Text(
-            text = viewModel.previewIssuer,
-            style = MaterialTheme.typography.bodySmall,
-            color = GlassInkMuted,
-        )
+        when {
+            viewModel.resolving -> Text(
+                text = stringResource(R.string.settings_resolving),
+                style = MaterialTheme.typography.bodySmall,
+                color = GlassInkMuted,
+            )
+            viewModel.saved && viewModel.resolvedMode == ServerConfig.Mode.UNKNOWN -> Text(
+                text = stringResource(R.string.settings_resolve_failed),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            viewModel.saved -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = ServerConfig.baseUrl, style = MaterialTheme.typography.bodySmall, color = GlassInkMuted)
+                Text(text = ServerConfig.issuer, style = MaterialTheme.typography.bodySmall, color = GlassInkMuted)
+            }
+        }
         Spacer(Modifier.height(24.dp))
 
-        if (viewModel.saved) {
+        if (viewModel.saved && viewModel.resolvedMode != ServerConfig.Mode.UNKNOWN) {
             Text(
                 text = stringResource(R.string.settings_saved),
                 style = MaterialTheme.typography.bodyMedium,

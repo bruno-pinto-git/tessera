@@ -1,17 +1,3 @@
-/**
- * Mock club catalog used while the match-service `GET /api/v1/clubs`
- * endpoint isn't wired yet. Each entry describes how to render the club's
- * monogram in <Crest> without depending on real logo assets.
- *
- * When the API integration lands:
- *   1. Replace the static `CLUBS` map with the result of a query against
- *      match-service.
- *   2. Add a real `logoUrl` field. <Crest> already falls back to the
- *      initials when the URL is missing, so the migration is incremental.
- *   3. Drop the `tone` field — the avatar fallback will pick the colour
- *      from `--primary` and the design will lean on actual crests.
- */
-
 export type CrestTone = "forest" | "oxblood" | "navy" | "ochre" | "slate" | "cream";
 
 export interface Club {

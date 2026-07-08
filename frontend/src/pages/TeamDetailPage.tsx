@@ -6,14 +6,6 @@ import { getTeam, teamCategoryLabel, type Team } from "@/features/teams/api/team
 import { getClub, type Club } from "@/features/clubs/api/clubsApi";
 import { PlayersSection } from "@/features/players/components/PlayersSection";
 
-/**
- * Per-team detail page: shows the parent club + team header, and the
- * players panel. Opened by clicking a team row in `TeamsSection`.
- *
- * Authorization: read-only for everyone who can reach a club page; manage
- * actions appear when the user is a platform-admin or a club-manager of
- * the team's parent club (computed from the JWT memberships).
- */
 export function TeamDetailPage() {
   const { id } = useParams<{ id: string }>();
   const teamId = Number(id);
