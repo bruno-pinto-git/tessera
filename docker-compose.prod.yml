@@ -86,12 +86,17 @@ services:
     mem_limit: 512m
     environment:
       KEYCLOAK_JWKS_URI: http://keycloak:8180/auth/realms/tessera/protocol/openid-connect/certs
+      # Browser writes (POST/PUT/DELETE) carry Origin=https://<fqdn> even though the
+      # SPA is same-origin; without the public origin allowed, Spring rejects them
+      # with "Invalid CORS request" (403). The dev localhost origins stay as the code default.
+      APP_CORS_ALLOWED_ORIGINS: https://${TESSERA_FQDN}
 
   ticket-service:
     restart: unless-stopped
     mem_limit: 512m
     environment:
       KEYCLOAK_JWKS_URI: http://keycloak:8180/auth/realms/tessera/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: https://${TESSERA_FQDN}
       # Stripe redirects the buyer back here after Checkout; the base compose
       # defaults these to localhost, which would strand the buyer in prod. Point
       # them at the public site. {eventId}/{id} are literal placeholders that
@@ -110,6 +115,7 @@ services:
     mem_limit: 512m
     environment:
       KEYCLOAK_JWKS_URI: http://keycloak:8180/auth/realms/tessera/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: https://${TESSERA_FQDN}
       TESSERA_KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8180/auth
 
   statistics-service:
@@ -117,6 +123,7 @@ services:
     mem_limit: 512m
     environment:
       KEYCLOAK_JWKS_URI: http://keycloak:8180/auth/realms/tessera/protocol/openid-connect/certs
+      APP_CORS_ALLOWED_ORIGINS: https://${TESSERA_FQDN}
 
   rabbitmq:
     restart: unless-stopped
