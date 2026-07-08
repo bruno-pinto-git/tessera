@@ -119,8 +119,8 @@ private fun ConnectionStatus() {
     val connected = RelayConfig.mode != RelayConfig.Mode.UNKNOWN && RelayConfig.lastPollOk != false
     val label = when {
         RelayConfig.mode == RelayConfig.Mode.UNKNOWN -> stringResource(R.string.status_not_connected)
-        RelayConfig.lastPollOk == false -> stringResource(R.string.status_lost, RelayConfig.host)
-        else -> stringResource(R.string.status_connected, RelayConfig.host)
+        RelayConfig.lastPollOk == false -> stringResource(R.string.status_lost, RelayConfig.activeHost)
+        else -> stringResource(R.string.status_connected, RelayConfig.activeHost)
     }
     Text(
         text = label,

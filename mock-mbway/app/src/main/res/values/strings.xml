@@ -33,9 +33,9 @@
     <string name="resolution_expired">Expirado</string>
 
     <string name="settings_title">Definições</string>
-    <string name="settings_help">Introduz o endereço do backend Tessera — a app deteta sozinha se é local ou publicado.</string>
-    <string name="settings_host_label">Endereço do backend</string>
-    <string name="settings_host_hint">ex: 192.168.43.10 ou tessera.exemplo.com</string>
+    <string name="settings_help">Introduz o IP do backend local — só para desenvolvimento/demo na mesma rede. O backend publicado é detetado automaticamente, não precisas de o configurar aqui.</string>
+    <string name="settings_host_label">IP do backend local</string>
+    <string name="settings_host_hint">ex: 192.168.43.10</string>
     <string name="settings_secret_label">Segredo partilhado (X-Relay-Secret)</string>
     <string name="settings_save">Guardar</string>
     <string name="settings_back">Voltar</string>

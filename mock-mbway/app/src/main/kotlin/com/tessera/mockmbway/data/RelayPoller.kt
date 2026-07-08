@@ -70,11 +70,11 @@ object RelayPoller {
 
     private suspend fun tick(context: Context) {
         if (RelayConfig.mode == RelayConfig.Mode.UNKNOWN) {
-            if (deliver(context, "http://${RelayConfig.host}:8081")) {
+            if (deliver(context, "http://${RelayConfig.localHost}:8081")) {
                 RelayConfig.mode = RelayConfig.Mode.LOCAL
                 return
             }
-            if (deliver(context, "https://${RelayConfig.host}")) {
+            if (deliver(context, "https://${RelayConfig.REMOTE_HOST}")) {
                 RelayConfig.mode = RelayConfig.Mode.REMOTE
             }
             return

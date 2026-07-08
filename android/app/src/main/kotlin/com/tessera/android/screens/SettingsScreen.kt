@@ -86,7 +86,7 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.error,
             )
             viewModel.saved -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = ServerConfig.baseUrl, style = MaterialTheme.typography.bodySmall, color = GlassInkMuted)
+                Text(text = "${ServerConfig.baseUrl}/api/v1", style = MaterialTheme.typography.bodySmall, color = GlassInkMuted)
                 Text(text = ServerConfig.issuer, style = MaterialTheme.typography.bodySmall, color = GlassInkMuted)
             }
         }
