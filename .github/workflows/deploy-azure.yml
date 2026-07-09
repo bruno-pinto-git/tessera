@@ -44,17 +44,22 @@ env:
   DEPLOY_REF: ${{ inputs.ref }}
 
 jobs:
-  # Quality gate: the full E2E suite (Playwright against a compose stack) must
-  # pass before a deploy touches the VM. Skipped for start/stop (nothing to test).
+  # Quality gate: BOTH the E2E suite (Playwright against a compose stack) and the
+  # backend JUnit suite must pass before a deploy touches the VM. Both are skipped
+  # for the start/stop operations (nothing to test).
   e2e:
     if: ${{ inputs.operation == 'deploy' }}
     uses: ./.github/workflows/e2e.yml
 
+  backend:
+    if: ${{ inputs.operation == 'deploy' }}
+    uses: ./.github/workflows/backend-tests.yml
+
   ops:
     name: ${{ inputs.operation }}
-    needs: [e2e]
-    # start/stop run without the gate; deploy proceeds only if e2e succeeded.
-    if: ${{ always() && (inputs.operation != 'deploy' || needs.e2e.result == 'success') }}
+    needs: [e2e, backend]
+    # start/stop run without the gate; deploy proceeds only if BOTH suites passed.
+    if: ${{ always() && (inputs.operation != 'deploy' || (needs.e2e.result == 'success' && needs.backend.result == 'success')) }}
     runs-on: ubuntu-latest
     steps:
       - name: Azure login

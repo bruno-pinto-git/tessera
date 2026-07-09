@@ -9,14 +9,8 @@ name: e2e
 # `workflow_call` lets deploy-azure.yml gate the VM deploy on this passing.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "frontend/**"
-      - "backend/**"
-      - "docker-compose.yml"
-      - "infra/**"
-      - ".github/workflows/e2e.yml"
+  # Runnable on demand and callable by ci-main.yml (push to main) and by the
+  # deploy gate. Not triggered directly on push — ci-main orchestrates main.
   workflow_dispatch:
   workflow_call:
 

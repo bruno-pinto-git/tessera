@@ -10,7 +10,10 @@ name: backend-tests
 
 on:
   push:
-    branches: [develop, main]
+    # develop gets lightweight, path-filtered feedback; main is orchestrated by
+    # ci-main.yml (which runs this + e2e on every push), so main is omitted here
+    # to avoid a duplicate run.
+    branches: [develop]
     paths:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
@@ -20,6 +23,8 @@ on:
       - "backend/**"
       - ".github/workflows/backend-tests.yml"
   workflow_dispatch:
+  # Lets deploy-azure.yml gate the VM deploy on this suite passing.
+  workflow_call:
 
 jobs:
   test:

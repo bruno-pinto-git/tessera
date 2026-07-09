@@ -1,0 +1,17 @@
+name: ci-main
+
+# Full CI on the release branch: every push to main runs BOTH the backend JUnit
+# suite and the E2E suite (no path filters — a release always gets the complete
+# check). develop keeps its lighter, path-filtered backend-tests run; the deploy
+# button gates on these same two suites via deploy-azure.yml.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    uses: ./.github/workflows/backend-tests.yml
+  e2e:
+    uses: ./.github/workflows/e2e.yml
