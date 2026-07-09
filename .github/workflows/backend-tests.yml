@@ -1,29 +1,16 @@
 name: backend-tests
 
-# Single tier: the team pushes straight to develop/main (no PR flow), so every
-# push runs the FULL suite — unit + @WebMvcTest + the Testcontainers integration
-# tests (-Pintegration) — plus bootJar to confirm the deployable artifact packages.
-# Each backend service is an independent Gradle build, so we fan out with a matrix.
+# The FULL backend suite — unit + @WebMvcTest + Testcontainers integration
+# (-Pintegration) + bootJar — fanned out per service with a matrix.
 #
-# `workflow_dispatch` adds a manual "Run workflow" button in the Actions tab.
-# `pull_request` is kept so the same checks still run if a PR is ever opened.
+# By team preference this does NOT run on push. It runs only when:
+#   - ci-main.yml calls it (on every push to main), or
+#   - the deploy-azure.yml gate calls it, or
+#   - it is dispatched manually.
+# So develop pushes stay CI-free; the full suite runs at the main/release gate.
 
 on:
-  push:
-    # develop gets lightweight, path-filtered feedback; main is orchestrated by
-    # ci-main.yml (which runs this + e2e on every push), so main is omitted here
-    # to avoid a duplicate run.
-    branches: [develop]
-    paths:
-      - "backend/**"
-      - ".github/workflows/backend-tests.yml"
-  pull_request:
-    branches: [develop, main]
-    paths:
-      - "backend/**"
-      - ".github/workflows/backend-tests.yml"
   workflow_dispatch:
-  # Lets deploy-azure.yml gate the VM deploy on this suite passing.
   workflow_call:
 
 jobs:
