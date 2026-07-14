@@ -3,6 +3,8 @@ import { Calendar, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crest } from "@/components/Crest";
+import { SheetLinkButton } from "@/features/sheets/components/SheetLinkButton";
+import { isMatchLive } from "../lib/catalog";
 import type { CatalogEntry } from "../lib/catalog";
 
 interface MatchCardProps {
@@ -11,6 +13,7 @@ interface MatchCardProps {
 
 export function MatchCard({ entry }: MatchCardProps) {
   const { day, date, time } = formatKickoff(entry.kickoffAt);
+  const live = isMatchLive(entry);
 
   return (
     <Card className="flex flex-col overflow-hidden">
@@ -59,7 +62,17 @@ export function MatchCard({ entry }: MatchCardProps) {
 
       <div className="border-t px-5 py-3 flex items-center justify-between">
         <div className="text-sm">
-          {entry.homeScore != null && entry.awayScore != null ? (
+          {live ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-500">
+                <span className="size-1.5 rounded-full bg-red-600 dark:bg-red-500 animate-pulse" />
+                A decorrer
+              </span>
+              <div className="font-display font-bold tabular-nums">
+                {entry.homeScore ?? 0} – {entry.awayScore ?? 0}
+              </div>
+            </>
+          ) : entry.homeScore != null && entry.awayScore != null ? (
             <>
               <span className="text-muted-foreground text-xs">Resultado</span>
               <div className="font-display font-bold tabular-nums">
@@ -73,9 +86,12 @@ export function MatchCard({ entry }: MatchCardProps) {
             </>
           )}
         </div>
-        <Button size="sm" asChild>
-          <Link to={`/events/${entry.eventId}`}>Ver detalhes →</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <SheetLinkButton matchId={entry.matchId} />
+          <Button size="sm" asChild>
+            <Link to={`/events/${entry.eventId}`}>Ver detalhes →</Link>
+          </Button>
+        </div>
       </div>
     </Card>
   );

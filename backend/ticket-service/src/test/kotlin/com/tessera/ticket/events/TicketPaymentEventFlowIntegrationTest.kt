@@ -81,7 +81,7 @@ class TicketPaymentEventFlowIntegrationTest {
         created.paymentMethod = "CARD"
         val paid = ticketRepository.save(created)
 
-        ticketService.validate(paid.code, "staff-sub", isPlatformAdmin = true, staffClubIds = emptySet())
+        ticketService.validate(paid.code, "staff-sub", isPlatformAdmin = true, validatorToken = "token")
 
         val received = rabbitTemplate.receiveAndConvert(CAPTURE_QUEUE, 10_000)
         assertNotNull(received, "expected a ticket.ticket.validated message on the exchange")

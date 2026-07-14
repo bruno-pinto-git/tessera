@@ -171,14 +171,14 @@ class TicketServiceTest {
     fun `validate fails for an unknown code`() {
         val code = UUID.randomUUID()
         whenever(ticketRepository.findByCode(code)).thenReturn(null)
-        assertFailsWith<TicketNotFoundException> { service.validate(code, "staff-sub", isPlatformAdmin = true, staffClubIds = emptySet()) }
+        assertFailsWith<TicketNotFoundException> { service.validate(code, "staff-sub", isPlatformAdmin = true, validatorToken = "token") }
     }
 
     @Test
     fun `validate rejects a ticket that is not paid`() {
         val code = UUID.randomUUID()
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PENDING))
-        assertFailsWith<InvalidTicketStatusException> { service.validate(code, "staff-sub", isPlatformAdmin = true, staffClubIds = emptySet()) }
+        assertFailsWith<InvalidTicketStatusException> { service.validate(code, "staff-sub", isPlatformAdmin = true, validatorToken = "token") }
     }
 
     @Test
@@ -188,7 +188,7 @@ class TicketServiceTest {
         whenever(ticketRepository.findByCode(code)).thenReturn(t)
         doReturn(t).whenever(ticketRepository).save(any())
 
-        val validated = service.validate(code, "staff-sub", isPlatformAdmin = true, staffClubIds = emptySet())
+        val validated = service.validate(code, "staff-sub", isPlatformAdmin = true, validatorToken = "token")
 
         assertEquals(TicketStatus.VALIDATED, validated.status)
         assertEquals("staff-sub", validated.validatorSub)
@@ -201,9 +201,10 @@ class TicketServiceTest {
         val t = ticket(status = TicketStatus.PAID)
         whenever(ticketRepository.findByCode(code)).thenReturn(t)
         whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1)))
+        whenever(matchLookup.isCurrentStaff(5L, "staff-sub", "token")).thenReturn(true)
         doReturn(t).whenever(ticketRepository).save(any())
 
-        val v = service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+        val v = service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
 
         assertEquals(TicketStatus.VALIDATED, v.status)
         verify(publisher).publishTicketValidated(v)
@@ -215,7 +216,19 @@ class TicketServiceTest {
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
         whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1)))
         assertFailsWith<AccessDeniedException> {
-            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(7L))
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
+        }
+    }
+
+    @Test
+    fun `staff removed from the club cannot validate even with a stale token`() {
+        val code = UUID.randomUUID()
+        whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
+        whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1)))
+        // The token still carries the club, but the live membership check says otherwise.
+        whenever(matchLookup.isCurrentStaff(5L, "staff-sub", "token")).thenReturn(false)
+        assertFailsWith<AccessDeniedException> {
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
         }
     }
 
@@ -225,7 +238,7 @@ class TicketServiceTest {
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
         whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(5)))
         assertFailsWith<AccessDeniedException> {
-            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
         }
     }
 
@@ -235,7 +248,7 @@ class TicketServiceTest {
         whenever(ticketRepository.findByCode(code)).thenReturn(ticket(status = TicketStatus.PAID))
         whenever(matchLookup.find(99L)).thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().minusHours(5)))
         assertFailsWith<AccessDeniedException> {
-            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
         }
     }
 
@@ -246,7 +259,7 @@ class TicketServiceTest {
         whenever(matchLookup.find(99L))
             .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusMinutes(150)))
         assertFailsWith<AccessDeniedException> {
-            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
         }
     }
 
@@ -257,7 +270,7 @@ class TicketServiceTest {
         whenever(matchLookup.find(99L))
             .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().minusMinutes(150)))
         assertFailsWith<AccessDeniedException> {
-            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
         }
     }
 
@@ -268,7 +281,7 @@ class TicketServiceTest {
         whenever(matchLookup.find(99L))
             .thenReturn(matchView(homeClubId = 5L, kickoff = OffsetDateTime.now().plusHours(1), status = "CANCELLED"))
         assertFailsWith<AccessDeniedException> {
-            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
         }
     }
 
@@ -279,7 +292,7 @@ class TicketServiceTest {
         whenever(ticketRepository.findByCode(code)).thenReturn(t)
         doReturn(t).whenever(ticketRepository).save(any())
 
-        val v = service.validate(code, "admin-sub", isPlatformAdmin = true, staffClubIds = emptySet())
+        val v = service.validate(code, "admin-sub", isPlatformAdmin = true, validatorToken = "token")
 
         assertEquals(TicketStatus.VALIDATED, v.status)
         verify(matchLookup, never()).find(any())
@@ -297,7 +310,7 @@ class TicketServiceTest {
         )
         whenever(ticketRepository.findByCode(code)).thenReturn(noMatch)
         assertFailsWith<AccessDeniedException> {
-            service.validate(code, "staff-sub", isPlatformAdmin = false, staffClubIds = setOf(5L))
+            service.validate(code, "staff-sub", isPlatformAdmin = false, validatorToken = "token")
         }
     }
 

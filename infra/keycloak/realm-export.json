@@ -210,7 +210,7 @@
       "description": "Backend for Frontend - comunicação serviço-a-serviço, validação de tokens",
       "enabled": true,
       "publicClient": false,
-      "secret": "change-me-in-production",
+      "secret": "${TESSERA_BFF_CLIENT_SECRET:change-me-in-production}",
       "serviceAccountsEnabled": true,
       "directAccessGrantsEnabled": false,
       "standardFlowEnabled": false,
@@ -235,7 +235,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin",
+          "value": "${SEED_ADMIN_PASSWORD:admin}",
           "temporary": false
         }
       ],
@@ -252,7 +252,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "gestor",
+          "value": "${SEED_GESTOR_PASSWORD:gestor}",
           "temporary": false
         }
       ],
@@ -286,7 +286,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "staff",
+          "value": "${SEED_STAFF_PASSWORD:staff}",
           "temporary": false
         }
       ],
@@ -303,7 +303,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "adepto",
+          "value": "${SEED_ADEPTO_PASSWORD:adepto}",
           "temporary": false
         }
       ],
@@ -325,7 +325,7 @@
       "firstBrokerLoginFlowAlias": "first broker login",
       "config": {
         "clientId": "744575456601-kt5lkklecr8m76iscc5vmj5csovn767h.apps.googleusercontent.com",
-        "clientSecret": "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",
+        "clientSecret": "${GOOGLE_IDP_CLIENT_SECRET:}",
         "syncMode": "IMPORT",
         "defaultScope": "openid profile email"
       }
@@ -344,7 +344,7 @@
       "firstBrokerLoginFlowAlias": "first broker login",
       "config": {
         "clientId": "8b82d774-8f31-410e-bff4-9536ad00ff37",
-        "clientSecret": "wnE8Q~jmFxqf4MwFr8XXOM9bSQIYPlW.SHNZsa3y",
+        "clientSecret": "${MICROSOFT_IDP_CLIENT_SECRET:}",
         "syncMode": "IMPORT",
         "defaultScope": "openid profile email User.Read"
       }

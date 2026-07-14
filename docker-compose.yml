@@ -43,12 +43,12 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-tickets:5432/tessera_tickets
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-postgres}
       KEYCLOAK_JWKS_URI: http://keycloak:8180/realms/tessera/protocol/openid-connect/certs
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: tessera
-      SPRING_RABBITMQ_PASSWORD: tessera
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-tessera}
       # MB WAY: mock-mbway (or real SIBS) polls us for pending payments and
       # calls this webhook back with the result — we never call out to it.
       # For a phone on the LAN, override with the host's LAN IP:
@@ -90,15 +90,15 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-matches:5432/tessera_matches
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-postgres}
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: tessera
-      SPRING_RABBITMQ_PASSWORD: tessera
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-tessera}
       TESSERA_KEYCLOAK_ADMIN_BASE_URL: http://keycloak:8180
       TESSERA_KEYCLOAK_ADMIN_REALM: tessera
       TESSERA_KEYCLOAK_ADMIN_CLIENT_ID: tessera-bff
-      TESSERA_KEYCLOAK_ADMIN_CLIENT_SECRET: change-me-in-production
+      TESSERA_KEYCLOAK_ADMIN_CLIENT_SECRET: ${TESSERA_BFF_CLIENT_SECRET:-change-me-in-production}
     depends_on:
       db-matches:
         condition: service_healthy
@@ -119,11 +119,11 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-statistics:5432/tessera_statistics
       SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD:-postgres}
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: tessera
-      SPRING_RABBITMQ_PASSWORD: tessera
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-tessera}
     depends_on:
       db-statistics:
         condition: service_healthy
@@ -142,7 +142,7 @@ services:
       - "15672:15672"   # management UI (http://localhost:15672, tessera/tessera)
     environment:
       RABBITMQ_DEFAULT_USER: tessera
-      RABBITMQ_DEFAULT_PASS: tessera
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-tessera}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -161,7 +161,7 @@ services:
     environment:
       POSTGRES_DB: tessera_tickets
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-postgres}
     volumes:
       - db-tickets-data:/var/lib/postgresql/data
     healthcheck:
@@ -177,7 +177,7 @@ services:
     environment:
       POSTGRES_DB: tessera_matches
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-postgres}
     volumes:
       - db-matches-data:/var/lib/postgresql/data
     healthcheck:
@@ -193,7 +193,7 @@ services:
     environment:
       POSTGRES_DB: tessera_statistics
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-postgres}
     volumes:
       - db-statistics-data:/var/lib/postgresql/data
     healthcheck:

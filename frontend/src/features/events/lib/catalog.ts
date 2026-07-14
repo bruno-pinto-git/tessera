@@ -37,6 +37,23 @@ export interface CatalogEntry {
   priceFrom: number;
 }
 
+/** How long after kickoff a match is still considered "in progress" (2h). */
+export const MATCH_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+export function isMatchFinished(e: Pick<CatalogEntry, "matchStatus">): boolean {
+  return e.matchStatus === "FINISHED" || e.matchStatus === "ABANDONED";
+}
+
+/** A match is "live" by time: kicked off, within the ~2h window, not finished/cancelled. */
+export function isMatchLive(e: Pick<CatalogEntry, "matchStatus" | "kickoffAt">): boolean {
+  if (isMatchFinished(e) || e.matchStatus === "CANCELLED") return false;
+  if (!e.kickoffAt) return false;
+  const k = new Date(e.kickoffAt).getTime();
+  if (Number.isNaN(k)) return false;
+  const now = Date.now();
+  return now >= k && now <= k + MATCH_WINDOW_MS;
+}
+
 const TONES: CrestTone[] = ["forest", "oxblood", "navy", "ochre", "slate", "cream"];
 
 export function toneFromId(id: number | null): CrestTone {

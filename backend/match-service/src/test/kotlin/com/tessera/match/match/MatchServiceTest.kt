@@ -35,6 +35,13 @@ class MatchServiceTest {
     }
 
     @Test
+    fun `create rejects a kickoff in the past`() {
+        val req = createReq(home = 1L, away = 2L, kickoffAt = OffsetDateTime.now().minusDays(1))
+        assertFailsWith<IllegalArgumentException> { service.create(req) }
+        verify(repo, never()).save(any())
+    }
+
+    @Test
     fun `create fails when home team does not exist`() {
         whenever(teamRepo.findActiveById(1L)).thenReturn(null)
         assertFailsWith<TeamNotFoundException> { service.create(createReq(home = 1L, away = 2L)) }
@@ -177,11 +184,16 @@ class MatchServiceTest {
         assertFailsWith<MatchNotFoundException> { service.get(404L) }
     }
 
-    private fun createReq(home: Long, away: Long, venueId: Long? = null) = MatchCreateRequest(
+    private fun createReq(
+        home: Long,
+        away: Long,
+        venueId: Long? = null,
+        kickoffAt: OffsetDateTime = OffsetDateTime.now().plusDays(1),
+    ) = MatchCreateRequest(
         homeTeamId = home,
         awayTeamId = away,
         venueId = venueId,
-        kickoffAt = OffsetDateTime.now().plusDays(1),
+        kickoffAt = kickoffAt,
     )
 
     private fun team(id: Long) = Team(

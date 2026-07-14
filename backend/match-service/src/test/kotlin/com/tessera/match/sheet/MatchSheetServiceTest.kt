@@ -349,6 +349,55 @@ class MatchSheetServiceTest {
         verify(publisher).publishMatchSheetClosed(sheet)
     }
 
+    @Test
+    fun `adding a goal syncs the match score`() {
+        val m = match(MatchStatus.SCHEDULED)
+        whenever(matchRepo.findActiveById(MATCH_ID)).thenReturn(m)
+        whenever(sheetRepo.findByMatchId(MATCH_ID)).thenReturn(sheet(locked = false))
+        whenever(lineupRepo.findById(LineupEntryId(SHEET_ID, 10L)))
+            .thenReturn(Optional.of(entry(10L, HOME_TEAM, LineupRole.STARTER)))
+        doReturn(occurrence(OccurrenceType.GOAL, playerId = 10L, teamId = HOME_TEAM))
+            .whenever(occurrenceRepo).save(any())
+        whenever(occurrenceRepo.findBySheet(SHEET_ID))
+            .thenReturn(listOf(occurrence(OccurrenceType.GOAL, playerId = 10L, teamId = HOME_TEAM)))
+
+        service.addOccurrence(MATCH_ID, occReq(OccurrenceType.GOAL, playerId = 10L))
+
+        assertEquals(1, m.homeScore)
+        assertEquals(0, m.awayScore)
+    }
+
+    @Test
+    fun `closing the sheet finishes the match with the score from the sheet`() {
+        val m = match(MatchStatus.SCHEDULED)
+        whenever(matchRepo.findActiveById(MATCH_ID)).thenReturn(m)
+        whenever(sheetRepo.findByMatchId(MATCH_ID)).thenReturn(sheet(locked = false))
+        whenever(occurrenceRepo.findBySheet(SHEET_ID)).thenReturn(
+            listOf(
+                occurrence(OccurrenceType.GOAL, playerId = 10L, teamId = HOME_TEAM),
+                occurrence(OccurrenceType.GOAL, playerId = 11L, teamId = HOME_TEAM),
+                occurrence(OccurrenceType.OWN_GOAL, playerId = 20L, teamId = AWAY_TEAM),
+            ),
+        )
+
+        service.lock(MATCH_ID)
+
+        assertEquals(MatchStatus.FINISHED, m.status)
+        assertEquals(3, m.homeScore)
+        assertEquals(0, m.awayScore)
+    }
+
+    @Test
+    fun `reopening a finished match makes it editable again`() {
+        val m = match(MatchStatus.FINISHED)
+        whenever(matchRepo.findActiveById(MATCH_ID)).thenReturn(m)
+        whenever(sheetRepo.findByMatchId(MATCH_ID)).thenReturn(sheet(locked = true))
+
+        service.unlock(MATCH_ID)
+
+        assertEquals(MatchStatus.SCHEDULED, m.status)
+    }
+
     private fun editableSheet() {
         whenever(matchRepo.findActiveById(MATCH_ID)).thenReturn(match(MatchStatus.SCHEDULED))
         whenever(sheetRepo.findByMatchId(MATCH_ID)).thenReturn(sheet(locked = false))

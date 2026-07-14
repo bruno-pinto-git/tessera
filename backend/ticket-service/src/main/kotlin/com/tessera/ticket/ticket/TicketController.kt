@@ -2,7 +2,6 @@ package com.tessera.ticket.ticket
 
 import com.tessera.ticket.common.PageEnvelope
 import com.tessera.ticket.event.isPlatformAdmin
-import com.tessera.ticket.event.staffClubIds
 import com.tessera.ticket.wallet.GoogleWalletClient
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -111,7 +110,7 @@ class TicketController(
                 throw IllegalArgumentException("Invalid UUID format: $raw")
             }
         val validated =
-            ticketService.validate(uuid, userIdOf(jwt), jwt.isPlatformAdmin(), jwt.staffClubIds())
+            ticketService.validate(uuid, userIdOf(jwt), jwt.isPlatformAdmin(), jwt.tokenValue)
         log.info("Validated ticket id={} by validator={}", validated.id, userIdOf(jwt))
         return toResponse(validated)
     }

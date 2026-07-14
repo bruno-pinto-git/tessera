@@ -1,6 +1,7 @@
 package com.tessera.ticket.event
 
 import com.tessera.ticket.common.PageEnvelope
+import com.tessera.ticket.ticket.BoxOfficeAlreadyExistsException
 import com.tessera.ticket.ticket.EventNotFoundException
 import com.tessera.ticket.ticket.SaleClosedException
 import jakarta.validation.constraints.DecimalMin
@@ -56,6 +57,13 @@ class EventService(
             throw IllegalArgumentException(
                 "Invalid status '$status'; expected one of $ALLOWED_STATUS"
             )
+        }
+        req.matchId?.let { matchId ->
+            if (repo.existsByMatchIdAndStatusNot(matchId, "CANCELLED")) {
+                throw BoxOfficeAlreadyExistsException(
+                    "A box office already exists for match $matchId."
+                )
+            }
         }
         val entity = Event(
             name           = req.name,

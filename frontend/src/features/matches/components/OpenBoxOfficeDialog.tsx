@@ -13,6 +13,23 @@ import { Label } from "@/components/ui/label";
 import { ApiError } from "@/api/client";
 import { createEvent } from "@/features/events/api/eventsApi";
 
+/** Turns an API/network error into a message a user can actually understand. */
+function friendlyError(err: unknown): string {
+  if (err instanceof ApiError) {
+    switch (err.status) {
+      case 409:
+        return "Já existe uma bilheteira aberta para este jogo.";
+      case 403:
+        return "Não tens permissão para abrir a bilheteira deste jogo.";
+      case 401:
+        return "A tua sessão expirou. Inicia sessão novamente.";
+      default:
+        return "Não foi possível abrir a bilheteira. Tenta novamente.";
+    }
+  }
+  return "Erro inesperado. Tenta novamente.";
+}
+
 interface OpenBoxOfficeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -70,11 +87,7 @@ export function OpenBoxOfficeDialog({
       onCreated();
       onOpenChange(false);
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError(err instanceof Error ? err.message : "Erro inesperado");
-      }
+      setError(friendlyError(err));
     } finally {
       setSubmitting(false);
     }

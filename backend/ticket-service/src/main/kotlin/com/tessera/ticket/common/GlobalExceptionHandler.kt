@@ -1,5 +1,6 @@
 package com.tessera.ticket.common
 
+import com.tessera.ticket.ticket.BoxOfficeAlreadyExistsException
 import com.tessera.ticket.ticket.EventNotFoundException
 import com.tessera.ticket.ticket.InvalidTicketStatusException
 import com.tessera.ticket.ticket.SaleClosedException
@@ -38,6 +39,7 @@ class GlobalExceptionHandler {
     @ExceptionHandler(value = [
         InvalidTicketStatusException::class,
         SaleClosedException::class,
+        BoxOfficeAlreadyExistsException::class,
     ])
     fun handleConflict(ex: RuntimeException, req: WebRequest): ResponseEntity<Problem> {
         log.warn("Conflict: {}", ex.message)

@@ -124,13 +124,13 @@ class TicketService(
         code: UUID,
         validatorSub: String,
         isPlatformAdmin: Boolean,
-        staffClubIds: Set<Long>,
+        validatorToken: String,
     ): Ticket {
         val ticket = ticketRepository.findByCode(code)
             ?: throw TicketNotFoundException("Ticket not found: $code")
 
         if (!isPlatformAdmin) {
-            authorizeStaffValidation(ticket, staffClubIds)
+            authorizeStaffValidation(ticket, validatorSub, validatorToken)
         }
 
         if (ticket.status != TicketStatus.PAID) {
@@ -148,16 +148,14 @@ class TicketService(
         return saved
     }
 
-    private fun authorizeStaffValidation(ticket: Ticket, staffClubIds: Set<Long>) {
+    private fun authorizeStaffValidation(ticket: Ticket, validatorSub: String, validatorToken: String) {
         val matchId = ticket.event?.matchId
             ?: throw AccessDeniedException("Only platform admins can validate tickets not tied to a match.")
         val match = matchLookup.find(matchId)
             ?: throw AccessDeniedException("Could not resolve the match for this ticket.")
 
         val homeClubId = match.homeClubId
-        if (homeClubId == null || homeClubId !in staffClubIds) {
-            throw AccessDeniedException("You can only validate tickets for your own club's home matches.")
-        }
+            ?: throw AccessDeniedException("You can only validate tickets for your own club's home matches.")
         if (match.status == "CANCELLED") {
             throw AccessDeniedException("This match has been cancelled.")
         }
@@ -172,6 +170,13 @@ class TicketService(
                 "Tickets can only be validated from ${VALIDATION_OPENS_HOURS_BEFORE}h before kickoff " +
                     "until the match ends.",
             )
+        }
+
+        // Cheap local checks passed; finally confirm the validator is CURRENTLY staff of the
+        // home club, checked live against Keycloak — not merely staff when the token was
+        // issued. This rejects a member removed from the club who still holds a valid token.
+        if (!matchLookup.isCurrentStaff(homeClubId, validatorSub, validatorToken)) {
+            throw AccessDeniedException("You can only validate tickets for your own club's home matches.")
         }
     }
 
@@ -206,3 +211,4 @@ class TicketNotFoundException(message: String) : RuntimeException(message)
 class EventNotFoundException(message: String) : RuntimeException(message)
 class InvalidTicketStatusException(message: String) : RuntimeException(message)
 class SaleClosedException(message: String) : RuntimeException(message)
+class BoxOfficeAlreadyExistsException(message: String) : RuntimeException(message)

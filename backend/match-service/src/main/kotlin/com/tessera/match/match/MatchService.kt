@@ -41,6 +41,9 @@ class MatchService(
 
     @Transactional
     fun create(req: MatchCreateRequest): Match {
+        if (req.kickoffAt.isBefore(OffsetDateTime.now())) {
+            throw IllegalArgumentException("Kickoff must be in the future.")
+        }
         if (req.homeTeamId == req.awayTeamId) {
             throw IllegalArgumentException("Home and away team must be different.")
         }

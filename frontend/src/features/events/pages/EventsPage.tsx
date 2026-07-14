@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { MatchCard } from "../components/MatchCard";
 import { useEventsCatalog } from "../hooks/useEventsCatalog";
 import type { CatalogEntry } from "../lib/catalog";
+import { isMatchFinished, isMatchLive } from "../lib/catalog";
 import { cn } from "@/lib/utils";
 
 interface Filter {
@@ -17,16 +18,17 @@ const FILTERS: Filter[] = [
   {
     key: "upcoming",
     label: "Por jogar",
-    match: (e) =>
-      e.matchStatus === "SCHEDULED" ||
-      e.matchStatus === "LIVE" ||
-      e.matchStatus === "POSTPONED" ||
-      e.matchStatus == null,
+    match: (e) => !isMatchFinished(e) && !isMatchLive(e) && e.matchStatus !== "CANCELLED",
+  },
+  {
+    key: "live",
+    label: "A decorrer",
+    match: (e) => isMatchLive(e),
   },
   {
     key: "finished",
     label: "Terminados",
-    match: (e) => e.matchStatus === "FINISHED" || e.matchStatus === "ABANDONED",
+    match: (e) => isMatchFinished(e),
   },
 ];
 

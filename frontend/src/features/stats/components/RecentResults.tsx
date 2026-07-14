@@ -6,13 +6,19 @@ import { useMatchHistory } from "../hooks/useStats";
 
 export function RecentResults({ clubId, title = "Resultados recentes" }: { clubId?: number; title?: string }) {
   const { data, loading, error } = useMatchHistory({
-    size: 4,
+    size: 8,
     sort: "kickoffAt,desc",
     ...(clubId != null ? { clubId } : {}),
   });
   const { clubs } = useMatchLookups();
 
   const clubName = (id: number) => clubs.get(id)?.name ?? `Clube #${id}`;
+
+  // Only surface matches that actually have a recorded result — not sheets that
+  // were closed before a score was ever set.
+  const results = (data ?? [])
+    .filter((m) => m.homeScore != null && m.awayScore != null)
+    .slice(0, 4);
 
   return (
     <section className="space-y-3">
@@ -27,11 +33,11 @@ export function RecentResults({ clubId, title = "Resultados recentes" }: { clubI
         <p className="text-sm text-muted-foreground">Não foi possível carregar os resultados.</p>
       ) : loading ? (
         <p className="text-sm text-muted-foreground">A carregar…</p>
-      ) : !data || data.length === 0 ? (
+      ) : results.length === 0 ? (
         <p className="text-sm text-muted-foreground">Ainda não há resultados publicados.</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {data.map((m) => (
+          {results.map((m) => (
             <MatchResultCard
               key={m.matchId}
               match={m}

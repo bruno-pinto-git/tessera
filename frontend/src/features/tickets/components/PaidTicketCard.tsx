@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Download, Share2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,83 @@ import type { TicketView } from "../hooks/useMyTickets";
 export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
   const { home, away } = ticket;
   const [addingToWallet, setAddingToWallet] = useState(false);
+  const [shareNote, setShareNote] = useState<string | null>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  function savePdf() {
+    const qr = qrRef.current?.querySelector("svg")?.outerHTML ?? "";
+    const rows = [
+      ["Local", ticket.venue ?? "—"],
+      ["Tipo", ticket.tier],
+      ["Preço", ticket.price],
+      ["Bilhete", `#${ticket.id}`],
+    ]
+      .map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td class="v">${esc(v)}</td></tr>`)
+      .join("");
+    const html = `<!doctype html><html lang="pt"><head><meta charset="utf-8">
+      <title>Bilhete — ${esc(ticket.title)}</title><style>
+      @page{margin:18mm} *{box-sizing:border-box}
+      body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:0}
+      .wrap{max-width:520px;margin:0 auto;border:1px solid #ddd;border-radius:12px;padding:28px}
+      .brand{text-align:center;font-weight:700;letter-spacing:2px;color:#0a7a4b;margin-bottom:16px}
+      h1{font-size:20px;margin:0 0 4px} .sub{color:#666;font-size:13px}
+      .qr{text-align:center;margin:22px 0} .qr svg{width:220px;height:220px}
+      .code{font-family:monospace;font-size:12px;text-align:center;color:#333;word-break:break-all;margin-bottom:16px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      td{padding:7px 0;border-bottom:1px solid #eee} td.k{color:#666} td.v{text-align:right}
+      </style></head><body><div class="wrap">
+      <div class="brand">TESSERA</div>
+      <h1>${esc(ticket.title)}</h1><div class="sub">${esc(ticket.day)}</div>
+      <div class="qr">${qr}</div>
+      <div class="code">${esc(ticket.code)}</div>
+      <table>${rows}</table>
+      </div></body></html>`;
+    const frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+    document.body.appendChild(frame);
+    const doc = frame.contentWindow?.document;
+    if (!doc) {
+      frame.remove();
+      return;
+    }
+    doc.open();
+    doc.write(html);
+    doc.close();
+    // Content is fully inline (SVG + CSS), so a short tick is enough before printing.
+    window.setTimeout(() => {
+      frame.contentWindow?.focus();
+      frame.contentWindow?.print();
+      window.setTimeout(() => frame.remove(), 1000);
+    }, 300);
+  }
+
+  async function share() {
+    const url = `${window.location.origin}/events/${ticket.eventId}`;
+    const text = `O meu bilhete para ${ticket.title} (${ticket.day}).`;
+
+    // Native share sheet where available (mobile, and desktop Chromium).
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Bilhete — ${ticket.title}`, text, url });
+      } catch {
+        // user dismissed the sheet — nothing to do
+      }
+      return;
+    }
+
+    // Fallback: copy to clipboard; always give feedback, even if the copy is blocked.
+    const payload = `${text} ${url}`;
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(payload);
+      copied = true;
+    } catch {
+      copied = legacyCopy(payload);
+    }
+    setShareNote(copied ? "Link copiado para a área de transferência" : url);
+    window.setTimeout(() => setShareNote(null), 4000);
+  }
 
   async function addToWallet() {
     setAddingToWallet(true);
@@ -53,13 +130,16 @@ export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="flex-1">
+            <Button size="sm" variant="outline" className="flex-1" onClick={savePdf}>
               <Download className="size-3.5" /> Guardar PDF
             </Button>
-            <Button size="sm" variant="ghost" className="flex-1">
+            <Button size="sm" variant="ghost" className="flex-1" onClick={share}>
               <Share2 className="size-3.5" /> Partilhar
             </Button>
           </div>
+          {shareNote && (
+            <p className="-mt-2 text-center text-xs text-muted-foreground">{shareNote}</p>
+          )}
 
           <button
             type="button"
@@ -78,7 +158,7 @@ export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
         >
           <span className="absolute -left-2 top-3 size-4 rounded-full bg-background border" />
           <span className="absolute -left-2 bottom-3 size-4 rounded-full bg-background border" />
-          <div className="rounded-lg bg-white p-2 border">
+          <div ref={qrRef} className="rounded-lg bg-white p-2 border">
             <QRCodeSVG value={ticket.code} size={156} />
           </div>
           <div className="text-center">
@@ -95,6 +175,29 @@ export function PaidTicketCard({ ticket }: { ticket: TicketView }) {
         </div>
       </div>
     </Card>
+  );
+}
+
+function legacyCopy(text: string): boolean {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function esc(s: string): string {
+  return s.replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c,
   );
 }
 

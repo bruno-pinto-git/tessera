@@ -104,7 +104,7 @@ class MatchSheetService(
 
     @Transactional
     fun addOccurrence(matchId: Long, req: OccurrenceCreateRequest): Occurrence {
-        val (sheet, _) = lockedAwareSheet(matchId)
+        val (sheet, match) = lockedAwareSheet(matchId)
 
         val authorEntry = lineupRepo.findById(LineupEntryId(sheet.id, req.playerId))
             .orElseThrow {
@@ -163,12 +163,14 @@ class MatchSheetService(
             playerId          = req.playerId,
             replacedPlayerId  = req.replacedPlayerId,
         )
-        return occurrenceRepo.save(occ)
+        val saved = occurrenceRepo.save(occ)
+        syncScore(sheet, match)
+        return saved
     }
 
     @Transactional
     fun removeOccurrence(matchId: Long, occId: Long) {
-        val (sheet, _) = lockedAwareSheet(matchId)
+        val (sheet, match) = lockedAwareSheet(matchId)
         val occ = occurrenceRepo.findById(occId).orElseThrow {
             OccurrenceNotFoundException(matchId, occId)
         }
@@ -176,6 +178,7 @@ class MatchSheetService(
             throw OccurrenceNotFoundException(matchId, occId)
         }
         occurrenceRepo.delete(occ)
+        syncScore(sheet, match)
     }
 
     @Transactional
@@ -186,6 +189,12 @@ class MatchSheetService(
         if (!sheet.locked) {
             sheet.locked = true
             sheet.lockedAt = OffsetDateTime.now()
+        }
+        // Closing the sheet finalises the match: it becomes FINISHED with the
+        // score taken from the goals recorded on the sheet.
+        if (match.status == MatchStatus.SCHEDULED || match.status == MatchStatus.LIVE) {
+            syncScore(sheet, match)
+            match.status = MatchStatus.FINISHED
         }
         publishOnCommit(sheet)
         return sheet
@@ -200,6 +209,10 @@ class MatchSheetService(
             sheet.locked = false
             sheet.lockedAt = null
             publishReopenOnCommit(match.id)
+        }
+        // Reopening a finished match puts it back in an editable state.
+        if (match.status == MatchStatus.FINISHED) {
+            match.status = MatchStatus.SCHEDULED
         }
         return sheet
     }
@@ -262,6 +275,30 @@ class MatchSheetService(
             throw SheetNotEditableException(matchId, match.status)
         }
         return sheet to match
+    }
+
+    /**
+     * Recomputes the match score from the goals recorded on the sheet. A goal
+     * counts for the scorer's team; an own goal counts for the opponent.
+     */
+    private fun syncScore(sheet: MatchSheet, match: Match) {
+        var home = 0
+        var away = 0
+        for (o in occurrenceRepo.findBySheet(sheet.id)) {
+            when (o.type) {
+                OccurrenceType.GOAL -> when (o.teamId) {
+                    match.homeTeamId -> home++
+                    match.awayTeamId -> away++
+                }
+                OccurrenceType.OWN_GOAL -> when (o.teamId) {
+                    match.homeTeamId -> away++
+                    match.awayTeamId -> home++
+                }
+                else -> {}
+            }
+        }
+        match.homeScore = home
+        match.awayScore = away
     }
 
     companion object {

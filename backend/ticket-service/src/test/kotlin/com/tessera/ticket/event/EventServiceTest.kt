@@ -1,5 +1,6 @@
 package com.tessera.ticket.event
 
+import com.tessera.ticket.ticket.BoxOfficeAlreadyExistsException
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
@@ -39,6 +40,15 @@ class EventServiceTest {
         service.create(request(status = "draft"))
 
         assertEquals("DRAFT", captor.firstValue.status)
+    }
+
+    @Test
+    fun `create rejects a second box office for the same match`() {
+        whenever(repo.existsByMatchIdAndStatusNot(99L, "CANCELLED")).doReturn(true)
+
+        assertFailsWith<BoxOfficeAlreadyExistsException> {
+            service.create(request(status = null))
+        }
     }
 
     @Test

@@ -124,6 +124,9 @@ export function MatchFormDialog({
       return "As duas equipas têm de ser diferentes.";
     }
     if (!form.kickoffAt) return "Define a data e hora do jogo.";
+    if (!isEdit && new Date(form.kickoffAt).getTime() < Date.now()) {
+      return "A data do jogo tem de ser no futuro.";
+    }
     return null;
   }
 
@@ -180,6 +183,7 @@ export function MatchFormDialog({
 
   const sortedClubs = Array.from(clubs.values()).sort((a, b) => a.name.localeCompare(b.name));
   const sortedVenues = Array.from(venues.values()).sort((a, b) => a.name.localeCompare(b.name));
+  const minKickoff = toDatetimeLocal(new Date().toISOString());
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -294,6 +298,7 @@ export function MatchFormDialog({
                 id="m-kickoff"
                 type="datetime-local"
                 value={form.kickoffAt}
+                min={isEdit ? undefined : minKickoff}
                 onChange={(e) => setForm({ ...form, kickoffAt: e.target.value })}
                 required
               />

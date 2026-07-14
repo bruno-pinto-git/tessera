@@ -9,6 +9,7 @@ import { Crest } from "@/components/Crest";
 import { useEventCatalog } from "../hooks/useEventsCatalog";
 import { PurchaseModal } from "../components/PurchaseModal";
 import { MatchSheetView } from "@/features/sheets/components/MatchSheetView";
+import { SheetLinkButton } from "@/features/sheets/components/SheetLinkButton";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import type { CatalogEntry } from "../lib/catalog";
 
@@ -59,12 +60,15 @@ export function EventDetailPage() {
   return (
     <>
       <div className="space-y-8">
-        <Breadcrumb
-          parts={[
-            { label: "Jogos", to: "/events" },
-            { label: `${entry.homeShort} vs ${entry.awayShort}` },
-          ]}
-        />
+        <div className="flex items-center justify-between gap-4">
+          <Breadcrumb
+            parts={[
+              { label: "Jogos", to: "/events" },
+              { label: `${entry.homeShort} vs ${entry.awayShort}` },
+            ]}
+          />
+          <SheetLinkButton matchId={entry.matchId} />
+        </div>
 
         <header className="rounded-xl border bg-card overflow-hidden">
           <div
