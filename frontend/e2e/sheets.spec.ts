@@ -49,8 +49,12 @@ test.describe("Match sheet (ficha técnica)", () => {
     const stamp = Date.now();
     const token = await apiToken(request, USERS.admin.username, USERS.admin.password);
     const match = await seedFilledSheet(request, token, stamp);
-    await lockSheet(request, token, match.id);
+
+    // Create event BEFORE locking the sheet
     const event = await seedEvent(request, token, match.id, `E2E Ficha Evento ${stamp}`);
+
+    // Lock sheet AFTER event is created
+    await lockSheet(request, token, match.id);
 
     // The public viewer reads statistics-service's match-sheet snapshot, built
     // asynchronously after the lock (match.sheet.closed over RabbitMQ). Reload
