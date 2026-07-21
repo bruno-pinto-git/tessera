@@ -177,6 +177,9 @@ function MbwayApi($method, $path, $body = $null, $headers = @{}) {
 function BuyTicket($eventId, $supporter) {
     $t = Api POST "/api/v1/tickets" @{ eventId = $eventId; supporter = $supporter }
     [void](Api POST "/api/v1/tickets/$($t.id)/pay" @{ paymentMethod = "MBWAY"; phoneNumber = "351912345678" })
+    # Confirm immediately so each relay request spends only milliseconds in the
+    # shared queue — a stray mock-mbway poller can't drain them out from under us.
+    [void](DrainAndConfirmMbway)
     return $t
 }
 
@@ -189,34 +192,48 @@ function SellTickets($eventId, $count) {
     return , $sold.ToArray()
 }
 
-# Act as mock-mbway: drain the relay queue and confirm every pending payment.
+# Drain the relay queue ONCE (act as mock-mbway) and confirm each pending payment.
 # NOTE: capture the poll result into a variable BEFORE wrapping with @().
 # Windows PowerShell 5.1 does NOT unroll the array returned straight from
-# Invoke-RestMethod, so `@(MbwayApi ...)` yields a single element holding the
-# whole array and `$r.transactionID` becomes a LIST of ids -> the webhook then
-# gets {"transactionID":[...]} and rejects it with 400. Capturing to $raw first
-# and doing @($raw) enumerates correctly on both 5.1 and PowerShell 7.
+# Invoke-RestMethod, so `@(MbwayApi ...)` would yield a single element holding
+# the whole array and `$r.transactionID` would become a LIST of ids -> the
+# webhook then gets {"transactionID":[...]} and drops it. Capturing to $raw and
+# doing @($raw) enumerates correctly on both 5.1 and PowerShell 7.
+function DrainAndConfirmMbway() {
+    $raw = MbwayApi POST "/api/v1/mbway/relay/poll" $null @{ "X-Relay-Secret" = $RelaySecret }
+    $reqs = @($raw)
+    $n = 0
+    foreach ($r in $reqs) {
+        $txn = "$($r.transactionID)"
+        if ([string]::IsNullOrWhiteSpace($txn)) { continue }
+        [void](MbwayApi POST "/api/v1/webhooks/mbway" @{ transactionID = $txn; paymentStatus = "SUCCESS" })
+        $n++
+    }
+    return $n
+}
+
+# Final sweep — confirm anything still queued (belt-and-braces after the
+# per-ticket confirmation done in BuyTicket).
 function ConfirmAllMbway() {
     $total = 0
     while ($true) {
-        $raw = MbwayApi POST "/api/v1/mbway/relay/poll" $null @{ "X-Relay-Secret" = $RelaySecret }
-        $reqs = @($raw)
-        if ($reqs.Count -eq 0) { break }
-        foreach ($r in $reqs) {
-            $txn = "$($r.transactionID)"
-            if ([string]::IsNullOrWhiteSpace($txn)) { continue }
-            [void](MbwayApi POST "/api/v1/webhooks/mbway" @{ transactionID = $txn; paymentStatus = "SUCCESS" })
-            $total++
-        }
+        $n = DrainAndConfirmMbway
+        if ($n -eq 0) { break }
+        $total += $n
     }
     return $total
 }
 
-# Validate the first $n tickets (admin bypasses the staff/time-window checks).
+# Validate up to $n PAID tickets (admin bypasses the staff/time-window checks).
+# Defensive: skip any that aren't PAID, so a stray unconfirmed ticket can't crash the run.
 function ValidateSome($tickets, $n) {
-    $count = [Math]::Min($n, $tickets.Count)
-    for ($i = 0; $i -lt $count; $i++) {
-        [void](Api POST "/api/v1/tickets/validate" @{ code = $tickets[$i].code })
+    $count = 0
+    foreach ($t in $tickets) {
+        if ($count -ge $n) { break }
+        $fresh = Api GET "/api/v1/tickets/$($t.id)"
+        if ($fresh.status -ne "PAID") { continue }
+        [void](Api POST "/api/v1/tickets/validate" @{ code = $t.code })
+        $count++
     }
     return $count
 }
@@ -323,9 +340,9 @@ Write-Host "  + DEMO: 1 de Dezembro vs Sintrense (hoje+7, convocatoria feita, se
 # ---------------------------------------------------------------------------
 # Bilhetes: confirmar pagamentos MB WAY (em bloco) & validar jogos concluidos
 # ---------------------------------------------------------------------------
-Write-Host ""; Write-Host "[5] Bilhetes: confirmar pagamentos MB WAY & validar..." -ForegroundColor Yellow
-$paid = ConfirmAllMbway
-Write-Host "  MB WAY confirmados -> PAID: $paid bilhetes" -ForegroundColor Green
+Write-Host ""; Write-Host "[5] Bilhetes: varredura final MB WAY & validar jogos concluidos..." -ForegroundColor Yellow
+$swept = ConfirmAllMbway
+Write-Host "  MB WAY: pagamentos ja confirmados por bilhete (varredura final: +$swept)" -ForegroundColor Green
 $v1 = ValidateSome $dezSold1 15
 $v2 = ValidateSome $sinSold2 13
 Write-Host "  validados (jogos concluidos): $v1 no 1 de Dezembro + $v2 no Sintrense" -ForegroundColor Green
