@@ -16,11 +16,16 @@ services:
   match-url: http://localhost:8082
   statistics-url: http://localhost:8083
 
-# OpenAPI / Swagger UI — serve our hand-written spec, not one generated from controllers.
-# The spec at /static/openapi.yaml is produced by `npm run bundle:bff` in docs/api/.
+# OpenAPI / Swagger UI — the UI displays our hand-written spec (swagger-ui.url),
+# not one generated from controllers. The spec at /static/api/openapi.yaml is
+# produced by `npm run bundle:bff` in docs/api/.
+# NOTE: api-docs must stay ENABLED. In springdoc 2.x the Swagger UI config is
+# @ConditionalOnBean(SpringDocConfiguration), and that bean only exists when
+# springdoc.api-docs.enabled=true. Disabling it silently drops the whole UI
+# (/api/docs + /swagger-ui/** 404), leaving only the static /api/openapi.yaml.
 springdoc:
   api-docs:
-    enabled: false
+    enabled: true
   swagger-ui:
     path: /api/docs
     url: /api/openapi.yaml
