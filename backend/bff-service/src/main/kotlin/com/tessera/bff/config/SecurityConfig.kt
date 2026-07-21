@@ -31,8 +31,13 @@ class SecurityConfig(
             .cors { }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
+                // Swagger UI: springdoc serves the entry at /api/docs and its
+                // webjar assets under /api/swagger-ui/** (the /api prefix comes
+                // from swagger-ui.path=/api/docs). swagger-config sits at
+                // /v3/api-docs/**. All public so the docs open without a login.
                 auth.requestMatchers("/api/docs", "/api/docs/**",
-                                     "/swagger-ui/**", "/v3/api-docs/**",
+                                     "/api/swagger-ui/**", "/swagger-ui/**",
+                                     "/v3/api-docs/**",
                                      "/api/openapi.yaml").permitAll()
                 auth.requestMatchers("/api/v1/clubs/*/members/**").authenticated()
                 auth.requestMatchers("/api/v1/users/**").authenticated()
