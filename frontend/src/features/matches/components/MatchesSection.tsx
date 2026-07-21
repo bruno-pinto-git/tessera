@@ -138,15 +138,7 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                         {venue?.name ?? "—"}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <MatchStatusBadge status={m.status} />
-                          {hasBoxOffice && (
-                            <span className="flex items-center gap-1 text-[11px] font-medium text-status-validated">
-                              <Ticket className="size-3" />
-                              Bilheteira aberta
-                            </span>
-                          )}
-                        </div>
+                        <MatchStatusBadge status={m.status} />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end">
