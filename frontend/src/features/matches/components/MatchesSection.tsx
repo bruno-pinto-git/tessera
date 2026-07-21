@@ -13,6 +13,7 @@ import {
 import { ClipboardList, Pencil, Plus, Ticket, Trash2 } from "lucide-react";
 import { useMatches } from "../hooks/useMatches";
 import { useMatchLookups } from "../hooks/useMatchLookups";
+import { useBoxOffices } from "../hooks/useBoxOffices";
 import { MatchStatusBadge } from "./MatchStatusBadge";
 import { MatchFormDialog } from "./MatchFormDialog";
 import { DeleteMatchDialog } from "./DeleteMatchDialog";
@@ -32,6 +33,7 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
   const [openingBoxOffice, setOpeningBoxOffice] = useState<Match | null>(null);
 
   const lookups = useMatchLookups();
+  const boxOffices = useBoxOffices();
   const { data, loading, error, refetch } = useMatches({
     clubId,
     sort: "kickoffAt,desc",
@@ -125,6 +127,7 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
               {!loading &&
                 homeMatches.map((m) => {
                   const venue = m.venueId != null ? lookups.venues.get(m.venueId) : null;
+                  const hasBoxOffice = boxOffices.byMatch.has(m.id);
                   return (
                     <TableRow key={m.id}>
                       <TableCell className="text-muted-foreground">
@@ -135,7 +138,15 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                         {venue?.name ?? "—"}
                       </TableCell>
                       <TableCell>
-                        <MatchStatusBadge status={m.status} />
+                        <div className="flex flex-col gap-1">
+                          <MatchStatusBadge status={m.status} />
+                          {hasBoxOffice && (
+                            <span className="flex items-center gap-1 text-[11px] font-medium text-status-validated">
+                              <Ticket className="size-3" />
+                              Bilheteira aberta
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end">
@@ -152,15 +163,27 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
                           </Button>
                           {canManage && (
                             <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setOpeningBoxOffice(m)}
-                                aria-label="Abrir bilheteira"
-                                title="Abrir bilheteira"
-                              >
-                                <Ticket className="size-4" />
-                              </Button>
+                              {hasBoxOffice ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled
+                                  aria-label="Bilheteira já aberta"
+                                  title="Bilheteira já aberta"
+                                >
+                                  <Ticket className="size-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setOpeningBoxOffice(m)}
+                                  aria-label="Abrir bilheteira"
+                                  title="Abrir bilheteira"
+                                >
+                                  <Ticket className="size-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -221,7 +244,10 @@ export function MatchesSection({ clubId, canManage }: MatchesSectionProps) {
             onOpenChange={(o) => !o && setOpeningBoxOffice(null)}
             matchId={openingBoxOffice?.id ?? null}
             defaultLabel={openingBoxOffice ? matchLabel(openingBoxOffice) : ""}
-            onCreated={refetch}
+            onCreated={() => {
+              refetch();
+              boxOffices.refetch();
+            }}
           />
         </>
       )}
